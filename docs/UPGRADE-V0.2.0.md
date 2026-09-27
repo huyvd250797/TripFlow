@@ -1,5 +1,7 @@
 # Nâng cấp TripFlow V0.1.0 → V0.2.0
 
+> Tài liệu lịch sử cho bước nâng cấp V0.2.0. TripFlow hiện đã có V0.3.0; sau khi hoàn tất V0.2.0 hãy chạy tiếp `202609270002_v030_finance_reporting_integrity.sql`.
+
 ## 1. Database
 
 Với database V0.1.0 đang chạy, **chỉ chạy**:

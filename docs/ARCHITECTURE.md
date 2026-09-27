@@ -1,4 +1,4 @@
-# Kiến trúc TripFlow 0.2.0
+# Kiến trúc TripFlow 0.3.0
 
 ## Công nghệ và luồng dữ liệu
 
@@ -8,6 +8,7 @@
 - Supabase Auth lưu phiên bằng cookie qua `@supabase/ssr`. Server client chỉ được gọi trong route có thể cập nhật cookie; ứng dụng không đặt dữ liệu riêng trong HTML render tĩnh. Browser client tự làm mới phiên, route handlers ghi lại cookie khi cần.
 - Supabase PostgreSQL là nguồn dữ liệu chính. RLS bảo vệ đọc, RPC `tf_mutate` kiểm tra trạng thái tài khoản, quyền và xử lý ghi trong transaction. Không có service-role key trong ứng dụng.
 - V0.2.0 bổ sung `tf_user_accounts` và các RPC Master. Master chỉ được gán bằng SQL tin cậy; frontend không có luồng tự nâng quyền.
+- V0.3.0 bổ sung metadata snapshot bất biến và RPC `tf_finance_report` để server tổng hợp một nguồn báo cáo tài chính chuẩn, thay vì tin vào nhiều tổng lưu rời rạc.
 - IndexedDB `tripflow-v020` giữ cache và mutation queue theo `userId`; service worker chỉ cache app shell, không cache `/api` hoặc `/auth`. Khi sync, server vẫn là nguồn quyết định cuối cùng.
 - Realtime thử làm mới các bảng con; polling 30 giây và refetch khi quay lại cửa sổ là cơ chế dự phòng. Đây không phải cam kết đồng bộ tức thì mọi loại sự kiện.
 

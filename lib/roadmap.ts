@@ -23,7 +23,7 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V0.3.0",
     title: "Finance & Reporting Integrity",
-    done: false,
+    done: true,
     description:
       "Hoàn thiện snapshot ngân sách, đối chiếu dự toán gốc/hiện tại/thực chi, hoàn tiền, báo cáo và kiểm soát tính đúng của số liệu.",
   },

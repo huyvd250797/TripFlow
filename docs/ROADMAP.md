@@ -18,11 +18,19 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Tài khoản bị hủy kích hoạt bị chặn bởi account gate, RLS và mutation wrapper. Khi đăng nhập, app phát hiện trạng thái rồi đăng xuất ngay.
 - Audit riêng cho thao tác quản trị tài khoản.
 
-## ➡️ V0.3.0 — Finance & Reporting Integrity
+## ✅ V0.3.0 — Finance & Reporting Integrity
 
-Phiên bản tiếp theo tập trung đưa tài chính lên mức production: snapshot dự toán gốc bất biến, dự toán hiện hành, thực chi ròng, hoàn tiền, khoản ngoài dự toán, đối chiếu theo nhóm/ngày/hoạt động, báo cáo và kiểm thử tính đúng số liệu.
+- Lần chốt đầu tiên trở thành **baseline dự toán gốc**, các lần sau là revision; snapshot có số thứ tự, tổng tiền và số khoản.
+- Snapshot được bảo vệ bất biến ở database, không cho cập nhật nội dung sau khi chốt.
+- Báo cáo tài chính server-side đối chiếu **dự toán gốc / dự toán hiện tại / tổng chi / hoàn tiền / thực chi ròng / chênh lệch**.
+- Báo cáo theo nhóm, ngày và hoạt động; theo dõi khoản ngoài dự toán.
+- Data Integrity kiểm tra refund vượt gốc, refund sai liên kết, liên kết dự toán sai nhóm/đã xóa, activity link và snapshot mismatch.
+- Export CSV/JSON tài chính có cấu trúc đầy đủ; CSV tiếp tục chống formula injection.
+- UI Chi phí bổ sung tab Báo cáo, baseline/revision history và cảnh báo integrity.
 
-## V0.4.0 — Live Trip & Realtime
+## ➡️ V0.4.0 — Live Trip & Realtime
+
+Phiên bản tiếp theo tập trung đưa TripFlow vào sử dụng trực tiếp trong chuyến đi: Current/Next/Late, check-in giao dịch, Realtime nhiều thiết bị, lịch sử trạng thái, cảnh báo trễ và kiểm thử cập nhật đồng thời.
 
 Current/Next/Late, check-in giao dịch, Realtime nhiều thiết bị, lịch sử trạng thái, cảnh báo trễ và kiểm thử cập nhật đồng thời.
 

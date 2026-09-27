@@ -67,6 +67,8 @@ import {
   csv,
   planned,
   net,
+  buildFinanceReport,
+  financeJson,
 } from "@/lib/domain";
 import { MasterAdmin } from "./admin";
 import { ProductRoadmap } from "./roadmap";
@@ -566,13 +568,19 @@ function App() {
       />
     );
   const totals = data ? compare(data.budgets, data.expenses) : null;
+  const financeReport = data
+    ? data.finance_report || buildFinanceReport(data)
+    : null;
   const progress = data
     ? live(data.items, now || new Date().toISOString())
     : null;
   const current = progress?.active || progress?.scheduled[0];
-  const latestSnapshot = data?.snapshots.toSorted((a, b) =>
-    b.created_at.localeCompare(a.created_at),
-  )[0];
+  const orderedSnapshots = data?.snapshots.toSorted((a, b) =>
+    (a.snapshot_no ?? 999999) - (b.snapshot_no ?? 999999) ||
+    a.created_at.localeCompare(b.created_at),
+  );
+  const baselineSnapshot = orderedSnapshots?.[0];
+  const latestSnapshot = orderedSnapshots?.at(-1);
   const queuePending = queueRows.filter((x) => x.state === "pending" || x.state === "sending").length;
   const queueIssues = queueRows.filter((x) => x.state === "conflict" || x.state === "rejected").length;
   const tableNames: Record<string, string> = {
@@ -682,7 +690,7 @@ function App() {
           )}
         </nav>
         <div className="side-footer">
-          <span className="version">V{VERSION} · OFFLINE + ADMIN</span>
+          <span className="version">V{VERSION} · FINANCE INTEGRITY</span>
           <p>
             Đi cùng nhau.
             <br />
@@ -1334,34 +1342,49 @@ function App() {
                   )}
                 </>
               )}
-              {tab === "money" && data && totals && (
+              {tab === "money" && data && totals && financeReport && (
                 <>
-                  <section className="money-banner">
+                  <section className="money-banner finance-v030">
                     <div>
-                      <span>Dự toán</span>
-                      <strong>{money(totals.plan)}</strong>
+                      <span>Dự toán gốc</span>
+                      <strong>
+                        {financeReport.baseline_snapshot_id
+                          ? money(financeReport.totals.original_budget)
+                          : "Chưa chốt"}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Dự toán hiện tại</span>
+                      <strong>{money(financeReport.totals.current_budget)}</strong>
                     </div>
                     <div>
                       <span>Thực chi ròng</span>
-                      <strong>{money(totals.actual)}</strong>
+                      <strong>{money(financeReport.totals.net_actual)}</strong>
                     </div>
                     <div>
                       <span>
-                        {totals.remaining < 0 ? "Vượt dự toán" : "Còn lại"}
+                        {financeReport.totals.current_variance < 0
+                          ? "Vượt dự toán"
+                          : "Còn lại"}
                       </span>
                       <strong
-                        className={totals.remaining < 0 ? "over-text" : ""}
+                        className={
+                          financeReport.totals.current_variance < 0
+                            ? "over-text"
+                            : ""
+                        }
                       >
-                        {money(Math.abs(totals.remaining))}
+                        {money(Math.abs(financeReport.totals.current_variance))}
                       </strong>
                     </div>
                   </section>
                   <div className="finance-toolbar">
                     <div className="segments">
                       {[
-                        ["summary", "So sánh"],
+                        ["summary", "Đối chiếu"],
                         ["plan", "Dự toán"],
                         ["actual", "Thực chi"],
+                        ["report", "Báo cáo"],
                       ].map(([id, label]) => (
                         <button
                           className={financeTab === id ? "active" : ""}
@@ -1387,40 +1410,81 @@ function App() {
                     <>
                       <section className="panel">
                         <div className="section-heading">
-                          <h2>Dự toán & thực tế</h2>
-                          {writable && (
+                          <div>
+                            <span className="eyebrow">FINANCE V0.3.0</span>
+                            <h2>Dự toán gốc · hiện tại · thực tế</h2>
+                          </div>
+                          <div className="finance-actions">
                             <button
                               className="btn secondary"
                               onClick={() =>
                                 download(
-                                  "TripFlow-Chi-phi.csv",
+                                  "TripFlow-Finance.csv",
                                   csv(data),
                                   "text/csv;charset=utf-8",
                                 )
                               }
                             >
                               <Download size={16} />
-                              Xuất CSV
+                              CSV
                             </button>
-                          )}
+                            <button
+                              className="btn secondary"
+                              onClick={() =>
+                                download(
+                                  "TripFlow-Finance.json",
+                                  financeJson(data),
+                                  "application/json;charset=utf-8",
+                                )
+                              }
+                            >
+                              <FileText size={16} />
+                              JSON
+                            </button>
+                          </div>
                         </div>
                         <div className="comparison-bars">
+                          {financeReport.baseline_snapshot_id && (
+                            <div>
+                              <span>Dự toán gốc</span>
+                              <Bar
+                                value={financeReport.totals.original_budget}
+                                max={Math.max(
+                                  financeReport.totals.original_budget,
+                                  financeReport.totals.current_budget,
+                                  financeReport.totals.net_actual,
+                                )}
+                              />
+                              <b>{money(financeReport.totals.original_budget)}</b>
+                            </div>
+                          )}
                           <div>
-                            <span>Dự toán</span>
+                            <span>Hiện tại</span>
                             <Bar
-                              value={totals.plan}
-                              max={Math.max(totals.plan, totals.actual)}
+                              value={financeReport.totals.current_budget}
+                              max={Math.max(
+                                financeReport.totals.original_budget,
+                                financeReport.totals.current_budget,
+                                financeReport.totals.net_actual,
+                              )}
                             />
-                            <b>{money(totals.plan)}</b>
+                            <b>{money(financeReport.totals.current_budget)}</b>
                           </div>
                           <div>
                             <span>Thực chi</span>
                             <Bar
-                              value={totals.actual}
-                              max={Math.max(totals.plan, totals.actual)}
-                              over={totals.actual > totals.plan}
+                              value={financeReport.totals.net_actual}
+                              max={Math.max(
+                                financeReport.totals.original_budget,
+                                financeReport.totals.current_budget,
+                                financeReport.totals.net_actual,
+                              )}
+                              over={
+                                financeReport.totals.net_actual >
+                                financeReport.totals.current_budget
+                              }
                             />
-                            <b>{money(totals.actual)}</b>
+                            <b>{money(financeReport.totals.net_actual)}</b>
                           </div>
                         </div>
                         <div className="table-scroll">
@@ -1428,13 +1492,14 @@ function App() {
                             <thead>
                               <tr>
                                 <th>Nhóm</th>
-                                <th>Dự toán</th>
+                                <th>Dự toán gốc</th>
+                                <th>Hiện tại</th>
                                 <th>Thực chi</th>
                                 <th>Chênh lệch</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {totals.categories
+                              {financeReport.categories
                                 .filter(
                                   (x) =>
                                     category === "all" ||
@@ -1443,14 +1508,19 @@ function App() {
                                 .map((x) => (
                                   <tr key={x.category}>
                                     <td>{x.category}</td>
-                                    <td>{money(x.plan)}</td>
-                                    <td>{money(x.actual)}</td>
+                                    <td>
+                                      {financeReport.baseline_snapshot_id
+                                        ? money(Number(x.original))
+                                        : "—"}
+                                    </td>
+                                    <td>{money(Number(x.current))}</td>
+                                    <td>{money(Number(x.actual))}</td>
                                     <td
                                       className={
-                                        x.plan < x.actual ? "negative" : ""
+                                        Number(x.variance) < 0 ? "negative" : ""
                                       }
                                     >
-                                      {money(x.plan - x.actual)}
+                                      {money(Number(x.variance))}
                                     </td>
                                   </tr>
                                 ))}
@@ -1458,12 +1528,23 @@ function App() {
                           </table>
                         </div>
                         <p className="hint">
-                          Chênh lệch = dự toán − thực chi. Thực chi ròng đã trừ
-                          hoàn tiền. Tổng trên cùng là toàn chuyến.
+                          Chênh lệch = dự toán hiện tại − thực chi ròng. Thực chi
+                          ròng = tổng chi − hoàn tiền. Dự toán gốc lấy từ lần
+                          chốt đầu tiên và không thay đổi theo các lần chỉnh sửa
+                          sau.
                         </p>
                       </section>
+
                       <section className="panel">
-                        <h2>Đối chiếu từng khoản</h2>
+                        <div className="section-heading">
+                          <div>
+                            <span className="eyebrow">RECONCILIATION</span>
+                            <h2>Đối chiếu từng khoản</h2>
+                          </div>
+                          <span className="pill">
+                            {data.budgets.length} khoản
+                          </span>
+                        </div>
                         {data.budgets
                           .filter(
                             (b) =>
@@ -1473,11 +1554,20 @@ function App() {
                             const actual = net(
                               data.expenses.filter((x) => x.budget_id === b.id),
                             );
+                            const variance = Number(b.amount) - actual;
                             return (
                               <div className="reconcile" key={b.id}>
                                 <div>
                                   <b>{b.title}</b>
-                                  <small>{b.category}</small>
+                                  <small>
+                                    {b.category}
+                                    {b.item_id
+                                      ? " · " +
+                                        (data.items.find(
+                                          (x) => x.id === b.item_id,
+                                        )?.title || "Hoạt động")
+                                      : ""}
+                                  </small>
                                 </div>
                                 <div>
                                   <b>
@@ -1485,88 +1575,175 @@ function App() {
                                   </b>
                                   <small
                                     className={
-                                      actual > Number(b.amount)
-                                        ? "negative"
-                                        : ""
+                                      variance < 0 ? "negative" : ""
                                     }
                                   >
-                                    Chênh lệch{" "}
-                                    {money(Number(b.amount) - actual)}
+                                    {variance < 0 ? "Vượt " : "Còn "}
+                                    {money(Math.abs(variance))}
                                   </small>
                                 </div>
                               </div>
                             );
                           })}
+                        {!data.budgets.length && (
+                          <p className="muted">Chưa có khoản dự toán để đối chiếu.</p>
+                        )}
                         <p className="notice">
                           Thực chi chưa gắn dự toán:{" "}
-                          <b>{money(totals.unlinked)}</b>. Các khoản này đã nằm
-                          trong tổng thực chi.
+                          <b>{money(financeReport.totals.unlinked_actual)}</b>.
+                          Khoản này vẫn được tính vào thực chi toàn chuyến.
                         </p>
                       </section>
+
                       <section className="panel">
                         <div className="section-heading">
-                          <h2>Dự toán đã chốt</h2>
+                          <div>
+                            <span className="eyebrow">BUDGET SNAPSHOT</span>
+                            <h2>Dự toán đã chốt</h2>
+                          </div>
                           {owner && (
                             <button
                               className="btn secondary"
                               onClick={() => edit("snapshot")}
                             >
                               <LockKeyhole size={16} />
-                              Chốt dự toán
+                              {baselineSnapshot
+                                ? "Chốt bản điều chỉnh"
+                                : "Chốt dự toán gốc"}
                             </button>
                           )}
                         </div>
-                        {latestSnapshot ? (
+                        {baselineSnapshot ? (
                           <>
-                            <p>
-                              <b>{latestSnapshot.title}</b> ·{" "}
-                              {dateLabel(latestSnapshot.created_at)}
-                            </p>
+                            <div className="snapshot-status">
+                              <span className="snapshot-badge baseline">
+                                Dự toán gốc · #{baselineSnapshot.snapshot_no ?? 1}
+                              </span>
+                              <b>{baselineSnapshot.title}</b>
+                              <small>
+                                {dateLabel(baselineSnapshot.created_at)} ·{" "}
+                                {baselineSnapshot.item_count ??
+                                  baselineSnapshot.data.length}{" "}
+                                khoản
+                              </small>
+                            </div>
                             <div className="snapshot-values">
                               <span>
-                                Ngân sách gốc{" "}
-                                <b>{money(planned(latestSnapshot.data))}</b>
+                                Ngân sách gốc
+                                <b>
+                                  {money(
+                                    Number(
+                                      baselineSnapshot.total_amount ??
+                                        planned(baselineSnapshot.data),
+                                    ),
+                                  )}
+                                </b>
                               </span>
                               <span>
-                                So với thực chi{" "}
+                                Dự toán hiện tại
+                                <b>{money(financeReport.totals.current_budget)}</b>
+                              </span>
+                              <span>
+                                Thay đổi kế hoạch
                                 <b
                                   className={
-                                    planned(latestSnapshot.data) < totals.actual
+                                    financeReport.totals.current_budget >
+                                    financeReport.totals.original_budget
                                       ? "negative"
                                       : ""
                                   }
                                 >
                                   {money(
-                                    planned(latestSnapshot.data) -
-                                      totals.actual,
+                                    financeReport.totals.current_budget -
+                                      financeReport.totals.original_budget,
+                                  )}
+                                </b>
+                              </span>
+                              <span>
+                                So với thực chi
+                                <b
+                                  className={
+                                    (financeReport.totals.original_variance ??
+                                      0) < 0
+                                      ? "negative"
+                                      : ""
+                                  }
+                                >
+                                  {money(
+                                    Number(
+                                      financeReport.totals.original_variance ??
+                                        0,
+                                    ),
                                   )}
                                 </b>
                               </span>
                             </div>
                             <details>
                               <summary>
-                                Lịch sử {data.snapshots.length} lần chốt
+                                Lịch sử {orderedSnapshots?.length || 0} lần chốt
                               </summary>
-                              {data.snapshots.map((s) => (
-                                <p key={s.id}>
-                                  {dateLabel(s.created_at)} · {s.title} ·{" "}
-                                  {money(planned(s.data))}
-                                </p>
-                              ))}
+                              <div className="snapshot-history">
+                                {orderedSnapshots?.map((snapshot) => (
+                                  <div key={snapshot.id}>
+                                    <span
+                                      className={`snapshot-badge ${
+                                        snapshot.snapshot_kind === "baseline" ||
+                                        snapshot.id === baselineSnapshot.id
+                                          ? "baseline"
+                                          : ""
+                                      }`}
+                                    >
+                                      {snapshot.snapshot_kind === "baseline" ||
+                                      snapshot.id === baselineSnapshot.id
+                                        ? "Gốc"
+                                        : `Điều chỉnh #${snapshot.snapshot_no ?? "?"}`}
+                                    </span>
+                                    <span>{snapshot.title}</span>
+                                    <b>
+                                      {money(
+                                        Number(
+                                          snapshot.total_amount ??
+                                            planned(snapshot.data),
+                                        ),
+                                      )}
+                                    </b>
+                                    <small>
+                                      {dateLabel(snapshot.created_at)}
+                                    </small>
+                                  </div>
+                                ))}
+                              </div>
                             </details>
+                            {latestSnapshot &&
+                              latestSnapshot.id !== baselineSnapshot.id && (
+                                <p className="hint">
+                                  Bản chốt mới nhất chỉ lưu lịch sử thay đổi.
+                                  Dự toán gốc vẫn là lần chốt đầu tiên.
+                                </p>
+                              )}
                           </>
                         ) : (
-                          <p className="muted">
-                            Chốt một bản dự toán trước khi đi để đối chiếu, ngay
-                            cả khi ngân sách hiện hành thay đổi.
-                          </p>
+                          <div className="integrity-empty">
+                            <AlertTriangle size={22} />
+                            <div>
+                              <b>Chưa có dự toán gốc</b>
+                              <p>
+                                Hãy chốt ngân sách trước chuyến đi. Lần chốt đầu
+                                tiên sẽ trở thành baseline bất biến để đối chiếu
+                                về sau.
+                              </p>
+                            </div>
+                          </div>
                         )}
                       </section>
                     </>
                   ) : financeTab === "plan" ? (
                     <section className="panel">
                       <div className="section-heading">
-                        <h2>Dự toán chi tiết</h2>
+                        <div>
+                          <span className="eyebrow">CURRENT BUDGET</span>
+                          <h2>Dự toán hiện tại</h2>
+                        </div>
                         {writable && (
                           <button
                             className="btn secondary"
@@ -1615,10 +1792,13 @@ function App() {
                         />
                       )}
                     </section>
-                  ) : (
+                  ) : financeTab === "actual" ? (
                     <section className="panel">
                       <div className="section-heading">
-                        <h2>Nhật ký chi tiêu</h2>
+                        <div>
+                          <span className="eyebrow">ACTUAL SPENDING</span>
+                          <h2>Nhật ký chi tiêu</h2>
+                        </div>
                         <span className="pill">
                           {data.expenses.length} giao dịch
                         </span>
@@ -1674,6 +1854,171 @@ function App() {
                         />
                       )}
                     </section>
+                  ) : (
+                    <>
+                      <section className="panel">
+                        <div className="section-heading">
+                          <div>
+                            <span className="eyebrow">DATA INTEGRITY</span>
+                            <h2>Kiểm tra tính đúng tài chính</h2>
+                          </div>
+                          <span
+                            className={`integrity-pill ${financeReport.integrity.status}`}
+                          >
+                            {financeReport.integrity.status === "ok" ? (
+                              <CheckCircle2 size={16} />
+                            ) : (
+                              <AlertTriangle size={16} />
+                            )}
+                            {financeReport.integrity.status === "ok"
+                              ? "Dữ liệu hợp lệ"
+                              : `${financeReport.integrity.issue_count} cảnh báo`}
+                          </span>
+                        </div>
+                        {financeReport.integrity.issues.length ? (
+                          <div className="integrity-list">
+                            {financeReport.integrity.issues.map((issue) => (
+                              <div key={issue.code}>
+                                <AlertTriangle size={18} />
+                                <div>
+                                  <b>{issue.message}</b>
+                                  <small>
+                                    Mã {issue.code} · {issue.count} trường hợp
+                                  </small>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="integrity-ok">
+                            <ShieldCheck size={26} />
+                            <div>
+                              <b>Không phát hiện sai lệch cấu trúc tài chính</b>
+                              <p>
+                                Refund, liên kết dự toán và snapshot đang nhất
+                                quán theo dữ liệu server.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </section>
+
+                      <section className="report-kpis">
+                        <article className="panel">
+                          <span>Tổng chi trước hoàn</span>
+                          <b>{money(financeReport.totals.gross_payments)}</b>
+                        </article>
+                        <article className="panel">
+                          <span>Đã hoàn tiền</span>
+                          <b>{money(financeReport.totals.refunds)}</b>
+                        </article>
+                        <article className="panel">
+                          <span>Thực chi ròng</span>
+                          <b>{money(financeReport.totals.net_actual)}</b>
+                        </article>
+                        <article className="panel">
+                          <span>Ngoài dự toán</span>
+                          <b>{money(financeReport.totals.unlinked_actual)}</b>
+                        </article>
+                      </section>
+
+                      <section className="panel">
+                        <div className="section-heading">
+                          <h2>Báo cáo theo ngày</h2>
+                          <small className="muted">
+                            {financeReport.days.length} ngày có giao dịch
+                          </small>
+                        </div>
+                        {financeReport.days.length ? (
+                          <div className="table-scroll">
+                            <table>
+                              <thead>
+                                <tr>
+                                  <th>Ngày</th>
+                                  <th>Chi</th>
+                                  <th>Hoàn</th>
+                                  <th>Thực chi ròng</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {financeReport.days.map((row) => (
+                                  <tr key={row.day}>
+                                    <td>{dateLabel(row.day)}</td>
+                                    <td>{money(Number(row.payments))}</td>
+                                    <td>{money(Number(row.refunds))}</td>
+                                    <td>{money(Number(row.actual))}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="muted">Chưa có giao dịch để thống kê.</p>
+                        )}
+                      </section>
+
+                      <section className="panel">
+                        <div className="section-heading">
+                          <h2>Báo cáo theo hoạt động</h2>
+                          <div className="finance-actions">
+                            <button
+                              className="btn secondary"
+                              onClick={() =>
+                                download(
+                                  "TripFlow-Finance.csv",
+                                  csv(data),
+                                  "text/csv;charset=utf-8",
+                                )
+                              }
+                            >
+                              <Download size={16} />
+                              CSV
+                            </button>
+                            <button
+                              className="btn secondary"
+                              onClick={() =>
+                                download(
+                                  "TripFlow-Finance.json",
+                                  financeJson(data),
+                                  "application/json;charset=utf-8",
+                                )
+                              }
+                            >
+                              <FileText size={16} />
+                              JSON
+                            </button>
+                          </div>
+                        </div>
+                        <div className="table-scroll">
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Hoạt động</th>
+                                <th>Dự toán</th>
+                                <th>Thực chi</th>
+                                <th>Chênh lệch</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {financeReport.activities.map((row) => (
+                                <tr key={row.item_id || "unassigned"}>
+                                  <td>{row.title}</td>
+                                  <td>{money(Number(row.current_budget))}</td>
+                                  <td>{money(Number(row.actual))}</td>
+                                  <td
+                                    className={
+                                      Number(row.variance) < 0 ? "negative" : ""
+                                    }
+                                  >
+                                    {money(Number(row.variance))}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+                    </>
                   )}
                 </>
               )}

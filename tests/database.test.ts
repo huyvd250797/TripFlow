@@ -55,6 +55,12 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202609270002_v030_finance_reporting_integrity.sql",
+      "utf8",
+    ),
+  );
   await asUser(owner);
   const trip = await mutation("trip", "create", {
     name: "Test cloud",
@@ -150,7 +156,17 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     1100000,
   );
   await mutation("snapshot", "create", { title: "Dự toán trước chuyến đi" });
-  assert.equal((await rows("budget_snapshots"))[0].data[0].amount, 1000000);
+  const baseline = (await rows("budget_snapshots"))[0];
+  assert.equal(baseline.data[0].amount, 1000000);
+  assert.equal(baseline.snapshot_no, 1);
+  assert.equal(baseline.snapshot_kind, "baseline");
+  assert.equal(Number(baseline.total_amount), 1000000);
+  await db.exec("set role postgres;");
+  await assert.rejects(
+    db.query("update public.budget_snapshots set title='Không được sửa' where id=$1", [baseline.id]),
+    /SNAPSHOT_IMMUTABLE/,
+  );
+  await asUser(owner);
   const refund = await mutation("expense", "create", {
     ...cost,
     title: "Hoàn tiền",
@@ -168,6 +184,19 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     }),
     /REFUND_EXCEEDED/,
   );
+  const financeReport = (
+    await db.query<{ result: Record<string, any> }>(
+      "select public.tf_finance_report($1) as result",
+      [tripId],
+    )
+  ).rows[0].result;
+  assert.equal(Number(financeReport.totals.original_budget), 1000000);
+  assert.equal(Number(financeReport.totals.current_budget), 1000000);
+  assert.equal(Number(financeReport.totals.gross_payments), 1100000);
+  assert.equal(Number(financeReport.totals.refunds), 100000);
+  assert.equal(Number(financeReport.totals.net_actual), 1000000);
+  assert.equal(financeReport.integrity.status, "ok");
+
   await assert.rejects(
     mutation("expense", "delete", {}, expense),
     /HAS_REFUNDS/,

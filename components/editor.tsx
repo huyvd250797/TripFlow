@@ -204,7 +204,7 @@ export function Editor({
       ["editor", "Được chỉnh sửa"],
       ["viewer", "Chỉ xem"],
     ]);
-  if (spec.entity === "snapshot") title("Tên bản dự toán đã chốt *");
+  if (spec.entity === "snapshot") title("Tên lần chốt dự toán *");
   if (!["invitation", "member", "snapshot"].includes(spec.entity))
     f("note", "Ghi chú", "textarea");
   const names: Record<Entity, string> = {
@@ -216,7 +216,7 @@ export function Editor({
     participant: "người tham gia",
     invitation: "lời mời",
     member: "quyền thành viên",
-    snapshot: "bản dự toán gốc",
+    snapshot: "lần chốt dự toán",
   };
   const close = () => {
     if (
@@ -369,6 +369,12 @@ export function Editor({
             <p className="hint full">
               App chỉ lưu liên kết. Người xem cần quyền tại Google Drive hoặc
               trang nguồn.
+            </p>
+          )}
+          {spec.entity === "snapshot" && (
+            <p className="hint full">
+              Lần chốt đầu tiên là dự toán gốc bất biến. Các lần chốt sau chỉ
+              lưu lịch sử điều chỉnh và không thay thế baseline.
             </p>
           )}
           {error && (

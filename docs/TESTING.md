@@ -1,4 +1,4 @@
-# Kiểm tra bản 0.2.0
+# Kiểm tra bản 0.3.0
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
@@ -62,3 +62,12 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Album Drive mở ở tab/trang nguồn; không có upload file vào Supabase Storage.
 - [ ] Kiểm tra iPhone Safari, Android Chrome, bàn phím form, vùng safe-area, GPS quyền từ chối/cho phép, thao tác back/foreground.
 - [ ] Kiểm tra logs, quota, backup và thử restore trước khi cho nhiều người dùng.
+
+## Finance V0.3.0
+
+- Chốt lần đầu phải tạo snapshot `baseline`, `snapshot_no = 1`; lần chốt sau là `revision`.
+- Không UPDATE được snapshot đã chốt (`SNAPSHOT_IMMUTABLE`).
+- `tf_finance_report` phải khớp dự toán hiện tại, baseline, tổng chi, refund và thực chi ròng.
+- Kiểm tra báo cáo theo nhóm/ngày/hoạt động và khoản ngoài dự toán.
+- Data Integrity phải cảnh báo khi chưa có baseline và phát hiện dữ liệu refund/link/snapshot không nhất quán.
+- Export CSV phải tiếp tục chống formula injection; export JSON phải chứa report và dữ liệu nguồn.

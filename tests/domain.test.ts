@@ -7,6 +7,8 @@ import {
   compare,
   live,
   csv,
+  buildFinanceReport,
+  financeJson,
 } from "../lib/domain";
 import { mutationSchema } from "../lib/validation";
 import type { Budget, Expense, Item, Bundle } from "../lib/types";
@@ -76,4 +78,30 @@ test("CSV neutralizes formula injection", () => {
     expenses: [],
   } as unknown as Bundle;
   assert.match(csv(data), /"'=BAD\(\)"/);
+});
+
+test("finance report preserves original baseline and groups by day/activity", () => {
+  const bundle = {
+    trip: { id: "t", name: "Đà Lạt", destination: "", start_date: "2026-09-25", end_date: "2026-09-27", timezone: "Asia/Ho_Chi_Minh" },
+    items: [{ id: "i1", title: "Khách sạn" }],
+    budgets: [
+      { id: "b1", amount: 1200000, category: "Lưu trú", item_id: "i1" },
+    ],
+    expenses: [
+      { id: "e1", amount: 900000, kind: "payment", category: "Lưu trú", budget_id: "b1", refund_of: null, spent_on: "2026-09-25" },
+      { id: "e2", amount: 100000, kind: "refund", category: "Lưu trú", budget_id: "b1", refund_of: "e1", spent_on: "2026-09-26" },
+    ],
+    snapshots: [
+      { id: "s1", snapshot_no: 1, snapshot_kind: "baseline", created_at: "2026-09-24T00:00:00Z", data: [{ id: "b1", amount: 1000000, category: "Lưu trú" }] },
+    ],
+  } as unknown as Bundle;
+  const report = buildFinanceReport(bundle);
+  assert.equal(report.totals.original_budget, 1000000);
+  assert.equal(report.totals.current_budget, 1200000);
+  assert.equal(report.totals.net_actual, 800000);
+  assert.equal(report.categories.find((x) => x.category === "Lưu trú")?.variance, 400000);
+  assert.equal(report.days.length, 2);
+  assert.equal(report.activities[0].actual, 800000);
+  assert.equal(report.integrity.status, "ok");
+  assert.match(financeJson(bundle), /"original_budget": 1000000/);
 });

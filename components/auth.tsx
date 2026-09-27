@@ -119,7 +119,7 @@ export function Auth({
             <LockKeyhole /> Dữ liệu riêng của bạn
           </span>
         </div>
-        <small>TRIPFLOW · OFFLINE & ADMIN · 0.2.0</small>
+        <small>TRIPFLOW · FINANCE INTEGRITY · 0.3.0</small>
       </aside>
       <main className="auth-main">
         <div className="auth-card">

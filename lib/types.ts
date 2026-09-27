@@ -1,4 +1,4 @@
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -115,7 +115,70 @@ export type Invitation = Row & {
   used_at: string | null;
   revoked_at: string | null;
 };
-export type Snapshot = Row & { title: string; data: Budget[] };
+export type Snapshot = {
+  id: string;
+  trip_id: string;
+  title: string;
+  data: Budget[];
+  created_by: string;
+  created_at: string;
+  snapshot_no?: number;
+  snapshot_kind?: "baseline" | "revision";
+  total_amount?: number;
+  item_count?: number;
+};
+
+export type FinanceCategoryReport = {
+  category: string;
+  original: number;
+  current: number;
+  payments: number;
+  refunds: number;
+  actual: number;
+  variance: number;
+};
+export type FinanceDayReport = {
+  day: string;
+  payments: number;
+  refunds: number;
+  actual: number;
+};
+export type FinanceActivityReport = {
+  item_id: string | null;
+  title: string;
+  current_budget: number;
+  actual: number;
+  variance: number;
+};
+export type FinanceIntegrityIssue = {
+  code: string;
+  count: number;
+  message: string;
+};
+export type FinanceReport = {
+  generated_at: string;
+  baseline_snapshot_id: string | null;
+  baseline_snapshot_no: number | null;
+  totals: {
+    original_budget: number;
+    current_budget: number;
+    gross_payments: number;
+    refunds: number;
+    net_actual: number;
+    unlinked_actual: number;
+    current_variance: number;
+    original_variance: number | null;
+  };
+  categories: FinanceCategoryReport[];
+  days: FinanceDayReport[];
+  activities: FinanceActivityReport[];
+  integrity: {
+    status: "ok" | "warning";
+    issue_count: number;
+    issues: FinanceIntegrityIssue[];
+  };
+};
+
 export type Audit = {
   id: number;
   entity: string;
@@ -136,6 +199,7 @@ export type Bundle = {
   invitations: Invitation[];
   snapshots: Snapshot[];
   audits: Audit[];
+  finance_report?: FinanceReport;
 };
 export type Mutation = {
   operationId: string;

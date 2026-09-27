@@ -116,6 +116,7 @@ export async function GET(req: NextRequest) {
       snapshots,
       invResult,
       auditResult,
+      financeResult,
     ] = await Promise.all([
       all("itinerary_items"),
       all("budget_items"),
@@ -136,9 +137,12 @@ export async function GET(req: NextRequest) {
         .eq("trip_id", tid)
         .order("created_at", { ascending: false })
         .limit(50),
+      s.rpc("tf_finance_report", { target_trip: tid }),
     ]);
     if (invResult.error || auditResult.error)
       throw invResult.error || auditResult.error;
+    if (financeResult.error)
+      throw new Error("V030_FINANCE_MIGRATION_REQUIRED:" + financeResult.error.message);
     const role =
       trip.owner_id === user.id
         ? "owner"
@@ -155,6 +159,7 @@ export async function GET(req: NextRequest) {
       snapshots,
       invitations: invResult.data,
       audits: auditResult.data,
+      finance_report: financeResult.data,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "database";
@@ -165,6 +170,15 @@ export async function GET(req: NextRequest) {
           error:
             "Database chưa được nâng cấp V0.2.0. Hãy chạy migration 202609270001_v020_offline_master_admin.sql.",
           code: "V020_MIGRATION_REQUIRED",
+        },
+        503,
+      );
+    if (message.startsWith("V030_FINANCE_MIGRATION_REQUIRED:"))
+      return reply(
+        {
+          error:
+            "Database chưa được nâng cấp V0.3.0. Hãy chạy migration 202609270002_v030_finance_reporting_integrity.sql.",
+          code: "V030_MIGRATION_REQUIRED",
         },
         503,
       );

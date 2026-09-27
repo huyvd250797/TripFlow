@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — Finance & Reporting Integrity
+
+- Baseline dự toán gốc bất biến; các lần chốt sau được đánh số revision.
+- Snapshot lưu metadata `snapshot_no`, `snapshot_kind`, `total_amount`, `item_count`.
+- RPC `tf_finance_report` tổng hợp số liệu chuẩn từ database theo nhóm/ngày/hoạt động.
+- Đối chiếu dự toán gốc, dự toán hiện tại, tổng chi, hoàn tiền, thực chi ròng và chênh lệch.
+- Integrity checks cho refund, liên kết budget/activity và snapshot consistency.
+- Tab **Báo cáo** mới trong Chi phí, kèm trạng thái integrity và KPI.
+- Export CSV và JSON tài chính nâng cấp.
+- Roadmap trong app đánh dấu V0.3.0 ✅; phiên bản tiếp theo là V0.4.0 Live Trip & Realtime.
+- Migration mới `202609270002_v030_finance_reporting_integrity.sql`.
+
 ## 0.2.0 — Offline, Data Reliability & Master Administration
 
 - IndexedDB cache theo user và queue mutation offline.

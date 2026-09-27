@@ -1,8 +1,8 @@
-# TripFlow 0.2.0 · Offline, Data Reliability & Master Administration
+# TripFlow 0.3.0 · Finance & Reporting Integrity
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
-**Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → gán 1 tài khoản Master bằng SQL tin cậy → kiểm thử online/offline và phân quyền.
+**Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
 
@@ -14,14 +14,16 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - Điểm hiện tại theo lịch, điểm đã check-in, hoạt động quá giờ chưa cập nhật; mở Google Maps/GPS khi người dùng yêu cầu.
 - Dự toán theo khoản và nhóm, số lượng × đơn giá; chốt bản dự toán gốc.
 - Ghi thực chi, người trả, ngày chi, link chứng từ; liên kết dự toán, chi ngoài kế hoạch và hoàn tiền.
-- Tổng hợp/so sánh ngân sách và thực chi ròng theo nhóm, từng khoản và bản dự toán đã chốt; xuất CSV.
+- **Finance V0.3.0:** lần chốt đầu tiên là baseline dự toán gốc bất biến; các lần sau là revision có số thứ tự. Đối chiếu dự toán gốc / hiện tại / tổng chi / hoàn tiền / thực chi ròng / chênh lệch.
+- Báo cáo tài chính theo nhóm, ngày và hoạt động; theo dõi khoản ngoài dự toán; tab Data Integrity phát hiện refund/link/snapshot không nhất quán.
+- Export tài chính CSV và JSON; CSV chống formula injection.
 - Gắn link Google Drive/HTTPS cho album, ảnh, video, tài liệu; liên kết với hoạt động. Media mở tại nguồn, không upload vào app.
 - Danh sách người tham gia; mời tài khoản qua liên kết ràng buộc email, quyền chủ chuyến/chỉnh sửa/chỉ xem; thu hồi quyền.
 - Nhật ký thay đổi, xuất dữ liệu chuyến đi JSON, phát hiện xung đột khi nhiều người sửa, chống ghi trùng khi thử lại.
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 và V0.2.0 được đánh dấu ✅, đồng thời mô tả V0.3.0 là phiên bản tiếp theo.
+- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0, V0.2.0 và V0.3.0 được đánh dấu ✅; phiên bản tiếp theo là V0.4.0 – Live Trip & Realtime.
 
 **Phạm vi offline:** cho phép thêm thực chi, cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -31,8 +33,9 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 2. Mở **SQL Editor** và chạy migration **đúng thứ tự**:
    - `supabase/migrations/202609250001_tripflow.sql` — nền V0.1.0.
    - `supabase/migrations/202609270001_v020_offline_master_admin.sql` — nâng cấp V0.2.0.
-   Nếu database đang chạy V0.1.0 thì **chỉ chạy migration V0.2.0**, không chạy lại file đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
-3. Sau V0.2.0 có 12 bảng trong schema `public`, gồm 10 bảng cũ cộng `tf_user_accounts` và `tf_admin_audit`; schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
+   - `supabase/migrations/202609270002_v030_finance_reporting_integrity.sql` — nâng cấp V0.3.0.
+   Nếu database đang chạy V0.2.0 thì **chỉ chạy migration V0.3.0**. Nếu đang ở V0.1.0 thì chạy lần lượt V0.2.0 rồi V0.3.0; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+3. V0.3.0 không thêm bảng public mới; bổ sung metadata snapshot, trigger bảo vệ baseline và RPC báo cáo tài chính `tf_finance_report`. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
 6. Auth: bật đăng nhập Email/Password và **Confirm email**. Đặt mật khẩu tối thiểu 8 ký tự. Cấu hình SMTP của bạn cho email dùng thật; kiểm tra giới hạn gửi của dịch vụ trước khi mời nhóm sử dụng.
@@ -67,6 +70,16 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - Mutation offline giữ nguyên `operationId`; server `mutation_receipts` chống gửi trùng.
 - Khi sync, server kiểm tra lại version và quyền hiện tại. Conflict trả 409 và hàng đợi giữ trạng thái để người dùng xử lý, không ghi đè im lặng.
 - Đăng xuất khi không còn thao tác chờ sẽ xóa cache local của user. Nếu còn hàng đợi chưa gửi, app cảnh báo và giữ queue để tránh mất dữ liệu; queue chỉ được đọc/gửi lại khi đúng user đăng nhập.
+
+## 1.3. Finance & Reporting Integrity V0.3.0
+
+- Lần chốt ngân sách đầu tiên tự động là `baseline`; các lần sau là `revision`.
+- Snapshot được gắn `snapshot_no`, `snapshot_kind`, `total_amount`, `item_count` và bị chặn UPDATE trực tiếp để giữ lịch sử.
+- `tf_finance_report(trip_id)` là nguồn tổng hợp chuẩn phía server cho báo cáo: dự toán gốc, hiện tại, tổng chi, hoàn tiền, thực chi ròng, khoản ngoài dự toán, chênh lệch.
+- Báo cáo phân rã theo **nhóm / ngày / hoạt động** và trả về trạng thái **Data Integrity**.
+- Integrity kiểm tra các bất thường: hoàn tiền vượt giao dịch gốc, refund sai liên kết, thực chi liên kết budget không hợp lệ/sai nhóm, budget còn gắn activity đã xóa, snapshot metadata lệch payload.
+- Nếu chưa chốt baseline, app vẫn tính số liệu hiện tại nhưng hiển thị cảnh báo `NO_BASELINE`.
+- Snapshot, đổi quyền, xóa chuyến và Master Admin vẫn yêu cầu online; tạo thực chi offline tiếp tục dùng queue V0.2.0.
 
 ## 2. Deploy lên Vercel
 
@@ -151,8 +164,8 @@ Mở `http://localhost:3000`. Nếu thiếu cấu hình, app hiện hướng d�
 
 1. Đăng ký, xác nhận email, đăng nhập; tạo chuyến đi với ngày và múi giờ phù hợp.
 2. Trong **Lịch trình**, thêm hoạt động. Giờ nhập là giờ địa phương của chuyến đi.
-3. Trong **Chi phí → Dự toán**, thêm chi phí; trong **So sánh**, chốt bản dự toán trước khi đi.
-4. Bấm **Ghi chi tiêu**. Chọn khoản dự toán tương ứng hoặc để ngoài dự toán; chi ròng tự trừ khoản hoàn tiền hợp lệ.
+3. Trong **Chi phí → Dự toán**, thêm các khoản dự kiến; trong **Đối chiếu**, bấm **Chốt dự toán gốc**. Lần chốt đầu tiên trở thành baseline bất biến, các lần sau là bản điều chỉnh.
+4. Bấm **Ghi chi tiêu**. Chọn khoản dự toán tương ứng hoặc để ngoài dự toán; chi ròng tự trừ khoản hoàn tiền hợp lệ. Mở **Chi phí → Báo cáo** để xem tổng hợp theo ngày/hoạt động và trạng thái Data Integrity.
 5. Bấm **Tôi đã đến** khi tới một điểm; xác nhận chuyển điểm sẽ hoàn thành điểm cũ. App không coi giờ kế hoạch là xác nhận bạn đang có mặt.
 6. Trong **Media**, gắn link album Drive. Cấp quyền album tại Drive cho người xem; quyền TripFlow không thay đổi quyền Drive.
 7. Trong **Thêm**, mời bằng email, sao chép link và tự gửi. Người nhận đăng nhập đúng email rồi mở link để chấp nhận. Nếu vừa đăng ký và xác nhận email, mở lại link mời. Danh sách “Người tham gia” không tự tạo tài khoản hoặc cấp quyền.
@@ -173,7 +186,7 @@ npm run build
 - [Hướng dẫn backup, nâng cấp, xử lý lỗi](docs/OPERATIONS.md)
 - [Phạm vi và lộ trình tiếp theo](docs/ROADMAP.md)
 
-Source không chứa credentials thật. Bản này đã được build/test cục bộ; chưa kết nối tài khoản Supabase/Vercel thật của bạn. Hoàn thành checklist staging trước khi dùng cho nhóm.
+Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typecheck` và `npm run build` trên Node.js 24 trước khi deploy production, sau đó hoàn thành checklist staging với Supabase/Vercel thật của bạn.
 
 ## Tài liệu chính thức tham chiếu
 

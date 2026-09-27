@@ -41,3 +41,10 @@ Theo dõi tăng trưởng audit, admin audit và mutation receipts. V0.2 chưa c
 ## Hỗ trợ trình duyệt
 
 Mục tiêu: các bản Chrome/Edge/Safari/Firefox hiện đại hỗ trợ `Intl` timezone, `crypto.randomUUID`, ES2023 `toSorted` và CSS `dvh`. Đã kiểm tra Chromium trong môi trường desktop mô phỏng viewport mobile; cần nghiệm thu Safari/iOS và Android thật. Manifest + service worker cho phép mở app shell và dữ liệu chuyến đã cache khi offline. Media nguồn ngoài vẫn cần mạng/quyền nguồn. Cần nghiệm thu Safari/iOS và Android thật trước production.
+
+## Finance V0.3.0
+
+- Nếu màn hình chuyến đi báo `V030_MIGRATION_REQUIRED`, chạy `202609270002_v030_finance_reporting_integrity.sql` trên đúng Supabase project.
+- Nếu Data Integrity báo `NO_BASELINE`, đây là cảnh báo nghiệp vụ: chốt dự toán gốc trong **Chi phí → Đối chiếu**.
+- Nếu có `REFUND_*`, `BUDGET_LINK_MISMATCH`, `ACTIVITY_LINK_MISMATCH` hoặc `SNAPSHOT_MISMATCH`, không sửa trực tiếp bảng production trước khi backup; đối chiếu audit và dữ liệu gốc rồi tạo migration/repair script riêng.
+- Không UPDATE trực tiếp `budget_snapshots`; trigger V0.3.0 cố ý trả `SNAPSHOT_IMMUTABLE`.
