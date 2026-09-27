@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -37,6 +37,9 @@ import {
   Receipt,
   FileText,
   ChevronRight,
+  ShieldCheck,
+  CloudUpload,
+  AlertTriangle,
 } from "lucide-react";
 import { browserClient, configured } from "@/lib/supabase/client";
 import { Auth } from "./auth";
@@ -51,6 +54,8 @@ import {
   type Mutation,
   type Entity,
   type Item,
+  type TripListResponse,
+  type QueuedMutation,
   CATEGORIES,
 } from "@/lib/types";
 import {
@@ -63,6 +68,21 @@ import {
   planned,
   net,
 } from "@/lib/domain";
+import { MasterAdmin } from "./admin";
+import { ProductRoadmap } from "./roadmap";
+import {
+  cacheBundle,
+  cacheTrips,
+  canQueueMutation,
+  clearUserOfflineData,
+  enqueueMutation,
+  listQueue,
+  readCachedBundle,
+  readCachedTrips,
+  removeQueue,
+  retryQueue,
+  updateQueue,
+} from "@/lib/offline";
 const tabs = [
   { id: "home", label: "Tổng quan", Icon: LayoutDashboard },
   { id: "route", label: "Lịch trình", Icon: Route },
@@ -70,10 +90,30 @@ const tabs = [
   { id: "media", label: "Media", Icon: Images },
   { id: "more", label: "Thêm", Icon: Ellipsis },
 ];
+class ApiError extends Error {
+  status: number;
+  code?: string;
+  constructor(message: string, status = 0, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { cache: "no-store", ...init });
-  const data = await res.json();
-  if (!res.ok) throw Error(data.error || "Có lỗi xảy ra. Vui lòng thử lại.");
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: "no-store", ...init });
+  } catch {
+    throw new ApiError("Không kết nối được máy chủ.", 0, "NETWORK_ERROR");
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok)
+    throw new ApiError(
+      data.error || "Có lỗi xảy ra. Vui lòng thử lại.",
+      res.status,
+      data.code,
+    );
   return data as T;
 }
 function download(name: string, content: string, type: string) {
@@ -155,7 +195,8 @@ function App() {
   const qc = useQueryClient();
   const [user, setUser] = useState<User | null>(null),
     [authLoading, setAuthLoading] = useState(true),
-    [recover, setRecover] = useState(false);
+    [recover, setRecover] = useState(false),
+    [blockedMessage, setBlockedMessage] = useState("");
   const [selected, setSelected] = useState(""),
     [tab, setTab] = useState("home"),
     [financeTab, setFinanceTab] = useState("summary"),
@@ -175,6 +216,9 @@ function App() {
     } | null>(null),
     [inviteToken, setInviteToken] = useState(""),
     [shareLink, setShareLink] = useState("");
+  const [queueRows, setQueueRows] = useState<QueuedMutation[]>([]),
+    [syncing, setSyncing] = useState(false);
+  const syncLock = useRef(false);
   const notify = useCallback((s: string) => setToast(s), []);
   useEffect(() => {
     if (toast) {
@@ -216,21 +260,58 @@ function App() {
       sub?.unsubscribe();
     };
   }, [loadAuth]);
-  const tripsQ = useQuery<{ trips: Trip[] }>({
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  }, []);
+  const tripsQ = useQuery<TripListResponse>({
     queryKey: ["trips", user?.id],
-    queryFn: () => api("/api/tripflow"),
+    queryFn: async () => {
+      if (!user) throw new Error("Vui lòng đăng nhập.");
+      try {
+        const value = await api<TripListResponse>("/api/tripflow");
+        await cacheTrips(user.id, value);
+        return value;
+      } catch (e) {
+        if (e instanceof ApiError && e.status !== 0) throw e;
+        const cached = await readCachedTrips(user.id);
+        if (cached) return cached;
+        throw e;
+      }
+    },
     enabled: !!user,
-    refetchInterval: 30000,
+    refetchInterval: online ? 30000 : false,
   });
   const trips = tripsQ.data?.trips || [];
+  const account = tripsQ.data?.account;
+  useEffect(() => {
+    const e = tripsQ.error;
+    if (!user || !(e instanceof ApiError) || e.code !== "ACCOUNT_DEACTIVATED") return;
+    setBlockedMessage(e.message);
+    setQueueRows([]);
+    qc.clear();
+    void browserClient().auth.signOut().finally(() => setUser(null));
+  }, [tripsQ.error, user, qc]);
   const selectedId = trips.some((t) => t.id === selected)
     ? selected
     : trips[0]?.id || "";
   const bq = useQuery<Bundle>({
     queryKey: ["trip", user?.id, selectedId],
-    queryFn: () => api("/api/tripflow?trip=" + selectedId),
+    queryFn: async () => {
+      if (!user || !selectedId) throw new Error("Chưa chọn chuyến đi.");
+      try {
+        const value = await api<Bundle>("/api/tripflow?trip=" + selectedId);
+        await cacheBundle(user.id, selectedId, value);
+        return value;
+      } catch (e) {
+        if (e instanceof ApiError && e.status !== 0) throw e;
+        const cached = await readCachedBundle(user.id, selectedId);
+        if (cached) return cached;
+        throw e;
+      }
+    },
     enabled: !!user && !!selectedId,
-    refetchInterval: 30000,
+    refetchInterval: online ? 30000 : false,
   });
   const data = bq.data,
     trip = data?.trip;
@@ -253,19 +334,106 @@ function App() {
       void s.removeChannel(channel);
     };
   }, [user, selectedId, qc]);
-  async function save(m: Mutation) {
-    if (!navigator.onLine)
-      throw Error(
-        "Bạn đang mất mạng. Nội dung vẫn ở trong form; hãy kết nối lại để lưu.",
+  const refreshQueue = useCallback(async () => {
+    if (!user) {
+      setQueueRows([]);
+      return;
+    }
+    setQueueRows(await listQueue(user.id));
+  }, [user]);
+  const syncPending = useCallback(
+    async (showMessage = false) => {
+      if (!user || !navigator.onLine || syncLock.current) return;
+      syncLock.current = true;
+      setSyncing(true);
+      let sent = 0;
+      try {
+        const rows = await listQueue(user.id);
+        for (const row of rows) {
+          if (!['pending', 'sending'].includes(row.state)) continue;
+          await updateQueue(row.operationId, {
+            state: 'sending',
+            attempts: row.attempts + 1,
+            error: undefined,
+          });
+          try {
+            await api<{ result: Record<string, unknown> }>("/api/tripflow", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(row.mutation),
+            });
+            await removeQueue(row.operationId);
+            sent += 1;
+          } catch (e) {
+            const err = e instanceof ApiError ? e : new ApiError((e as Error).message);
+            if (err.status === 0 || err.status >= 500) {
+              await updateQueue(row.operationId, { state: 'pending', error: err.message });
+              break;
+            }
+            await updateQueue(row.operationId, {
+              state: err.status === 409 ? 'conflict' : 'rejected',
+              error: err.message,
+            });
+            if (err.code === 'ACCOUNT_DEACTIVATED') break;
+          }
+        }
+        if (sent) {
+          await Promise.all([
+            qc.invalidateQueries({ queryKey: ["trips"] }),
+            qc.invalidateQueries({ queryKey: ["trip"] }),
+          ]);
+          if (showMessage) notify(`Đã đồng bộ ${sent} thao tác.`);
+        } else if (showMessage) {
+          notify("Không có thao tác mới cần đồng bộ.");
+        }
+      } finally {
+        await refreshQueue();
+        setSyncing(false);
+        syncLock.current = false;
+      }
+    },
+    [user, qc, notify, refreshQueue],
+  );
+  useEffect(() => {
+    void refreshQueue();
+  }, [refreshQueue]);
+  useEffect(() => {
+    if (online && user) void syncPending(false);
+  }, [online, user, syncPending]);
+
+  async function queueOffline(m: Mutation) {
+    if (!user) throw new Error("Vui lòng đăng nhập lại.");
+    if (!canQueueMutation(m))
+      throw new Error(
+        "Thao tác này cần kết nối mạng. Offline V0.2.0 chỉ cho phép ghi chi tiêu mới, cập nhật/check-in lịch trình, người tham gia và media.",
       );
-    const result = await api<{ result: Record<string, unknown> }>(
-      "/api/tripflow",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(m),
-      },
-    );
+    await enqueueMutation(user.id, m);
+    await refreshQueue();
+    notify("Đã lưu trên thiết bị · chờ đồng bộ khi có mạng.");
+  }
+
+  async function save(m: Mutation) {
+    if (!navigator.onLine) {
+      await queueOffline(m);
+      return;
+    }
+    let result: { result: Record<string, unknown> };
+    try {
+      result = await api<{ result: Record<string, unknown> }>(
+        "/api/tripflow",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(m),
+        },
+      );
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 0 && canQueueMutation(m)) {
+        await queueOffline(m);
+        return;
+      }
+      throw e;
+    }
     if (m.entity === "trip" && m.action === "create") {
       setSelected(m.tripId);
       setTab("home");
@@ -365,9 +533,15 @@ function App() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }
   async function logout() {
-    if (!window.confirm("Đăng xuất khỏi TripFlow?")) return;
+    const pending = queueRows.length;
+    const message = pending
+      ? `Đang có ${pending} thao tác offline chưa đồng bộ. Nếu đăng xuất, TripFlow sẽ giữ chúng trên thiết bị và chỉ gửi lại khi đúng tài khoản này đăng nhập. Tiếp tục?`
+      : "Đăng xuất khỏi TripFlow? Dữ liệu cache offline trên thiết bị này sẽ được xóa.";
+    if (!window.confirm(message)) return;
+    if (!pending && user) await clearUserOfflineData(user.id);
     await browserClient().auth.signOut();
     qc.clear();
+    setQueueRows([]);
     setSelected("");
     setUser(null);
   }
@@ -382,7 +556,9 @@ function App() {
     return (
       <Auth
         recovery={recover}
+        initialError={blockedMessage}
         onDone={() => {
+          setBlockedMessage("");
           setRecover(false);
           void loadAuth();
           qc.clear();
@@ -397,6 +573,8 @@ function App() {
   const latestSnapshot = data?.snapshots.toSorted((a, b) =>
     b.created_at.localeCompare(a.created_at),
   )[0];
+  const queuePending = queueRows.filter((x) => x.state === "pending" || x.state === "sending").length;
+  const queueIssues = queueRows.filter((x) => x.state === "conflict" || x.state === "rejected").length;
   const tableNames: Record<string, string> = {
     trips: "Chuyến đi",
     itinerary_items: "Lịch trình",
@@ -493,9 +671,18 @@ function App() {
               {label}
             </button>
           ))}
+          {account?.role === "master" && (
+            <button
+              className={tab === "admin" ? "active" : ""}
+              onClick={() => navigate("admin")}
+            >
+              <ShieldCheck size={21} />
+              Quản trị Master
+            </button>
+          )}
         </nav>
         <div className="side-footer">
-          <span className="version">V{VERSION} · CLOUD</span>
+          <span className="version">V{VERSION} · OFFLINE + ADMIN</span>
           <p>
             Đi cùng nhau.
             <br />
@@ -520,11 +707,23 @@ function App() {
             Chuyến đi <ChevronRight size={14} /> {trip?.name || "Của bạn"}
           </span>
           <div className="top-actions">
+            {queueRows.length > 0 && (
+              <button
+                className={`sync-badge ${queueIssues ? "issue" : ""}`}
+                onClick={() => void syncPending(true)}
+                disabled={!online || syncing}
+                title="Đồng bộ dữ liệu offline"
+              >
+                {queueIssues ? <AlertTriangle size={16} /> : <CloudUpload size={16} />}
+                <span>{queuePending || queueIssues}</span>
+              </button>
+            )}
             <button
               className="icon-btn"
               aria-label="Tải lại dữ liệu"
               onClick={() => {
                 void qc.invalidateQueries();
+                if (online) void syncPending(false);
                 notify("Đang cập nhật dữ liệu…");
               }}
             >
@@ -541,8 +740,8 @@ function App() {
           {!online && (
             <div className="notice warning">
               <WifiOff size={19} />
-              Đang mất mạng. Bạn có thể xem dữ liệu đã tải trong màn hình này;
-              thao tác lưu cần kết nối lại.
+              Đang mất mạng. TripFlow đang dùng dữ liệu đã cache. Các thao tác
+              được hỗ trợ offline sẽ lưu vào hàng đợi và tự đồng bộ khi có mạng.
             </div>
           )}
           {(tripsQ.error || bq.error || error) && (
@@ -611,45 +810,69 @@ function App() {
               </button>
             </section>
           )}
-          {tripsQ.isPending || (selectedId && bq.isPending) ? (
+          {tab === "admin" && account?.role === "master" ? (
+            <MasterAdmin currentUserId={user.id} notify={notify} />
+          ) : tripsQ.isPending || (selectedId && bq.isPending) ? (
             <div className="skeleton">
               <div />
               <div />
               <div />
             </div>
           ) : !trip ? (
-            <>
-              <div className="page-heading">
-                <div>
-                  <span className="eyebrow">CHUYẾN ĐI CỦA BẠN</span>
-                  <h1>Đi đâu tiếp theo?</h1>
+            tab === "more" ? (
+              <>
+                <ProductRoadmap />
+                <section className="panel">
+                  <h2>Tài khoản & dữ liệu offline</h2>
+                  <p className="muted">
+                    {user.email} · TripFlow {VERSION}{account?.role === "master" ? " · MASTER" : ""}
+                  </p>
+                  <div className="actions">
+                    {account?.role === "master" && (
+                      <button className="btn secondary" onClick={() => navigate("admin")}>
+                        <ShieldCheck size={17} /> Quản trị Master
+                      </button>
+                    )}
+                    <button className="btn secondary" onClick={logout}>
+                      <LogOut size={17} /> Đăng xuất
+                    </button>
+                  </div>
+                </section>
+              </>
+            ) : (
+              <>
+                <div className="page-heading">
+                  <div>
+                    <span className="eyebrow">CHUYẾN ĐI CỦA BẠN</span>
+                    <h1>Đi đâu tiếp theo?</h1>
+                  </div>
+                  <button className="btn primary" onClick={() => edit("trip")}>
+                    <Plus size={18} />
+                    Tạo chuyến đi
+                  </button>
                 </div>
-                <button className="btn primary" onClick={() => edit("trip")}>
-                  <Plus size={18} />
-                  Tạo chuyến đi
+                <section className="panel welcome">
+                  <Compass size={58} />
+                  <h2>
+                    Một kế hoạch nhỏ.
+                    <br />
+                    Một hành trình đáng nhớ.
+                  </h2>
+                  <p>
+                    Tạo chuyến đi đầu tiên, thêm những nơi muốn đến
+                    <br className="desktop-only" /> và chủ động ngân sách của bạn.
+                  </p>
+                  <button className="btn primary" onClick={() => edit("trip")}>
+                    <Plus size={18} />
+                    Tạo chuyến đi đầu tiên
+                  </button>
+                </section>
+                <button className="text-btn" onClick={logout}>
+                  <LogOut size={16} />
+                  Đăng xuất {user.email}
                 </button>
-              </div>
-              <section className="panel welcome">
-                <Compass size={58} />
-                <h2>
-                  Một kế hoạch nhỏ.
-                  <br />
-                  Một hành trình đáng nhớ.
-                </h2>
-                <p>
-                  Tạo chuyến đi đầu tiên, thêm những nơi muốn đến
-                  <br className="desktop-only" /> và chủ động ngân sách của bạn.
-                </p>
-                <button className="btn primary" onClick={() => edit("trip")}>
-                  <Plus size={18} />
-                  Tạo chuyến đi đầu tiên
-                </button>
-              </section>
-              <button className="text-btn" onClick={logout}>
-                <LogOut size={16} />
-                Đăng xuất {user.email}
-              </button>
-            </>
+              </>
+            )
           ) : (
             <>
               <div className="page-heading">
@@ -1678,13 +1901,74 @@ function App() {
                         ))}
                   </section>
                   <section className="panel">
-                    <h2>Dữ liệu & tài khoản</h2>
-                    <p className="muted">
-                      Dữ liệu được lưu trên Supabase và tải lại giữa các thiết
-                      bị. Bản {VERSION} cần kết nối mạng để ghi dữ liệu; chưa có
-                      hàng đợi offline.
-                    </p>
+                    <div className="section-heading">
+                      <div>
+                        <h2>Dữ liệu, offline & tài khoản</h2>
+                        <p className="muted">
+                          Supabase là nguồn dữ liệu chính. IndexedDB giữ bản cache theo từng tài khoản và hàng đợi thao tác khi mạng yếu.
+                        </p>
+                      </div>
+                      <span className={`status-chip ${online ? "active" : "deactivated"}`}>
+                        {online ? "Online" : "Offline"}
+                      </span>
+                    </div>
+                    <div className="sync-summary">
+                      <div><CloudUpload size={19} /><span><b>{queuePending}</b><small>Chờ đồng bộ</small></span></div>
+                      <div><AlertTriangle size={19} /><span><b>{queueIssues}</b><small>Xung đột / bị từ chối</small></span></div>
+                    </div>
+                    {queueRows.length > 0 && (
+                      <div className="sync-queue-list">
+                        {queueRows.map((row) => (
+                          <div key={row.operationId}>
+                            <span className={`sync-dot ${row.state}`} />
+                            <span>
+                              <b>{row.mutation.entity} · {row.mutation.action}</b>
+                              <small>
+                                {row.state === "pending"
+                                  ? "Chờ gửi"
+                                  : row.state === "sending"
+                                    ? "Đang gửi"
+                                    : row.state === "conflict"
+                                      ? "Xung đột dữ liệu"
+                                      : "Bị từ chối"}
+                                {row.error ? ` · ${row.error}` : ""}
+                              </small>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="actions">
+                      {queueRows.length > 0 && (
+                        <button
+                          className="btn secondary"
+                          disabled={!online || syncing}
+                          onClick={() => void syncPending(true)}
+                        >
+                          <CloudUpload size={17} />
+                          {syncing ? "Đang đồng bộ…" : "Đồng bộ ngay"}
+                        </button>
+                      )}
+                      {queueIssues > 0 && (
+                        <button
+                          className="btn secondary"
+                          disabled={!online || syncing}
+                          onClick={async () => {
+                            await retryQueue(user.id);
+                            await refreshQueue();
+                            void syncPending(true);
+                          }}
+                        >
+                          <RefreshCw size={17} />
+                          Thử lại thao tác lỗi
+                        </button>
+                      )}
+                      {account?.role === "master" && (
+                        <button className="btn secondary" onClick={() => navigate("admin")}>
+                          <ShieldCheck size={17} />
+                          Quản trị Master
+                        </button>
+                      )}
                       {owner && (
                         <button
                           className="btn secondary"
@@ -1694,7 +1978,7 @@ function App() {
                               JSON.stringify(
                                 {
                                   format: "tripflow-cloud-export",
-                                  version: 1,
+                                  version: 2,
                                   exportedAt: new Date().toISOString(),
                                   trip,
                                   items: data.items,
@@ -1721,14 +2005,13 @@ function App() {
                       </button>
                     </div>
                     <p className="hint">
-                      File JSON dùng lưu trữ dữ liệu cá nhân. Khôi phục database
-                      theo hướng dẫn quản trị; nhập lại trực tiếp trong app sẽ
-                      có ở bản sau.
+                      Offline V0.2.0 hỗ trợ ghi chi tiêu mới, cập nhật/check-in lịch trình, người tham gia và media. Phân quyền, xóa chuyến, chốt dự toán và quản trị yêu cầu online.
                     </p>
                     <p className="hint">
-                      {user.email} · TripFlow {VERSION}
+                      {user.email} · TripFlow {VERSION}{account?.role === "master" ? " · MASTER" : ""}
                     </p>
                   </section>
+                  <ProductRoadmap />
                   <section className="panel">
                     <h2>Lịch sử gần đây</h2>
                     <p className="hint">

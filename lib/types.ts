@@ -1,4 +1,4 @@
-export const VERSION = "0.1.0";
+export const VERSION = "0.2.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -145,4 +145,30 @@ export type Mutation = {
   id?: string;
   version?: number;
   data?: Record<string, unknown>;
+};
+
+export type AccountState = {
+  user_id: string;
+  role: "master" | "user";
+  status: "active" | "deactivated";
+  deactivated_at: string | null;
+};
+
+export type TripListResponse = {
+  trips: Trip[];
+  user?: { id: string; email?: string | null };
+  account: AccountState;
+};
+
+export type SyncState = "pending" | "sending" | "conflict" | "rejected";
+export type QueuedMutation = {
+  operationId: string;
+  userId: string;
+  tripId: string;
+  mutation: Mutation;
+  state: SyncState;
+  attempts: number;
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
 };

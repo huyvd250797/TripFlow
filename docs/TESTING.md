@@ -1,15 +1,11 @@
-# Kiểm tra bản 0.1.0
+# Kiểm tra bản 0.2.0
 
-## Đã thực hiện trong môi trường phát triển
+## Bộ kiểm thử và phạm vi cần chạy
 
-- Build Next.js production.
-- TypeScript strict.
-- 5 unit tests: ngày hợp lệ và timezone/DST; tổng dự toán/thực chi/hoàn tiền; điểm hiện tại theo lịch khác check-in; URL HTTPS; CSV chống formula injection.
-- 1 bài integration PostgreSQL gồm nhiều tình huống: migration trên PostgreSQL/PGlite, quyền đọc RLS, cấm ghi thẳng bảng, chủ/editor/viewer/người ngoài, lời mời email, thu hồi quyền, CRUD, khoản liên kết sai chuyến, giữ thực chi/media khi xóa liên kết, giới hạn hoàn tiền, operation retry, stale version, snapshot, check-in nguyên tử và audit.
-- Browser integration trên Chromium: đăng nhập giả lập; giao diện chạy thật gọi adapter đến PGlite; thêm chi tiêu và kiểm tra tổng DB; chuyển điểm check-in; sao chép hoạt động; thêm link Drive; kiểm tra 5 màn hình × 4 kích thước 320/390/768/1440 không tràn trang ngang. Không có exception JavaScript trong các luồng đã thử. Đã xem ảnh chụp mobile form, tổng quan và desktop.
-- `npm audit --omit=dev` tại thời điểm kiểm tra: không báo lỗ hổng đã biết. Đây không phải chứng nhận bảo mật.
-
-PGlite là PostgreSQL chạy trong môi trường nhúng; test tạo stub `auth.uid()`/`auth.jwt()` và role để kiểm tra RLS. Browser test mock Auth và HTTP transport, **không thay thế kiểm tra Supabase Auth/PostgREST/Realtime/Vercel thật**. Chưa gửi email thật, chưa nghiệm thu trên Safari/iOS/Android thật, chưa kiểm thử tải lớn.
+- Unit tests kiểm tra ngày/timezone, tổng dự toán/thực chi/hoàn tiền, điểm hiện tại, URL HTTPS và CSV.
+- Integration PostgreSQL/PGlite kiểm tra RLS, quyền owner/editor/viewer, CRUD, invitation, refund, idempotency, stale version, snapshot, check-in và audit. V0.2 bổ sung kịch bản Master overview, deactivate/reactivate, RLS read bị chặn và `tf_mutate` từ chối tài khoản deactivated.
+- Browser integration hiện có cho các luồng V0.1. V0.2 cần chạy thêm kiểm thử thủ công/automation cho IndexedDB queue, service worker và Master UI trên browser thật.
+- PGlite/browser adapter không thay thế Supabase Auth/PostgREST/Realtime/Vercel thật; phải nghiệm thu staging trước production.
 
 ## Chạy lại kiểm tra nền tảng
 
@@ -58,7 +54,11 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Hai thiết bị sửa cùng bản ghi: thao tác thứ hai với version cũ bị từ chối. Kiểm tra tổng không ghi đè âm thầm.
 - [ ] Chuyển active giữa hai điểm: luôn còn đúng một điểm active; điểm cũ hoàn thành.
 - [ ] Xóa dự toán giữ các khoản thực chi; xóa hoạt động giữ media; xóa chuyến làm biến mất ở mọi thành viên.
-- [ ] Mất mạng khi đang nhập: không báo lưu thành công; form còn nội dung để thử lại khi có mạng.
+- [ ] Mở chuyến khi online → tắt mạng → thêm thực chi/check-in → queue hiện pending; reload vẫn giữ queue/cache; bật mạng → thao tác sync đúng một lần.
+- [ ] Tạo conflict bằng cách đổi cùng bản ghi trên thiết bị khác trước khi queue sync: queue chuyển `conflict`, server không ghi đè dữ liệu mới.
+- [ ] Lỗi quyền/nghiệp vụ khi sync chuyển `rejected` và vẫn hiển thị nguyên nhân.
+- [ ] Master tìm user, xem user/trip detail, deactivate/reactivate; Master không tự deactivate và không deactivate Master khác.
+- [ ] User deactivated: login account gate đăng xuất; API/RLS/RPC không cho đọc/ghi. Khi thiết bị đang hoàn toàn offline, kiểm tra thông báo/giới hạn cache theo chính sách đã nêu.
 - [ ] Album Drive mở ở tab/trang nguồn; không có upload file vào Supabase Storage.
 - [ ] Kiểm tra iPhone Safari, Android Chrome, bàn phím form, vùng safe-area, GPS quyền từ chối/cho phép, thao tác back/foreground.
 - [ ] Kiểm tra logs, quota, backup và thử restore trước khi cho nhiều người dùng.

@@ -12,20 +12,23 @@ import { browserClient, configured } from "@/lib/supabase/client";
 export function Auth({
   recovery = false,
   onDone,
+  initialError = "",
 }: {
   recovery?: boolean;
   onDone: () => void;
+  initialError?: string;
 }) {
   const [mode, setMode] = useState(recovery ? "change" : "login"),
-    [error, setError] = useState(""),
+    [error, setError] = useState(initialError),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   useEffect(() => {
+    if (initialError) setError(initialError);
     if (new URLSearchParams(location.search).has("auth_error"))
       setError(
         "Liên kết xác thực đã hết hạn hoặc không hợp lệ. Hãy yêu cầu lại.",
       );
-  }, []);
+  }, [initialError]);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -39,6 +42,15 @@ export function Auth({
       if (mode === "login") {
         const { error } = await s.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        const gate = await fetch("/api/tripflow", { cache: "no-store" });
+        if (!gate.ok) {
+          const info = await gate.json().catch(() => ({}));
+          await s.auth.signOut();
+          throw new Error(
+            info.error ||
+              "Tài khoản chưa được phép truy cập TripFlow. Liên hệ quản trị Master.",
+          );
+        }
         onDone();
       } else if (mode === "signup") {
         const { data, error } = await s.auth.signUp({
@@ -107,7 +119,7 @@ export function Auth({
             <LockKeyhole /> Dữ liệu riêng của bạn
           </span>
         </div>
-        <small>TRIPFLOW · CLOUD MVP · 0.1.0</small>
+        <small>TRIPFLOW · OFFLINE & ADMIN · 0.2.0</small>
       </aside>
       <main className="auth-main">
         <div className="auth-card">

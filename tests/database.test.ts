@@ -44,10 +44,16 @@ async function rows(table: string) {
 }
 test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", async () => {
   await db.exec(
-    `create schema auth;create role anon;create role authenticated;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;grant usage on schema auth to authenticated;insert into auth.users values('${owner}'),('${editor}'),('${viewer}'),('${stranger}');`,
+    `create schema auth;create role anon;create role authenticated;create table auth.users(id uuid primary key,email text,created_at timestamptz default now(),last_sign_in_at timestamptz);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;grant usage on schema auth to authenticated;insert into auth.users(id,email) values('${owner}','${owner}@test.local'),('${editor}','${editor}@test.local'),('${viewer}','${viewer}@test.local'),('${stranger}','${stranger}@test.local');`,
   );
   await db.exec(
     await readFile("supabase/migrations/202609250001_tripflow.sql", "utf8"),
+  );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202609270001_v020_offline_master_admin.sql",
+      "utf8",
+    ),
   );
   await asUser(owner);
   const trip = await mutation("trip", "create", {
@@ -296,5 +302,36 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   );
   await asUser(owner);
   assert.ok((await rows("audit_logs")).length > 10);
+
+  // V0.2.0 master administration and account gate. Master is provisioned only
+  // from trusted SQL/admin tooling, never from the client.
+  await db.exec(
+    `set role postgres;insert into public.tf_user_accounts(user_id,role,status) values('${owner}','master','active');set role authenticated;`,
+  );
+  await asUser(owner);
+  const adminOverview = (
+    await db.query<{ result: Record<string, any> }>(
+      "select public.tf_admin_overview('') as result",
+    )
+  ).rows[0].result;
+  assert.equal(adminOverview.stats.total, 4);
+  await db.query("select public.tf_admin_set_user_status($1,'deactivated')", [
+    viewer,
+  ]);
+  await asUser(viewer);
+  const account = (
+    await db.query<{ result: Record<string, any> }>(
+      "select public.tf_account_state() as result",
+    )
+  ).rows[0].result;
+  assert.equal(account.status, "deactivated");
+  assert.equal((await rows("trips")).length, 0);
+  await assert.rejects(
+    mutation("participant", "create", { name: "Blocked" }),
+    /ACCOUNT_DEACTIVATED/,
+  );
+  await asUser(owner);
+  await db.query("select public.tf_admin_set_user_status($1,'active')", [viewer]);
+
   await db.close();
 });

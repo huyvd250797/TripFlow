@@ -249,7 +249,11 @@ export function Editor({
             : bundle!.trip.id,
         entity: spec.entity,
         action: row ? "update" : "create",
-        ...(row ? { id: String(row.id), version: Number(row.version) } : {}),
+        ...(row
+          ? { id: String(row.id), version: Number(row.version) }
+          : spec.entity === "trip"
+            ? {}
+            : { id: id.current }),
         data: parsed.data,
       });
       onClose();

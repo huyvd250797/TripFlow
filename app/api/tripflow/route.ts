@@ -21,6 +21,7 @@ const messages: Record<string, string> = {
   INVALID_REFUND: "Không tìm thấy khoản chi gốc.",
   INVALID_TIMEZONE: "Múi giờ không hợp lệ.",
   OPERATION_REUSED: "Mã thao tác đã dùng cho nội dung khác.",
+  ACCOUNT_DEACTIVATED: "Tài khoản đã bị hủy kích hoạt. Liên hệ quản trị Master để được mở lại.",
   NOT_FOUND: "Không tìm thấy dữ liệu hoặc dữ liệu đã bị xóa.",
 };
 function reply(data: unknown, status = 200) {
@@ -35,11 +36,31 @@ async function auth() {
   if (error || !data.user) return null;
   return { s, user: data.user };
 }
+async function accountState(s: Awaited<ReturnType<typeof serverClient>>) {
+  const { data, error } = await s.rpc("tf_account_state");
+  if (error) throw new Error("V020_ACCOUNT_MIGRATION_REQUIRED:" + error.message);
+  return data as {
+    user_id: string;
+    role: "master" | "user";
+    status: "active" | "deactivated";
+    deactivated_at: string | null;
+  };
+}
 export async function GET(req: NextRequest) {
   try {
     const a = await auth();
     if (!a) return reply({ error: "Vui lòng đăng nhập." }, 401);
     const { s, user } = a;
+    const account = await accountState(s);
+    if (account.status !== "active")
+      return reply(
+        {
+          error: messages.ACCOUNT_DEACTIVATED,
+          code: "ACCOUNT_DEACTIVATED",
+          account,
+        },
+        403,
+      );
     const tid = req.nextUrl.searchParams.get("trip");
     if (!tid) {
       const { data, error } = await s
@@ -49,7 +70,11 @@ export async function GET(req: NextRequest) {
         .order("start_date", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return reply({ trips: data, user: { id: user.id, email: user.email } });
+      return reply({
+        trips: data,
+        user: { id: user.id, email: user.email },
+        account,
+      });
     }
     if (!z.uuid().safeParse(tid).success)
       return reply({ error: "Mã chuyến đi không hợp lệ." }, 400);
@@ -132,10 +157,17 @@ export async function GET(req: NextRequest) {
       audits: auditResult.data,
     });
   } catch (e) {
-    console.error(
-      "TripFlow read failed",
-      e instanceof Error ? e.message : "database",
-    );
+    const message = e instanceof Error ? e.message : "database";
+    console.error("TripFlow read failed", message);
+    if (message.startsWith("V020_ACCOUNT_MIGRATION_REQUIRED:"))
+      return reply(
+        {
+          error:
+            "Database chưa được nâng cấp V0.2.0. Hãy chạy migration 202609270001_v020_offline_master_admin.sql.",
+          code: "V020_MIGRATION_REQUIRED",
+        },
+        503,
+      );
     return reply(
       {
         error:
@@ -152,6 +184,12 @@ export async function POST(req: NextRequest) {
     const a = await auth();
     if (!a)
       return reply({ error: "Phiên đã hết hạn. Vui lòng đăng nhập lại." }, 401);
+    const account = await accountState(a.s);
+    if (account.status !== "active")
+      return reply(
+        { error: messages.ACCOUNT_DEACTIVATED, code: "ACCOUNT_DEACTIVATED" },
+        403,
+      );
     const raw = await req.text();
     if (raw.length > 50000) return reply({ error: "Dữ liệu quá lớn." }, 413);
     let json;
@@ -177,7 +215,17 @@ export async function POST(req: NextRequest) {
       );
     }
     return reply({ result: data });
-  } catch {
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "";
+    if (message.startsWith("V020_ACCOUNT_MIGRATION_REQUIRED:"))
+      return reply(
+        {
+          error:
+            "Database chưa được nâng cấp V0.2.0. Hãy chạy migration 202609270001_v020_offline_master_admin.sql.",
+          code: "V020_MIGRATION_REQUIRED",
+        },
+        503,
+      );
     return reply(
       { error: "Lưu chưa thành công. Kiểm tra kết nối rồi thử lại." },
       500,

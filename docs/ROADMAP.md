@@ -1,31 +1,51 @@
-# Phạm vi phát hành và bước tiếp theo
+# TripFlow roadmap
 
-## V0.1.0 — bản được bàn giao
+Roadmap này cũng được hiển thị trực tiếp trong **Thêm → TripFlow roadmap**. Phiên bản đã hoàn thành được đánh dấu ✅; khối cuối màn hình luôn mô tả phiên bản kế tiếp.
 
-Hoàn thành vòng sử dụng online: tài khoản → chuyến đi → lịch trình → dự toán → chi tiêu/hoàn tiền → so sánh → check-in → album → chia sẻ thành viên. Có database thật khi kết nối Supabase, phân quyền, kiểm tra transaction, export và tài liệu deploy.
+## ✅ V0.1.0 — Cloud MVP
 
-Bản này triển khai phần nền tảng và nghiệp vụ chính từ kế hoạch. Không coi V0.1 là hoàn tất mọi giai đoạn trong tài liệu kế hoạch.
+Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự toán, thực chi/hoàn tiền, media link, thành viên, RLS, audit, chống ghi trùng và triển khai Vercel + Supabase.
 
-## V0.2 — dùng tốt khi mạng yếu
+## ✅ V0.2.0 — Offline, Data Reliability & Master Administration
 
-- IndexedDB chứa bản sao dữ liệu đã được phép đọc và hàng đợi thao tác bền vững.
-- Service worker cache app shell, kiểm soát phiên bản cache; không cache trang/email xác thực.
-- Chính sách xử lý xung đột và mất quyền khi offline; trạng thái chờ/đã đồng bộ/thất bại.
-- Kiểm thử tắt mạng, reload, nhiều thiết bị, gửi lặp và thu hồi quyền khi có dữ liệu local.
-- Nhập JSON qua schema có phiên bản, preview, mapping ID và transaction; không ghi đè im lặng.
+- IndexedDB cache danh sách chuyến và bundle dữ liệu theo `user_id`.
+- Service worker cache app shell; API và route xác thực không được cache.
+- Hàng đợi offline bền vững với `operationId`, trạng thái pending/sending/conflict/rejected.
+- Tự đồng bộ khi mạng trở lại hoặc người dùng bấm Đồng bộ ngay.
+- Server vẫn kiểm tra idempotency, version, quyền hiện tại và transaction khi nhận thao tác offline.
+- Offline write có chủ đích: thêm thực chi; cập nhật/check-in lịch trình; thêm/sửa người tham gia và media. Thao tác nhạy cảm vẫn yêu cầu online.
+- Master Admin: xem danh sách user, trạng thái, chuyến đi, audit và dữ liệu theo chuyến; hủy kích hoạt/kích hoạt lại user.
+- Tài khoản bị hủy kích hoạt bị chặn bởi account gate, RLS và mutation wrapper. Khi đăng nhập, app phát hiện trạng thái rồi đăng xuất ngay.
+- Audit riêng cho thao tác quản trị tài khoản.
 
-## V0.3 — cộng tác và sử dụng thường xuyên
+## ➡️ V0.3.0 — Finance & Reporting Integrity
 
-- Tách component theo module khi mở rộng, danh sách phân trang ở UI, tối ưu payload theo tab.
-- Cải thiện realtime theo từng bảng, kiểm thử mạng gián đoạn trên Android/iOS thật.
-- Cấu hình nhắc lịch, web push theo đồng ý của người dùng; không mặc định theo dõi vị trí nền.
-- Mời email bằng tác vụ server có rate limit; token hash, quản lý nhiều lời mời cùng email.
-- Dashboard theo dõi lỗi, giới hạn lạm dụng đăng ký/ghi dữ liệu theo người dùng và project.
+Phiên bản tiếp theo tập trung đưa tài chính lên mức production: snapshot dự toán gốc bất biến, dự toán hiện hành, thực chi ròng, hoàn tiền, khoản ngoài dự toán, đối chiếu theo nhóm/ngày/hoạt động, báo cáo và kiểm thử tính đúng số liệu.
 
-## Giai đoạn mở rộng khi có nhu cầu
+## V0.4.0 — Live Trip & Realtime
 
-Đa tiền tệ/tỷ giá đã chốt, chia nợ và quyết toán nhóm, mẫu chuyến đi, sắp xếp kéo thả, nhập lịch, đề xuất địa điểm, tổng kết chuyến đi, báo cáo nâng cao. Tính phí, tích hợp đặt vé/phòng và AI nằm ngoài V0.1.
+Current/Next/Late, check-in giao dịch, Realtime nhiều thiết bị, lịch sử trạng thái, cảnh báo trễ và kiểm thử cập nhật đồng thời.
 
-## Điều kiện trước khi mở rộng cho nhiều nhóm
+## V0.5.0 — Collaboration & Permission Control
 
-Nghiệm thu staging Supabase/Vercel thật; kiểm tra Auth email và recovery; kiểm thử quyền với nhiều tài khoản; backup có thử restore; đo hiệu năng trên dữ liệu thật; đặt cảnh báo quota và chi phí dịch vụ. Quy mô Cloud MVP hướng đến cá nhân/nhóm nhỏ.
+Hoàn thiện Owner/Editor/Viewer, participant tách account, thu hồi quyền tức thời và các luồng cộng tác nhóm.
+
+## V0.6.0 — Mobile UX & PWA Stabilization
+
+Tối ưu mobile, form fullscreen, bàn phím, scroll/filter state, Safari iOS/Chrome Android, service worker update và hiệu năng cảm nhận.
+
+## V0.7.0 — Backup, Recovery & Operations
+
+Backup/restore, tombstone, retention, recovery, security hardening, vận hành và giám sát production.
+
+## V0.8.0 — Trip Analytics & Post-Trip Report
+
+Dashboard tổng kết chuyến, thống kê ngân sách/lịch trình, báo cáo sau chuyến và export nâng cao.
+
+## V0.9.0 — Release Candidate & Hardening
+
+Dừng mở rộng lớn; tập trung UAT, thiết bị thật, bảo mật, hiệu năng, mạng gián đoạn, migration và sửa lỗi.
+
+## V1.0.0 — Stable Production Release
+
+Bản ổn định chính thức với tài liệu vận hành, checklist release và tiêu chuẩn production.

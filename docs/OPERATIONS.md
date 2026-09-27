@@ -12,13 +12,13 @@ Dữ liệu chi phí, email thành viên, lịch trình và audit là dữ liệ
 - CSV phục vụ bảng tính, không phải định dạng khôi phục database.
 - Quản trị viên cấu hình backup PostgreSQL phù hợp gói Supabase và giữ bản sao độc lập theo chính sách riêng. Xem hướng dẫn chính thức: https://supabase.com/docs/guides/platform/backups và https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore . Khả năng backup/PITR phụ thuộc gói, không được giả định có sẵn.
 - Thử restore vào **project staging mới** trước; kiểm tra schema public/private và quan hệ với auth.users, đăng nhập, quyền, tổng chi phí và lịch trình. Không dùng JSON export để thay thế backup Auth.
-- Soft delete không phải xóa vĩnh viễn. V0.1 chưa có nút khôi phục/xóa vĩnh viễn trong app; quản trị viên phải có backup, kiểm tra khóa ngoại và thực hiện thủ công theo yêu cầu cụ thể. Không cung cấp câu lệnh xóa hàng loạt mặc định.
+- Soft delete không phải xóa vĩnh viễn. V0.2 chưa có nút khôi phục/xóa vĩnh viễn trong app; quản trị viên phải có backup, kiểm tra khóa ngoại và thực hiện thủ công theo yêu cầu cụ thể. Không cung cấp câu lệnh xóa hàng loạt mặc định.
 
 ## Nâng cấp
 
 Commit source vào repo của bạn. Mỗi thay đổi schema tạo migration mới, thử trên staging trước; backup trước khi áp dụng production. Kiểm tra rollback tương thích phiên bản frontend/API cũ. Vercel rollback frontend không tự rollback database.
 
-Theo dõi tăng trưởng audit và mutation receipts. V0.1 chưa có cron xóa dữ liệu; không tự xóa receipt gần đây vì sẽ làm mất khả năng nhận diện thao tác retry. Chọn thời hạn lưu sau khi có số liệu vận hành.
+Theo dõi tăng trưởng audit, admin audit và mutation receipts. V0.2 chưa có cron xóa dữ liệu; không tự xóa receipt gần đây vì sẽ làm mất khả năng nhận diện thao tác retry. Chọn thời hạn lưu sau khi có số liệu vận hành.
 
 ## Sự cố thường gặp
 
@@ -30,7 +30,9 @@ Theo dõi tăng trưởng audit và mutation receipts. V0.1 chưa có cron xóa 
 | Link email sai domain hoặc hết hạn           | Sửa Site URL, kiểm tra templates, yêu cầu email mới; URL token dùng một lần                                               |
 | Lưu bị từ chối vì nguồn yêu cầu              | Dùng domain ứng dụng trực tiếp; reverse proxy tùy chỉnh phải giữ đúng host/origin, không tắt kiểm tra Origin để sửa nhanh |
 | Dữ liệu đã thay đổi                          | Giữ lại nội dung cần thiết, đóng form, tải lại và sửa trên phiên bản mới                                                  |
-| Không lưu khi mất mạng                       | Kết nối lại và lưu trong form hiện tại; không đóng/reload vì bản này chưa có lưu nháp offline                             |
+| Thao tác offline chưa đồng bộ               | Mở **Thêm → Dữ liệu, offline & tài khoản** để xem queue; bật mạng và bấm Đồng bộ ngay. Conflict/rejected được giữ lại, không tự ghi đè |
+| User bị hủy kích hoạt nhưng đang offline    | Quyền thu hồi được áp dụng khi thiết bị kết nối lại và account gate/server kiểm tra; dữ liệu đã cache trước đó không thể bị thu hồi từ xa khi thiết bị hoàn toàn offline |
+| Không thấy Quản trị Master                  | Gán role `master` cho đúng user bằng SQL tin cậy theo README; đăng xuất/đăng nhập lại và kiểm tra migration V0.2            |
 | Drive báo không có quyền                     | Chủ album cấp quyền tại Drive; quyền TripFlow không cấp quyền Drive                                                       |
 | GPS bị chặn                                  | Dùng HTTPS, cấp quyền vị trí cho trình duyệt; có thể mở Maps từ link hoạt động                                            |
 | Thành viên không nhận lời mời                | Đăng nhập đúng email, kiểm tra hạn 7 ngày; mở lại link sau khi xác nhận tài khoản                                         |
@@ -38,4 +40,4 @@ Theo dõi tăng trưởng audit và mutation receipts. V0.1 chưa có cron xóa 
 
 ## Hỗ trợ trình duyệt
 
-Mục tiêu: các bản Chrome/Edge/Safari/Firefox hiện đại hỗ trợ `Intl` timezone, `crypto.randomUUID`, ES2023 `toSorted` và CSS `dvh`. Đã kiểm tra Chromium trong môi trường desktop mô phỏng viewport mobile; cần nghiệm thu Safari/iOS và Android thật. Manifest cho phép thêm lối tắt theo khả năng trình duyệt; chưa hỗ trợ mở app khi hoàn toàn offline.
+Mục tiêu: các bản Chrome/Edge/Safari/Firefox hiện đại hỗ trợ `Intl` timezone, `crypto.randomUUID`, ES2023 `toSorted` và CSS `dvh`. Đã kiểm tra Chromium trong môi trường desktop mô phỏng viewport mobile; cần nghiệm thu Safari/iOS và Android thật. Manifest + service worker cho phép mở app shell và dữ liệu chuyến đã cache khi offline. Media nguồn ngoài vẫn cần mạng/quyền nguồn. Cần nghiệm thu Safari/iOS và Android thật trước production.
