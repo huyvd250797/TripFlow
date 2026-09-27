@@ -1,4 +1,4 @@
-# Kiến trúc TripFlow 0.3.0
+# Kiến trúc TripFlow 0.4.0
 
 ## Công nghệ và luồng dữ liệu
 
@@ -77,3 +77,8 @@ Lời mời là UUID ngẫu nhiên, gắn email, có hạn 7 ngày, dùng một 
 Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động. App không proxy/tải/lưu binary từ Google Drive, không thu token Google, không tự cấp quyền Drive, không nhúng iframe cần cookie bên thứ ba. Nút mở media dẫn sang trang nguồn.
 
 Điểm theo thời gian là suy luận từ lịch. Check-in là xác nhận chủ động. GPS dùng Geolocation API theo thao tác, không ghi tọa độ lên database và không theo dõi nền. Khi lịch trùng giờ, app thông báo thay vì giả định có mặt ở nhiều nơi.
+
+
+## Live Trip V0.4.0
+
+`itinerary_items` vẫn là trạng thái hiện tại; `itinerary_events` là event history bất biến. Mutation status chạy qua `tf_mutate`, dùng trip advisory lock + unique active index, sau đó ghi event trong cùng transaction. `operation_id` + `(operation_id,item_id)` đảm bảo retry offline không nhân đôi lịch sử. Supabase Realtime chỉ đóng vai trò thông báo thay đổi; database/API vẫn là nguồn sự thật và client luôn có refetch dự phòng.

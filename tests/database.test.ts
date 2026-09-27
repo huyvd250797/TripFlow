@@ -61,6 +61,12 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202609270003_v040_live_trip_realtime.sql",
+      "utf8",
+    ),
+  );
   await asUser(owner);
   const trip = await mutation("trip", "create", {
     name: "Test cloud",
@@ -216,12 +222,39 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     mutation("item", "status", { status: "active" }, item2),
     /ACTIVE_CHANGED/,
   );
+  const liveOp = randomUUID();
   await mutation(
     "item",
     "status",
     { status: "active", previous_id: item.id },
     item2,
+    tripId,
+    liveOp,
   );
+  const liveEvents = await rows("itinerary_events");
+  assert.equal(liveEvents.filter((x) => x.operation_id === liveOp).length, 2);
+  assert.equal(
+    liveEvents.some(
+      (x) => x.item_id === item.id && x.event_type === "auto_complete" && x.to_status === "done",
+    ),
+    true,
+  );
+  assert.equal(
+    liveEvents.some(
+      (x) => x.item_id === item2.id && x.event_type === "check_in" && x.to_status === "active",
+    ),
+    true,
+  );
+  const liveEventCount = liveEvents.length;
+  await mutation(
+    "item",
+    "status",
+    { status: "active", previous_id: item.id },
+    item2,
+    tripId,
+    liveOp,
+  );
+  assert.equal((await rows("itinerary_events")).length, liveEventCount);
   assert.equal(
     (await rows("itinerary_items")).filter((x) => x.status === "active").length,
     1,

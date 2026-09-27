@@ -1,4 +1,4 @@
-export const VERSION = "0.3.0";
+export const VERSION = "0.4.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -128,6 +128,19 @@ export type Snapshot = {
   item_count?: number;
 };
 
+export type ItineraryEvent = {
+  id: number;
+  trip_id: string;
+  item_id: string;
+  operation_id: string;
+  actor_id: string | null;
+  event_type: "check_in" | "complete" | "auto_complete" | "skip" | "reset" | "status";
+  from_status: keyof typeof ITEM_STATUS | null;
+  to_status: keyof typeof ITEM_STATUS;
+  occurred_at: string;
+  metadata: Record<string, unknown>;
+};
+
 export type FinanceCategoryReport = {
   category: string;
   original: number;
@@ -198,6 +211,7 @@ export type Bundle = {
   members: Member[];
   invitations: Invitation[];
   snapshots: Snapshot[];
+  live_events?: ItineraryEvent[];
   audits: Audit[];
   finance_report?: FinanceReport;
 };

@@ -266,21 +266,42 @@ export function live(items: Item[], now = new Date().toISOString()) {
   const sorted = [...items].sort(
     (a, b) => Date.parse(a.start_at) - Date.parse(b.start_at),
   );
+  const nowMs = Date.parse(now);
+  const active = sorted.find((x) => x.status === "active");
+  const scheduled = sorted.filter(
+    (x) =>
+      x.status === "planned" &&
+      Date.parse(x.start_at) <= nowMs &&
+      Date.parse(x.end_at) > nowMs,
+  );
+  const late = sorted.filter(
+    (x) => x.status === "planned" && Date.parse(x.end_at) <= nowMs,
+  );
+  const next = sorted.find(
+    (x) => x.status === "planned" && Date.parse(x.start_at) > nowMs,
+  );
+  const current = active || scheduled[0];
+  const activeLateMinutes = active
+    ? Math.max(0, Math.floor((nowMs - Date.parse(active.end_at)) / 60000))
+    : 0;
+  const lateMinutes = late.map((x) => ({
+    item: x,
+    minutes: Math.max(0, Math.floor((nowMs - Date.parse(x.end_at)) / 60000)),
+  }));
+  const nextInMinutes = next
+    ? Math.max(0, Math.ceil((Date.parse(next.start_at) - nowMs) / 60000))
+    : null;
   return {
-    active: sorted.find((x) => x.status === "active"),
-    scheduled: sorted.filter(
-      (x) =>
-        x.status === "planned" &&
-        Date.parse(x.start_at) <= Date.parse(now) &&
-        Date.parse(x.end_at) > Date.parse(now),
-    ),
-    next: sorted.find(
-      (x) => x.status === "planned" && Date.parse(x.start_at) > Date.parse(now),
-    ),
-    late: sorted.filter(
-      (x) => x.status === "planned" && Date.parse(x.end_at) <= Date.parse(now),
-    ),
+    active,
+    current,
+    scheduled,
+    next,
+    late,
+    lateMinutes,
+    activeLateMinutes,
+    nextInMinutes,
     done: sorted.filter((x) => x.status === "done").length,
+    skipped: sorted.filter((x) => x.status === "skipped").length,
     processed: sorted.filter((x) => ["done", "skipped"].includes(x.status))
       .length,
     sorted,
@@ -290,7 +311,7 @@ export function csv(bundle: Bundle) {
   const report = bundle.finance_report || buildFinanceReport(bundle);
   const rows: unknown[][] = [
     ["TripFlow", bundle.trip.name],
-    ["BÁO CÁO TÀI CHÍNH", "V0.3.0"],
+    ["BÁO CÁO TÀI CHÍNH", "V0.4.0"],
     ["Chỉ số", "Số tiền"],
     ["Dự toán gốc", report.baseline_snapshot_id ? report.totals.original_budget : "Chưa chốt"],
     ["Dự toán hiện tại", report.totals.current_budget],

@@ -30,9 +30,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V0.4.0",
     title: "Live Trip & Realtime",
-    done: false,
+    done: true,
     description:
-      "Roadmap sử dụng thực tế, Current/Next/Late, Realtime nhiều thiết bị, check-in giao dịch và cảnh báo trễ.",
+      "Current/Next/Late, check-in giao dịch, lịch sử trạng thái bất biến, cảnh báo trễ và Realtime nhiều thiết bị có refetch dự phòng.",
   },
   {
     version: "V0.5.0",

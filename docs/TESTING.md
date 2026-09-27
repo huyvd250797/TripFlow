@@ -1,4 +1,4 @@
-# Kiểm tra bản 0.3.0
+# Kiểm tra bản 0.4.0
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
@@ -71,3 +71,16 @@ Dùng project staging và dữ liệu thử riêng:
 - Kiểm tra báo cáo theo nhóm/ngày/hoạt động và khoản ngoài dự toán.
 - Data Integrity phải cảnh báo khi chưa có baseline và phát hiện dữ liệu refund/link/snapshot không nhất quán.
 - Export CSV phải tiếp tục chống formula injection; export JSON phải chứa report và dữ liệu nguồn.
+
+
+## Live Trip & Realtime V0.4.0
+
+- [ ] Chạy migration V0.4.0 sau V0.3.0; API bundle trả `live_events`.
+- [ ] Hai thiết bị cùng mở một chuyến: thiết bị B nhận cập nhật sau khi A check-in mà không cần reload thủ công.
+- [ ] Nếu Realtime bị ngắt, badge chuyển trạng thái phù hợp và refetch 30 giây vẫn cập nhật dữ liệu.
+- [ ] Hai thiết bị đồng thời check-in hai activity khác nhau: transaction chỉ để lại đúng một activity `active`; request stale/không khớp nhận conflict.
+- [ ] Check-in tạo event `check_in`; chuyển sang activity khác tạo thêm `auto_complete` cho activity cũ.
+- [ ] Retry cùng `operationId` không tạo history trùng.
+- [ ] Hoàn thành, bỏ qua, đặt lại tạo event tương ứng và hiển thị đúng theo timezone chuyến đi.
+- [ ] Activity `active` quá `end_at` hiển thị số phút/giờ trễ; activity planned đã qua giờ xuất hiện trong LATE.
+- [ ] Offline check-in đi vào queue; khi có mạng, mutation sync một lần và history được tạo sau khi server xác nhận.

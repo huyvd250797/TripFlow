@@ -114,6 +114,7 @@ export async function GET(req: NextRequest) {
       participants,
       members,
       snapshots,
+      liveEventResult,
       invResult,
       auditResult,
       financeResult,
@@ -125,6 +126,13 @@ export async function GET(req: NextRequest) {
       all("trip_participants"),
       all("trip_members", false),
       all("budget_snapshots", false),
+      s
+        .from("itinerary_events")
+        .select("*")
+        .eq("trip_id", tid)
+        .order("occurred_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(200),
       s
         .from("trip_invitations")
         .select("*")
@@ -139,6 +147,8 @@ export async function GET(req: NextRequest) {
         .limit(50),
       s.rpc("tf_finance_report", { target_trip: tid }),
     ]);
+    if (liveEventResult.error)
+      throw new Error("V040_LIVE_MIGRATION_REQUIRED:" + liveEventResult.error.message);
     if (invResult.error || auditResult.error)
       throw invResult.error || auditResult.error;
     if (financeResult.error)
@@ -157,6 +167,7 @@ export async function GET(req: NextRequest) {
       participants,
       members,
       snapshots,
+      live_events: liveEventResult.data,
       invitations: invResult.data,
       audits: auditResult.data,
       finance_report: financeResult.data,
@@ -179,6 +190,15 @@ export async function GET(req: NextRequest) {
           error:
             "Database chưa được nâng cấp V0.3.0. Hãy chạy migration 202609270002_v030_finance_reporting_integrity.sql.",
           code: "V030_MIGRATION_REQUIRED",
+        },
+        503,
+      );
+    if (message.startsWith("V040_LIVE_MIGRATION_REQUIRED:"))
+      return reply(
+        {
+          error:
+            "Database chưa được nâng cấp V0.4.0. Hãy chạy migration 202609270003_v040_live_trip_realtime.sql.",
+          code: "V040_MIGRATION_REQUIRED",
         },
         503,
       );

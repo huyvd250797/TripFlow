@@ -1,4 +1,4 @@
-const CACHE = "tripflow-shell-v020";
+const CACHE = "tripflow-shell-v040";
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {

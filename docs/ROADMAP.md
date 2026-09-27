@@ -28,13 +28,17 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Export CSV/JSON tài chính có cấu trúc đầy đủ; CSV tiếp tục chống formula injection.
 - UI Chi phí bổ sung tab Báo cáo, baseline/revision history và cảnh báo integrity.
 
-## ➡️ V0.4.0 — Live Trip & Realtime
+## ✅ V0.4.0 — Live Trip & Realtime
 
-Phiên bản tiếp theo tập trung đưa TripFlow vào sử dụng trực tiếp trong chuyến đi: Current/Next/Late, check-in giao dịch, Realtime nhiều thiết bị, lịch sử trạng thái, cảnh báo trễ và kiểm thử cập nhật đồng thời.
+- Live panel hiển thị rõ **Current / Next / Late**, thời gian đến chặng tiếp theo và độ trễ của chặng hiện tại.
+- Check-in/hoàn thành/bỏ qua/đặt lại tiếp tục chạy trong transaction; chỉ có một activity `active` trên mỗi chuyến.
+- Bảng `itinerary_events` lưu lịch sử trạng thái bất biến theo `operation_id`, bao gồm auto-complete khi chuyển sang chặng khác.
+- Realtime subscribe riêng cho `trips`, `itinerary_items`, `itinerary_events`, `expenses`; vẫn giữ refetch 30 giây làm fallback.
+- Migration tự thêm các bảng Live Trip vào `supabase_realtime` publication nếu publication tồn tại.
+- UI hiển thị trạng thái kết nối Realtime và lịch sử Live Trip theo múi giờ chuyến đi.
+- Cảnh báo hoạt động đã qua giờ và activity active đang kéo dài quá thời gian kế hoạch.
 
-Current/Next/Late, check-in giao dịch, Realtime nhiều thiết bị, lịch sử trạng thái, cảnh báo trễ và kiểm thử cập nhật đồng thời.
-
-## V0.5.0 — Collaboration & Permission Control
+## ➡️ V0.5.0 — Collaboration & Permission Control
 
 Hoàn thiện Owner/Editor/Viewer, participant tách account, thu hồi quyền tức thời và các luồng cộng tác nhóm.
 

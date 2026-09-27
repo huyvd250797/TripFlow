@@ -105,3 +105,36 @@ test("finance report preserves original baseline and groups by day/activity", ()
   assert.equal(report.integrity.status, "ok");
   assert.match(financeJson(bundle), /"original_budget": 1000000/);
 });
+
+
+test("live trip derives Current/Next/Late and delay minutes", () => {
+  const r = live(
+    [
+      {
+        id: "active",
+        status: "active",
+        start_at: "2026-09-25T01:00:00Z",
+        end_at: "2026-09-25T02:00:00Z",
+      },
+      {
+        id: "late",
+        status: "planned",
+        start_at: "2026-09-25T02:10:00Z",
+        end_at: "2026-09-25T02:30:00Z",
+      },
+      {
+        id: "next",
+        status: "planned",
+        start_at: "2026-09-25T04:00:00Z",
+        end_at: "2026-09-25T05:00:00Z",
+      },
+    ] as Item[],
+    "2026-09-25T03:00:00Z",
+  );
+  assert.equal(r.current?.id, "active");
+  assert.equal(r.activeLateMinutes, 60);
+  assert.equal(r.late[0]?.id, "late");
+  assert.equal(r.lateMinutes[0]?.minutes, 30);
+  assert.equal(r.next?.id, "next");
+  assert.equal(r.nextInMinutes, 60);
+});

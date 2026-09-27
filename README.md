@@ -1,4 +1,4 @@
-# TripFlow 0.3.0 · Finance & Reporting Integrity
+# TripFlow 0.4.0 · Live Trip & Realtime
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -15,6 +15,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - Dự toán theo khoản và nhóm, số lượng × đơn giá; chốt bản dự toán gốc.
 - Ghi thực chi, người trả, ngày chi, link chứng từ; liên kết dự toán, chi ngoài kế hoạch và hoàn tiền.
 - **Finance V0.3.0:** lần chốt đầu tiên là baseline dự toán gốc bất biến; các lần sau là revision có số thứ tự. Đối chiếu dự toán gốc / hiện tại / tổng chi / hoàn tiền / thực chi ròng / chênh lệch.
+- **Live Trip V0.4.0:** Current / Next / Late, cảnh báo trễ, check-in giao dịch, lịch sử trạng thái bất biến và Realtime nhiều thiết bị với refetch fallback.
 - Báo cáo tài chính theo nhóm, ngày và hoạt động; theo dõi khoản ngoài dự toán; tab Data Integrity phát hiện refund/link/snapshot không nhất quán.
 - Export tài chính CSV và JSON; CSV chống formula injection.
 - Gắn link Google Drive/HTTPS cho album, ảnh, video, tài liệu; liên kết với hoạt động. Media mở tại nguồn, không upload vào app.
@@ -23,7 +24,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0, V0.2.0 và V0.3.0 được đánh dấu ✅; phiên bản tiếp theo là V0.4.0 – Live Trip & Realtime.
+- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V0.4.0 được đánh dấu ✅; phiên bản tiếp theo là V0.5.0 – Collaboration & Permission Control.
 
 **Phạm vi offline:** cho phép thêm thực chi, cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -34,8 +35,9 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609250001_tripflow.sql` — nền V0.1.0.
    - `supabase/migrations/202609270001_v020_offline_master_admin.sql` — nâng cấp V0.2.0.
    - `supabase/migrations/202609270002_v030_finance_reporting_integrity.sql` — nâng cấp V0.3.0.
-   Nếu database đang chạy V0.2.0 thì **chỉ chạy migration V0.3.0**. Nếu đang ở V0.1.0 thì chạy lần lượt V0.2.0 rồi V0.3.0; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
-3. V0.3.0 không thêm bảng public mới; bổ sung metadata snapshot, trigger bảo vệ baseline và RPC báo cáo tài chính `tf_finance_report`. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
+   - `supabase/migrations/202609270003_v040_live_trip_realtime.sql` — nâng cấp V0.4.0.
+   Nếu database đang chạy V0.3.0 thì **chỉ chạy migration V0.4.0**. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+3. V0.4.0 thêm bảng `itinerary_events`, wrapper mutation để ghi lịch sử trạng thái và cấu hình publication Realtime khi khả dụng. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
 6. Auth: bật đăng nhập Email/Password và **Confirm email**. Đặt mật khẩu tối thiểu 8 ký tự. Cấu hình SMTP của bạn cho email dùng thật; kiểm tra giới hạn gửi của dịch vụ trước khi mời nhóm sử dụng.
@@ -80,6 +82,16 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - Integrity kiểm tra các bất thường: hoàn tiền vượt giao dịch gốc, refund sai liên kết, thực chi liên kết budget không hợp lệ/sai nhóm, budget còn gắn activity đã xóa, snapshot metadata lệch payload.
 - Nếu chưa chốt baseline, app vẫn tính số liệu hiện tại nhưng hiển thị cảnh báo `NO_BASELINE`.
 - Snapshot, đổi quyền, xóa chuyến và Master Admin vẫn yêu cầu online; tạo thực chi offline tiếp tục dùng queue V0.2.0.
+
+## 1.4. Live Trip & Realtime V0.4.0
+
+- Live panel tách rõ **Current / Next / Late**; hiển thị thời gian còn lại đến chặng kế tiếp và số phút/giờ trễ.
+- `itinerary_items` là trạng thái hiện tại; `itinerary_events` lưu history bất biến cho check-in, complete, skip, reset và auto-complete.
+- Khi check-in chặng mới trong lúc đã có chặng active, transaction hoàn thành chặng cũ rồi kích hoạt chặng mới; unique index vẫn đảm bảo chỉ một active.
+- Event history dùng cùng `operation_id` với mutation để retry/offline sync không tạo dòng trùng.
+- Realtime subscribe `trips`, `itinerary_items`, `itinerary_events`, `expenses`; app vẫn refetch 30 giây khi Realtime chậm hoặc không khả dụng.
+- Check-in timestamp lấy từ database `now()`, không lấy đồng hồ điện thoại làm nguồn sự thật. GPS chỉ mở khi người dùng yêu cầu và không tự xác nhận check-in.
+
 
 ## 2. Deploy lên Vercel
 
@@ -169,7 +181,7 @@ Mở `http://localhost:3000`. Nếu thiếu cấu hình, app hiện hướng d�
 5. Bấm **Tôi đã đến** khi tới một điểm; xác nhận chuyển điểm sẽ hoàn thành điểm cũ. App không coi giờ kế hoạch là xác nhận bạn đang có mặt.
 6. Trong **Media**, gắn link album Drive. Cấp quyền album tại Drive cho người xem; quyền TripFlow không thay đổi quyền Drive.
 7. Trong **Thêm**, mời bằng email, sao chép link và tự gửi. Người nhận đăng nhập đúng email rồi mở link để chấp nhận. Nếu vừa đăng ký và xác nhận email, mở lại link mời. Danh sách “Người tham gia” không tự tạo tài khoản hoặc cấp quyền.
-8. Thử trên thiết bị thứ hai cùng tài khoản hoặc thành viên được mời. Dữ liệu tải lại định kỳ 30 giây; sự kiện realtime có thể làm mới sớm hơn.
+8. Thử trên thiết bị thứ hai cùng tài khoản hoặc thành viên được mời. V0.4.0 dùng Realtime để nhận thay đổi sớm giữa thiết bị; refetch 30 giây vẫn hoạt động làm fallback.
 9. Kiểm thử offline: mở chuyến khi online → tắt mạng → thêm một khoản chi hoặc check-in → vào **Thêm** kiểm tra hàng đợi → bật mạng → xác nhận trạng thái đồng bộ về 0.
 10. Đăng nhập Master → **Quản trị Master** → mở một user/chuyến để kiểm tra dữ liệu → hủy kích hoạt user thử nghiệm → xác nhận user đó bị chặn đăng nhập/sử dụng app → kích hoạt lại.
 

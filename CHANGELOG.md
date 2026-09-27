@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0 — Live Trip & Realtime
+
+- Live dashboard mới với Current / Next / Late và thời gian còn lại/độ trễ.
+- Lịch sử trạng thái `itinerary_events` bất biến cho check-in, complete, skip, reset và auto-complete.
+- Status mutation V0.4 vẫn dùng transaction/lock/idempotency cũ và ghi history trong cùng transaction.
+- Realtime nhiều thiết bị cho trip, itinerary, live history và expenses; refetch 30 giây vẫn là fallback.
+- Hiển thị trạng thái Realtime/Offline ngay trên Live Trip panel.
+- Cảnh báo activity active quá giờ và các activity planned đã qua giờ chưa xử lý.
+- Roadmap đánh dấu V0.4.0 ✅; phiên bản tiếp theo là V0.5.0 Collaboration & Permission Control.
+- Migration mới `202609270003_v040_live_trip_realtime.sql`.
+
 ## 0.3.0 — Finance & Reporting Integrity
 
 - Baseline dự toán gốc bất biến; các lần chốt sau được đánh số revision.

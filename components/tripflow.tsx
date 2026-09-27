@@ -40,6 +40,9 @@ import {
   ShieldCheck,
   CloudUpload,
   AlertTriangle,
+  Radio,
+  History,
+  Timer,
 } from "lucide-react";
 import { browserClient, configured } from "@/lib/supabase/client";
 import { Auth } from "./auth";
@@ -219,7 +222,10 @@ function App() {
     [inviteToken, setInviteToken] = useState(""),
     [shareLink, setShareLink] = useState("");
   const [queueRows, setQueueRows] = useState<QueuedMutation[]>([]),
-    [syncing, setSyncing] = useState(false);
+    [syncing, setSyncing] = useState(false),
+    [realtimeState, setRealtimeState] = useState<
+      "idle" | "connecting" | "live" | "offline" | "error"
+    >("idle");
   const syncLock = useRef(false);
   const notify = useCallback((s: string) => setToast(s), []);
   useEffect(() => {
@@ -318,24 +324,78 @@ function App() {
   const data = bq.data,
     trip = data?.trip;
   useEffect(() => {
-    if (!user || !selectedId || !configured()) return;
+    if (!user || !selectedId || !configured()) {
+      setRealtimeState("idle");
+      return;
+    }
+    if (!online) {
+      setRealtimeState("offline");
+      return;
+    }
     const s = browserClient();
+    setRealtimeState("connecting");
+    const refreshTrip = () => {
+      void qc.invalidateQueries({
+        queryKey: ["trip", user.id, selectedId],
+      });
+    };
+    const refreshTripAndList = () => {
+      refreshTrip();
+      void qc.invalidateQueries({ queryKey: ["trips", user.id] });
+    };
     const channel = s
-      .channel("trip:" + selectedId)
+      .channel("trip-live:" + selectedId)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", filter: `trip_id=eq.${selectedId}` },
-        () => {
-          void qc.invalidateQueries({
-            queryKey: ["trip", user.id, selectedId],
-          });
+        {
+          event: "*",
+          schema: "public",
+          table: "itinerary_items",
+          filter: `trip_id=eq.${selectedId}`,
         },
+        refreshTrip,
       )
-      .subscribe();
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "itinerary_events",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "expenses",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trips",
+          filter: `id=eq.${selectedId}`,
+        },
+        refreshTripAndList,
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setRealtimeState("live");
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT")
+          setRealtimeState("error");
+        else if (status === "CLOSED") setRealtimeState("idle");
+      });
     return () => {
+      setRealtimeState("idle");
       void s.removeChannel(channel);
     };
-  }, [user, selectedId, qc]);
+  }, [user, selectedId, qc, online]);
   const refreshQueue = useCallback(async () => {
     if (!user) {
       setQueueRows([]);
@@ -407,7 +467,7 @@ function App() {
     if (!user) throw new Error("Vui lòng đăng nhập lại.");
     if (!canQueueMutation(m))
       throw new Error(
-        "Thao tác này cần kết nối mạng. Offline V0.2.0 chỉ cho phép ghi chi tiêu mới, cập nhật/check-in lịch trình, người tham gia và media.",
+        "Thao tác này cần kết nối mạng. Chế độ offline hiện chỉ cho phép ghi chi tiêu mới, cập nhật/check-in lịch trình, người tham gia và media.",
       );
     await enqueueMutation(user.id, m);
     await refreshQueue();
@@ -574,7 +634,7 @@ function App() {
   const progress = data
     ? live(data.items, now || new Date().toISOString())
     : null;
-  const current = progress?.active || progress?.scheduled[0];
+  const current = progress?.current;
   const orderedSnapshots = data?.snapshots.toSorted((a, b) =>
     (a.snapshot_no ?? 999999) - (b.snapshot_no ?? 999999) ||
     a.created_at.localeCompare(b.created_at),
@@ -593,9 +653,39 @@ function App() {
     trip_members: "Thành viên",
     budget_snapshots: "Chốt dự toán",
   };
-  const liveCard = () =>
-    trip &&
-    progress && (
+  const eventLabels: Record<string, string> = {
+    check_in: "Check-in",
+    complete: "Hoàn thành",
+    auto_complete: "Tự hoàn thành khi chuyển chặng",
+    skip: "Bỏ qua",
+    reset: "Đặt lại kế hoạch",
+    status: "Đổi trạng thái",
+  };
+  const minutesText = (value: number | null | undefined) => {
+    if (value == null) return "";
+    if (value < 60) return `${value} phút`;
+    const hours = Math.floor(value / 60);
+    const minutes = value % 60;
+    return minutes ? `${hours} giờ ${minutes} phút` : `${hours} giờ`;
+  };
+  const liveCard = () => {
+    if (!trip || !progress) return null;
+    const overdueActive = progress.activeLateMinutes > 0;
+    const lateCount = progress.late.length + (overdueActive ? 1 : 0);
+    const worstLate = progress.lateMinutes.toSorted(
+      (a, b) => b.minutes - a.minutes,
+    )[0];
+    const realtimeText =
+      realtimeState === "live"
+        ? "Realtime"
+        : realtimeState === "connecting"
+          ? "Đang nối"
+          : realtimeState === "offline"
+            ? "Offline"
+            : realtimeState === "error"
+              ? "Realtime lỗi"
+              : "Định kỳ";
+    return (
       <section className="live-panel">
         <div className="live-top">
           <span className="pill light">
@@ -603,10 +693,16 @@ function App() {
             {trip.status === "completed"
               ? "CHUYẾN ĐI ĐÃ KẾT THÚC"
               : progress.active
-                ? "CHECK-IN THỰC TẾ"
+                ? "CURRENT · CHECK-IN THỰC TẾ"
                 : current
-                  ? "HIỆN TẠI THEO KẾ HOẠCH"
-                  : "CHẶNG TIẾP THEO"}
+                  ? "CURRENT · THEO KẾ HOẠCH"
+                  : progress.next
+                    ? "NEXT · CHẶNG TIẾP THEO"
+                    : "LIVE TRIP"}
+          </span>
+          <span className={`realtime-state ${realtimeState}`}>
+            <Radio size={13} />
+            {realtimeText}
           </span>
           <span>{now ? localTime(now, trip.timezone).slice(11) : "--:--"}</span>
         </div>
@@ -628,13 +724,50 @@ function App() {
               ? `${dateLabel(localTime(progress.next.start_at, trip.timezone))} · ${localTime(progress.next.start_at, trip.timezone).slice(11)}`
               : "Thêm hoạt động và thời gian để bắt đầu."}
         </p>
+        <div className="live-snapshot">
+          <div>
+            <small>CURRENT</small>
+            <b>{current?.title || "Chưa có"}</b>
+            <span>
+              {progress.active
+                ? overdueActive
+                  ? `Đang trễ ${minutesText(progress.activeLateMinutes)}`
+                  : "Đã check-in"
+                : current
+                  ? "Theo giờ kế hoạch"
+                  : "Chưa có hoạt động hiện tại"}
+            </span>
+          </div>
+          <div>
+            <small>NEXT</small>
+            <b>{progress.next?.title || "Chưa có"}</b>
+            <span>
+              {progress.next
+                ? progress.nextInMinutes === 0
+                  ? "Sắp bắt đầu"
+                  : `Còn ${minutesText(progress.nextInMinutes)}`
+                : "Không còn chặng kế tiếp"}
+            </span>
+          </div>
+          <div className={lateCount ? "late" : ""}>
+            <small>LATE</small>
+            <b>{lateCount ? `${lateCount} chặng` : "Không có"}</b>
+            <span>
+              {overdueActive
+                ? `Current trễ ${minutesText(progress.activeLateMinutes)}`
+                : worstLate
+                  ? `Lâu nhất ${minutesText(worstLate.minutes)}`
+                  : "Đúng tiến độ"}
+            </span>
+          </div>
+        </div>
         <div className="live-bottom">
           <small>
             {progress.active
-              ? "Bạn đã xác nhận điểm này."
+              ? "Check-in dùng thời gian server; không tự suy ra từ GPS."
               : current
                 ? "Chưa xác nhận có mặt. Đây không phải vị trí GPS."
-                : "Giờ theo múi giờ của chuyến đi."}
+                : "Giờ hiển thị theo múi giờ của chuyến đi."}
           </small>
           {current && writable && trip.status !== "completed" ? (
             <button
@@ -643,7 +776,7 @@ function App() {
                 status(current, progress.active ? "done" : "active")
               }
             >
-              {progress.active ? <Check size={17} /> : <MapPin size={17} />}{" "}
+              {progress.active ? <Check size={17} /> : <MapPin size={17} />} {" "}
               {progress.active ? "Hoàn thành" : "Tôi đã đến"}
             </button>
           ) : (
@@ -653,13 +786,20 @@ function App() {
             </button>
           )}
         </div>
-        {progress.scheduled.length > 1 && (
+        {(lateCount > 0 || progress.scheduled.length > 1) && (
           <small className="live-note">
-            Có {progress.scheduled.length} hoạt động trùng giờ dự kiến.
+            {lateCount > 0
+              ? `${lateCount} hoạt động đang trễ hoặc đã qua giờ chưa xử lý.`
+              : ""}
+            {lateCount > 0 && progress.scheduled.length > 1 ? " · " : ""}
+            {progress.scheduled.length > 1
+              ? `Có ${progress.scheduled.length} hoạt động trùng giờ dự kiến.`
+              : ""}
           </small>
         )}
       </section>
     );
+  };
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -690,7 +830,7 @@ function App() {
           )}
         </nav>
         <div className="side-footer">
-          <span className="version">V{VERSION} · FINANCE INTEGRITY</span>
+          <span className="version">V{VERSION} · LIVE TRIP & REALTIME</span>
           <p>
             Đi cùng nhau.
             <br />
@@ -1009,10 +1149,12 @@ function App() {
                         </b>
                       </div>
                       <Bar value={progress.done} max={data.items.length} />
-                      {progress.late.length > 0 && (
+                      {(progress.late.length > 0 || progress.activeLateMinutes > 0) && (
                         <p className="inline-notice">
-                          {progress.late.length} hoạt động qua giờ chưa cập
-                          nhật.
+                          <Timer size={15} />
+                          {progress.activeLateMinutes > 0
+                            ? `Chặng hiện tại đang trễ ${minutesText(progress.activeLateMinutes)}.`
+                            : `${progress.late.length} hoạt động qua giờ chưa cập nhật.`}
                         </p>
                       )}
                       <div className="mini-timeline">
@@ -1202,9 +1344,11 @@ function App() {
                                 className={`pill ${x.status === "active" ? "green" : ""}`}
                               >
                                 {ITEM_STATUS[x.status]}
-                                {progress.late.some((s) => s.id === x.id)
-                                  ? " · Qua giờ"
-                                  : ""}
+                                {x.status === "active" && progress.activeLateMinutes > 0
+                                  ? ` · Trễ ${minutesText(progress.activeLateMinutes)}`
+                                  : progress.late.some((s) => s.id === x.id)
+                                    ? " · Qua giờ"
+                                    : ""}
                               </span>
                               {rowTools("item", x)}
                             </div>
@@ -1340,6 +1484,41 @@ function App() {
                       />
                     </section>
                   )}
+                  <section className="panel live-history-panel">
+                    <div className="section-heading">
+                      <div>
+                        <span className="eyebrow">LIVE HISTORY</span>
+                        <h2>Lịch sử trạng thái</h2>
+                      </div>
+                      <History size={20} />
+                    </div>
+                    {(data.live_events || []).length ? (
+                      <div className="live-history">
+                        {(data.live_events || []).slice(0, 12).map((event) => {
+                          const item = data.items.find((x) => x.id === event.item_id);
+                          return (
+                            <div className="live-history-row" key={event.id}>
+                              <span className={`history-dot ${event.to_status}`} />
+                              <div>
+                                <b>{eventLabels[event.event_type] || "Cập nhật trạng thái"}</b>
+                                <p>{item?.title || "Hoạt động đã xóa"}</p>
+                                <small>
+                                  {event.actor_id === user.id ? "Bạn" : "Thành viên"} · {dateLabel(localTime(event.occurred_at, trip.timezone))} {localTime(event.occurred_at, trip.timezone).slice(11)}
+                                  {event.from_status
+                                    ? ` · ${ITEM_STATUS[event.from_status]} → ${ITEM_STATUS[event.to_status]}`
+                                    : ` · ${ITEM_STATUS[event.to_status]}`}
+                                </small>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="muted">
+                        Lịch sử Live Trip sẽ xuất hiện khi bạn check-in, hoàn thành, bỏ qua hoặc đặt lại hoạt động sau khi nâng database V0.4.0.
+                      </p>
+                    )}
+                  </section>
                 </>
               )}
               {tab === "money" && data && totals && financeReport && (
@@ -2350,7 +2529,7 @@ function App() {
                       </button>
                     </div>
                     <p className="hint">
-                      Offline V0.2.0 hỗ trợ ghi chi tiêu mới, cập nhật/check-in lịch trình, người tham gia và media. Phân quyền, xóa chuyến, chốt dự toán và quản trị yêu cầu online.
+                      Chế độ offline hỗ trợ ghi chi tiêu mới, cập nhật/check-in lịch trình, người tham gia và media. Phân quyền, xóa chuyến, chốt dự toán và quản trị yêu cầu online.
                     </p>
                     <p className="hint">
                       {user.email} · TripFlow {VERSION}{account?.role === "master" ? " · MASTER" : ""}

@@ -1,5 +1,7 @@
 # Nâng cấp TripFlow V0.2.0 → V0.3.0
 
+> Tài liệu lịch sử. TripFlow hiện đã có V0.4.0; sau V0.3.0 hãy chạy tiếp `202609270003_v040_live_trip_realtime.sql`.
+
 ## Mục tiêu
 
 V0.3.0 hoàn thiện Finance & Reporting Integrity: baseline dự toán gốc bất biến, revision history, báo cáo theo nhóm/ngày/hoạt động, export CSV/JSON và kiểm tra tính đúng dữ liệu tài chính.

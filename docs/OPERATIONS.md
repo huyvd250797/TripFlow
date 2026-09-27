@@ -48,3 +48,12 @@ Mục tiêu: các bản Chrome/Edge/Safari/Firefox hiện đại hỗ trợ `Int
 - Nếu Data Integrity báo `NO_BASELINE`, đây là cảnh báo nghiệp vụ: chốt dự toán gốc trong **Chi phí → Đối chiếu**.
 - Nếu có `REFUND_*`, `BUDGET_LINK_MISMATCH`, `ACTIVITY_LINK_MISMATCH` hoặc `SNAPSHOT_MISMATCH`, không sửa trực tiếp bảng production trước khi backup; đối chiếu audit và dữ liệu gốc rồi tạo migration/repair script riêng.
 - Không UPDATE trực tiếp `budget_snapshots`; trigger V0.3.0 cố ý trả `SNAPSHOT_IMMUTABLE`.
+
+
+## Live Trip & Realtime V0.4.0
+
+- Nếu API báo `V040_MIGRATION_REQUIRED`, chạy `202609270003_v040_live_trip_realtime.sql` trên đúng Supabase project.
+- Realtime chỉ được bật tự động khi publication `supabase_realtime` tồn tại. Nếu môi trường tự host không dùng publication này, app vẫn refetch mỗi 30 giây.
+- `itinerary_events` là lịch sử nghiệp vụ; không sửa/xóa trực tiếp để “chỉnh” timeline. Nếu dữ liệu sai, đối chiếu audit + mutation nguồn và tạo repair migration riêng.
+- Nếu badge Realtime báo lỗi nhưng dữ liệu vẫn cập nhật sau tối đa khoảng 30 giây, kiểm tra Supabase Realtime health/publication/RLS trước khi thay đổi frontend.
+- Khi nhiều thiết bị check-in đồng thời, `ACTIVE_CHANGED`/409 là cơ chế bảo vệ dữ liệu, không nên tắt lock hoặc unique index `one_active_item`.
