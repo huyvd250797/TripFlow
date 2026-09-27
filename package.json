@@ -1,0 +1,41 @@
+{
+  "name": "tripflow-cloud",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:ui": "node --import tsx tests/ui.ts",
+    "format": "prettier --write app components lib tests docs README.md next.config.ts tsconfig.json package.json vercel.json .github"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "1.1.23",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.117.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@tanstack/react-query": "5.103.2",
+    "lucide-react": "1.48.0",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-hook-form": "7.88.0",
+    "tailwindcss": "4.3.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "prettier": "3.9.9",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}
