@@ -1,3 +1,12 @@
+## 1.1.0 Mobile Layout Hotfix
+
+- Sửa lỗi CSS cascade của Brand Refresh làm `.app-body` vẫn giữ `margin-left: 248px` trên màn hình điện thoại, khiến toàn bộ nội dung bị ép sang phải và tiêu đề vỡ chữ.
+- Re-assert mobile shell/topbar/main padding ở breakpoint `<= 760px`; giữ safe-area cho iPhone nhưng không cộng trùng khoảng đệm.
+- Tối ưu page heading và trip selector ở màn hình nhỏ để không đẩy nút thao tác ra ngoài viewport.
+- Thêm regression test kiểm tra `.app-body` phải bắt đầu từ mép trái và chiếm đủ chiều rộng viewport ở 320/390px.
+- Bump PWA shell cache sang `tripflow-shell-v110-hotfix1` để thiết bị đã cài app nhận CSS mới.
+- Không có migration database mới; app/database version vẫn giữ V1.1.0 / V1.0.0.
+
 # Changelog
 
 ## 1.1.0 — Brand Refresh, Professional UI & Travel Identity

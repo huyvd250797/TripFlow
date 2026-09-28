@@ -341,6 +341,16 @@ async function main() {
     await expect(page.getByRole("link", { name: "Mở album" })).toBeVisible();
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
+      if (width <= 760) {
+        const shell = await page.locator(".app-body").evaluate((el) => {
+          const rect = el.getBoundingClientRect();
+          return { left: rect.left, width: rect.width, viewport: window.innerWidth };
+        });
+        expect(Math.abs(shell.left), `Mobile shell shifted at ${width}px`).toBeLessThanOrEqual(1);
+        expect(shell.width, `Mobile shell squeezed at ${width}px`).toBeGreaterThanOrEqual(
+          shell.viewport - 2,
+        );
+      }
       for (const tab of [
         "Tổng quan",
         "Lịch trình",

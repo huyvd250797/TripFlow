@@ -32,3 +32,7 @@ Vì vậy không tạo marker database giả chỉ để khớp version UI.
 ## Rollback
 
 Có thể rollback frontend về V1.0.0 mà không rollback database vì V1.1.0 không có migration.
+
+## Mobile layout hotfix
+
+Nếu đã deploy bản V1.1.0 đầu tiên và thấy giao diện mobile bị ép sang phải, hãy deploy lại source hotfix này. Nguyên nhân là rule desktop của Brand Refresh nằm sau breakpoint mobile và ghi đè `margin-left`/padding của app shell. Hotfix không cần SQL migration. PWA shell được đổi sang `tripflow-shell-v110-hotfix1`; sau deploy nên đóng/mở lại PWA hoặc bấm cập nhật khi TripFlow thông báo có phiên bản shell mới.

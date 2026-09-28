@@ -4221,3 +4221,149 @@ h3 {
 @media (max-width: 760px) {
   .auth-card h2 { font-size: 29px; }
 }
+
+/* V1.1.0 mobile layout hotfix
+   Brand refresh desktop rules are declared after the legacy mobile breakpoints.
+   Re-assert the mobile shell at the end of the cascade so desktop sidebar spacing
+   can never squeeze the phone viewport. */
+@media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  body {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .app-layout,
+  .app-body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .app-body {
+    margin-left: 0 !important;
+    margin-right: 0;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+    overflow-x: clip;
+  }
+  .topbar {
+    width: 100%;
+    max-width: 100%;
+    height: calc(70px + env(safe-area-inset-top));
+    min-height: calc(70px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: 0;
+    padding-left: max(16px, env(safe-area-inset-left));
+    gap: 10px;
+  }
+  .mobile-brand,
+  .top-actions,
+  .trip-select {
+    min-width: 0;
+  }
+  .mobile-brand {
+    flex: 0 1 auto;
+    white-space: nowrap;
+  }
+  .mobile-brand .brand-wordmark {
+    white-space: nowrap;
+  }
+  .top-actions {
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+  .trip-select {
+    max-width: min(145px, 38vw);
+  }
+  .main {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding-top: 24px;
+    padding-right: max(17px, env(safe-area-inset-right));
+    padding-bottom: 12px;
+    padding-left: max(17px, env(safe-area-inset-left));
+    overflow-x: clip;
+  }
+  .main > *,
+  .page-heading,
+  .page-heading > div,
+  .trip-meta,
+  .live-panel,
+  .stats,
+  .dashboard-grid,
+  .panel,
+  .analytics-glance,
+  .money-banner {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .page-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .page-heading > div {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .page-heading h1 {
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: none;
+  }
+  .page-heading .btn {
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
+  .trip-meta {
+    width: 100%;
+  }
+  .live-panel,
+  .panel,
+  .stat,
+  .analytics-glance,
+  .money-banner {
+    width: 100%;
+  }
+  .bottom-nav {
+    max-width: calc(100% - 20px);
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+    gap: 7px;
+  }
+  .mobile-brand .brand-mark {
+    width: 31px;
+    height: 31px;
+  }
+  .mobile-brand .brand-wordmark {
+    font-size: 19px;
+    letter-spacing: -.7px;
+  }
+  .top-actions {
+    gap: 2px;
+  }
+  .trip-select {
+    max-width: 116px;
+    padding-inline: 7px;
+  }
+  .main {
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+  .page-heading {
+    gap: 12px;
+  }
+  .page-heading .btn {
+    align-self: flex-start;
+  }
+}
