@@ -59,6 +59,9 @@ import {
   type Item,
   type TripListResponse,
   type QueuedMutation,
+  type RecoveryOverview,
+  type RecoveryBackupPackage,
+  type RecoveryTombstone,
   CATEGORIES,
 } from "@/lib/types";
 import {
@@ -484,6 +487,20 @@ function App() {
   });
   const data = bq.data,
     trip = data?.trip;
+  const recoveryQ = useQuery<RecoveryOverview>({
+    queryKey: ["recovery", user?.id, selectedId || "all"],
+    queryFn: () =>
+      api<RecoveryOverview>(
+        "/api/recovery?mode=overview" +
+          (selectedId ? "&trip=" + encodeURIComponent(selectedId) : ""),
+      ),
+    enabled:
+      !!user &&
+      tab === "more" &&
+      online &&
+      (!selectedId || data?.role === "owner"),
+    staleTime: 5000,
+  });
   useEffect(() => {
     if (!user || !selectedId || !configured()) {
       setRealtimeState("idle");
@@ -865,6 +882,181 @@ function App() {
         : "Trình duyệt chưa cấp lưu trữ bền vững; dữ liệu server vẫn an toàn và cache có thể được dọn khi thiếu bộ nhớ.",
     );
   }
+  async function recoveryPost(body: Record<string, unknown>) {
+    if (!navigator.onLine) throw new Error("Backup & Recovery cần kết nối mạng.");
+    return api<{ result: Record<string, unknown> }>("/api/recovery", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+  async function createBackup() {
+    if (!trip || !owner) return;
+    const title = window.prompt(
+      "Tên bản backup",
+      `${trip.name} · ${new Date().toLocaleString("vi-VN")}`,
+    );
+    if (title === null) return;
+    setWorking(true);
+    setError("");
+    try {
+      await recoveryPost({ action: "create_backup", tripId: trip.id, title });
+      await recoveryQ.refetch();
+      notify("Đã tạo backup trên hệ thống.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  }
+  async function downloadBackup(id: string, title: string) {
+    try {
+      const value = await api<RecoveryBackupPackage>(
+        `/api/recovery?mode=download&id=${encodeURIComponent(id)}`,
+      );
+      download(
+        `TripFlow-Recovery-${id}.json`,
+        JSON.stringify(value, null, 2),
+        "application/json",
+      );
+      notify(`Đã xuất “${title}”.`);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function restoreBackup(id: string, title: string) {
+    if (!window.confirm(`Khôi phục “${title}” thành một chuyến đi mới? Chuyến hiện tại sẽ không bị ghi đè.`)) return;
+    setWorking(true);
+    setError("");
+    try {
+      const res = await recoveryPost({ action: "restore_backup", backupId: id });
+      const tripId = String(res.result.trip_id || "");
+      await qc.invalidateQueries();
+      if (tripId) {
+        setSelected(tripId);
+        setTab("home");
+      }
+      notify("Đã khôi phục backup thành chuyến đi mới.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  }
+  async function restoreDeleted(entity: string, id: string, tripId: string, title: string) {
+    if (!window.confirm(`Khôi phục “${title}”?`)) return;
+    setWorking(true);
+    setError("");
+    try {
+      await recoveryPost({ action: "restore_deleted", entity, id, tripId });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["trips"] }),
+        qc.invalidateQueries({ queryKey: ["trip"] }),
+        recoveryQ.refetch(),
+      ]);
+      if (entity === "trip") setSelected(id);
+      notify("Đã khôi phục dữ liệu từ thùng rác.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  }
+  function recoveryEntityLabel(entity: RecoveryTombstone["entity"]) {
+    return ({ item: "Hoạt động", budget: "Dự toán", expense: "Chi tiêu", media: "Media", participant: "Người tham gia" } as const)[entity];
+  }
+  function recoveryPanel(hasTrip: boolean) {
+    if (!online)
+      return (
+        <section className="panel">
+          <h2>Backup & Recovery</h2>
+          <p className="muted">Khu vực khôi phục cần kết nối mạng để luôn kiểm tra dữ liệu và quyền mới nhất trên server.</p>
+        </section>
+      );
+    if (recoveryQ.isPending)
+      return (
+        <section className="panel">
+          <h2>Backup & Recovery</h2>
+          <p className="muted">Đang kiểm tra backup và thùng rác…</p>
+        </section>
+      );
+    if (recoveryQ.error)
+      return (
+        <section className="panel">
+          <h2>Backup & Recovery</h2>
+          <p className="error">{recoveryQ.error.message}</p>
+          <button className="btn secondary" onClick={() => void recoveryQ.refetch()}><RefreshCw size={17} /> Thử lại</button>
+        </section>
+      );
+    const r = recoveryQ.data;
+    if (!r) return null;
+    return (
+      <section className="panel recovery-panel">
+        <div className="section-heading">
+          <div>
+            <h2>Backup & Recovery</h2>
+            <p className="muted">Backup ứng dụng có checksum và khôi phục thành bản sao mới. Tombstone được giữ {r.policy.recovery_days} ngày theo chính sách hiện tại.</p>
+          </div>
+          {hasTrip && <button className="btn primary" disabled={working} onClick={() => void createBackup()}><ShieldCheck size={17} /> Tạo backup</button>}
+        </div>
+        <div className="sync-summary recovery-health">
+          <div><ShieldCheck size={19} /><span><b>{r.health.backup_count}</b><small>Backup</small></span></div>
+          <div><History size={19} /><span><b>{r.health.tombstone_count}</b><small>Đã xóa có thể phục hồi</small></span></div>
+          <div><FileText size={19} /><span><b>{r.health.audit_count}</b><small>Audit hiện tại</small></span></div>
+        </div>
+        {hasTrip && r.backups.length > 0 && (
+          <div className="recovery-group">
+            <h3>Backup của chuyến này</h3>
+            <div className="recovery-list">
+              {r.backups.map((b) => (
+                <div className="recovery-row" key={b.id}>
+                  <span><b>{b.title}</b><small>{dateLabel(b.created_at.slice(0,10))} · {(b.size_bytes / 1024).toFixed(1)} KB · checksum {b.checksum.slice(0,8)}…</small></span>
+                  <div className="row-tools">
+                    <button className="icon-btn" title="Tải backup" onClick={() => void downloadBackup(b.id,b.title)}><Download size={17} /></button>
+                    <button className="icon-btn" title="Khôi phục thành chuyến mới" onClick={() => void restoreBackup(b.id,b.title)}><RefreshCw size={17} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {hasTrip && r.tombstones.length > 0 && (
+          <div className="recovery-group">
+            <h3>Thùng rác của chuyến</h3>
+            <div className="recovery-list">
+              {r.tombstones.map((x) => (
+                <div className="recovery-row" key={`${x.entity}:${x.id}`}>
+                  <span><b>{recoveryEntityLabel(x.entity)} · {x.title}</b><small>Xóa {dateLabel(x.deleted_at.slice(0,10))} · khôi phục trước {dateLabel(x.purge_after.slice(0,10))}</small></span>
+                  <button className="btn secondary compact" disabled={working} onClick={() => void restoreDeleted(x.entity,x.id,selectedId,x.title)}><RefreshCw size={15} /> Khôi phục</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {r.deleted_trips.length > 0 && (
+          <div className="recovery-group">
+            <h3>Chuyến đi đã xóa</h3>
+            <div className="recovery-list">
+              {r.deleted_trips.map((x) => (
+                <div className="recovery-row" key={x.id}>
+                  <span><b>{x.name}</b><small>{x.destination || "Không có điểm đến"} · xóa {dateLabel(x.deleted_at.slice(0,10))}</small></span>
+                  <button className="btn secondary compact" disabled={working} onClick={() => void restoreDeleted("trip",x.id,x.id,x.name)}><RefreshCw size={15} /> Khôi phục chuyến</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {hasTrip && r.backups.length === 0 && r.tombstones.length === 0 && r.deleted_trips.length === 0 && (
+          <p className="hint">Chưa có backup hoặc dữ liệu đã xóa. Nên tạo backup trước các thay đổi lớn.</p>
+        )}
+        {r.health.eligible_for_purge > 0 && (
+          <p className="hint"><AlertTriangle size={14} /> Có {r.health.eligible_for_purge} tombstone đã qua cửa sổ recovery. V0.7.0 chỉ cảnh báo, không tự xóa vĩnh viễn.</p>
+        )}
+        <p className="hint">Retention chỉ đánh dấu cửa sổ phục hồi; V0.7.0 không tự purge dữ liệu production. Backup trong app không thay thế PostgreSQL backup/PITR độc lập của Supabase.</p>
+      </section>
+    );
+  }
+
   async function logout() {
     const pending = queueRows.length;
     const message = pending
@@ -923,6 +1115,7 @@ function App() {
     trip_participants: "Người tham gia",
     trip_members: "Thành viên",
     budget_snapshots: "Chốt dự toán",
+    trip_backups: "Backup & Recovery",
   };
   const eventLabels: Record<string, string> = {
     check_in: "Check-in",
@@ -1101,7 +1294,7 @@ function App() {
           )}
         </nav>
         <div className="side-footer">
-          <span className="version">V{VERSION} · MOBILE UX & PWA</span>
+          <span className="version">V{VERSION} · BACKUP & RECOVERY</span>
           <p>
             Đi cùng nhau.
             <br />
@@ -1240,6 +1433,7 @@ function App() {
           ) : !trip ? (
             tab === "more" ? (
               <>
+                {recoveryPanel(false)}
                 <ProductRoadmap />
                 <section className="panel">
                   <h2>Tài khoản & dữ liệu offline</h2>
@@ -2732,7 +2926,7 @@ function App() {
                   <section className="panel pwa-panel">
                     <div className="section-heading">
                       <div>
-                        <span className="eyebrow">MOBILE UX & PWA · V0.6.0</span>
+                        <span className="eyebrow">BACKUP, RECOVERY & OPERATIONS · V0.7.0</span>
                         <h2>Ứng dụng trên thiết bị</h2>
                         <p className="muted">
                           Safe-area iPhone/Android, form mobile fullscreen, cập nhật service worker có kiểm soát và cache offline theo tài khoản.
@@ -2782,6 +2976,7 @@ function App() {
                       </p>
                     )}
                   </section>
+                  {owner && recoveryPanel(true)}
                   <section className="panel">
                     <div className="section-heading">
                       <div>

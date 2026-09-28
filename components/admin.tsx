@@ -32,6 +32,18 @@ type AdminOverview = {
   users: AdminUser[];
   stats: { total: number; active: number; deactivated: number; trips: number };
 };
+type AdminOps = {
+  active_trips: number;
+  deleted_trips: number;
+  backups: number;
+  backups_past_retention: number;
+  tombstones: number;
+  eligible_for_purge: number;
+  audit_logs: number;
+  mutation_receipts: number;
+  last_backup_at: string | null;
+  policy: { recovery_days: number; backup_days: number; receipt_days: number; audit_days: number };
+};
 type UserDetail = {
   user: AdminUser;
   trips: Array<{
@@ -96,6 +108,7 @@ export function MasterAdmin({
 }) {
   const [search, setSearch] = useState("");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [ops, setOps] = useState<AdminOps | null>(null);
   const [user, setUser] = useState<UserDetail | null>(null);
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,6 +122,11 @@ export function MasterAdmin({
         "/api/admin?mode=overview&search=" + encodeURIComponent(value.trim()),
       );
       setOverview(data);
+      try {
+        setOps(await request<AdminOps>("/api/admin?mode=ops"));
+      } catch {
+        setOps(null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không tải được quản trị.");
     } finally {
@@ -276,6 +294,25 @@ export function MasterAdmin({
           <div><UserRoundX /><b>{overview.stats.deactivated}</b><span>Đã khóa</span></div>
           <div><Compass /><b>{overview.stats.trips}</b><span>Chuyến đi</span></div>
         </div>
+      )}
+      {ops && (
+        <section className="panel">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">V0.7.0 · OPERATIONS HEALTH</span>
+              <h2>Backup, Recovery & vận hành</h2>
+            </div>
+            <span className="status-chip active">Không auto purge</span>
+          </div>
+          <div className="admin-metrics compact">
+            <div><ShieldCheck /><b>{ops.backups}</b><span>Backup</span></div>
+            <div><RefreshCw /><b>{ops.tombstones}</b><span>Tombstone</span></div>
+            <div><Clock /><b>{ops.audit_logs}</b><span>Audit log</span></div>
+            <div><Compass /><b>{ops.deleted_trips}</b><span>Trip đã xóa</span></div>
+          </div>
+          <p className="hint">Recovery {ops.policy.recovery_days} ngày · backup {ops.policy.backup_days} ngày · receipt {ops.policy.receipt_days} ngày · audit {ops.policy.audit_days} ngày. Có {ops.eligible_for_purge} tombstone và {ops.backups_past_retention} backup đã qua mốc retention; V0.7 chỉ giám sát, không tự xóa.</p>
+          <p className="hint">Backup gần nhất: {fmtDate(ops.last_backup_at)} · Mutation receipts: {ops.mutation_receipts}</p>
+        </section>
       )}
       <section className="panel">
         <div className="admin-toolbar">

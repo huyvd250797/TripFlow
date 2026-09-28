@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 — Backup, Recovery & Operations
+
+- Backup snapshot server-side cho từng chuyến, checksum MD5 để phát hiện payload bị thay đổi, metadata kích thước/thời hạn.
+- Backup immutable; Owner có thể tải JSON recovery package hoặc restore thành một chuyến đi mới, không overwrite source.
+- Restore remap quan hệ item → budget → expense/refund → media, giữ participant và budget snapshots.
+- Thùng rác cho trip/item/budget/expense/media/participant và RPC khôi phục có kiểm tra dependency.
+- Retention policy + operations health; không tự purge dữ liệu production ở V0.7.0.
+- API `/api/recovery` có Auth, Origin check, validation và lỗi migration V0.7.0 rõ ràng.
+- Security headers bổ sung HSTS, Cross-Origin-Opener-Policy và tắt DNS prefetch.
+- Roadmap đánh dấu V0.7.0 ✅; phiên bản tiếp theo là V0.8.0 Trip Analytics & Post-Trip Report.
+- Migration mới `202609280003_v070_backup_recovery_operations.sql`.
+
 ## 0.6.0 — Mobile UX & PWA Stabilization
 
 - Mobile safe-area cho iPhone/Android; topbar, bottom nav, auth và footer tôn trọng vùng hệ thống.

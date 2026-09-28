@@ -1,4 +1,4 @@
-# Kiểm tra bản 0.6.0
+# Kiểm tra bản 0.7.0
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
@@ -107,3 +107,18 @@ Dùng project staging và dữ liệu thử riêng:
 - Deploy worker mới: worker cũ tiếp tục điều khiển phiên hiện tại, app hiện Cập nhật TripFlow; chỉ `SKIP_WAITING` sau khi người dùng bấm nút rồi reload qua `controllerchange`.
 - Cache Storage không chứa `/api/*` hoặc `/auth/*`; dữ liệu riêng tư offline nằm trong IndexedDB theo user.
 - Persistent Storage API: nếu browser từ chối thì app vẫn hoạt động, chỉ hiển thị cache ở chế độ tiêu chuẩn.
+
+
+## Backup, Recovery & Operations V0.7.0
+
+- [ ] Chạy migration `202609280003_v070_backup_recovery_operations.sql` trên staging.
+- [ ] Owner tạo backup; danh sách hiển thị checksum, kích thước, ngày tạo.
+- [ ] Tải recovery JSON và xác nhận package có `format=tripflow-recovery-backup`.
+- [ ] Restore backup tạo trip ID mới, source trip không thay đổi.
+- [ ] Item/budget/expense/refund/media được remap đúng quan hệ trong trip restore.
+- [ ] Xóa một item/participant test rồi khôi phục từ thùng rác.
+- [ ] Refund có payment gốc đang xóa phải bị chặn restore với lỗi dependency.
+- [ ] Editor/Viewer không tạo/tải/restore backup của Owner.
+- [ ] Xóa một trip thử nghiệm; khi không còn trip active vẫn vào **Thêm** và khôi phục được deleted trip.
+- [ ] Operations health cập nhật backup/tombstone/audit/receipt.
+- [ ] V0.7 không tự purge sau retention; production vẫn có PostgreSQL backup/PITR riêng.

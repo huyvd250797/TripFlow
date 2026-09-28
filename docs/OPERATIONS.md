@@ -57,3 +57,21 @@ Mục tiêu: các bản Chrome/Edge/Safari/Firefox hiện đại hỗ trợ `Int
 - `itinerary_events` là lịch sử nghiệp vụ; không sửa/xóa trực tiếp để “chỉnh” timeline. Nếu dữ liệu sai, đối chiếu audit + mutation nguồn và tạo repair migration riêng.
 - Nếu badge Realtime báo lỗi nhưng dữ liệu vẫn cập nhật sau tối đa khoảng 30 giây, kiểm tra Supabase Realtime health/publication/RLS trước khi thay đổi frontend.
 - Khi nhiều thiết bị check-in đồng thời, `ACTIVE_CHANGED`/409 là cơ chế bảo vệ dữ liệu, không nên tắt lock hoặc unique index `one_active_item`.
+
+## Backup, Recovery & Operations V0.7.0
+
+- Nếu giao diện báo `V070_MIGRATION_REQUIRED`, chạy `202609280003_v070_backup_recovery_operations.sql` trên đúng Supabase project.
+- **App backup** là snapshot logic của một chuyến đi. Snapshot được lưu trong cùng PostgreSQL project, có checksum để phát hiện thay đổi payload và chỉ Owner truy cập. Đây **không phải** disaster-recovery backup độc lập.
+- Restore backup luôn tạo một **chuyến đi mới**, remap các ID quan hệ và không overwrite source trip. Member/invitation không được restore để tránh vô tình cấp lại quyền truy cập cũ.
+- `trip_backups` là immutable: không UPDATE/DELETE trực tiếp. Nếu cần purge backup theo chính sách doanh nghiệp, tạo migration/maintenance job riêng sau khi đã kiểm thử restore staging.
+- Thùng rác V0.7.0 dùng các `deleted_at`/tombstone hiện có. Khôi phục refund yêu cầu giao dịch payment gốc đang hoạt động; nếu không, restore trả `DEPENDENCY_DELETED`.
+- Retention mặc định 30 ngày cho tombstone và 90 ngày cho app backup. V0.7.0 **không tự purge** dù đã quá mốc; `eligible_for_purge` chỉ là chỉ số vận hành.
+- Operations health hiển thị số backup, tombstone, audit và mutation receipt để theo dõi tăng trưởng. Trước khi triển khai purge/cron, cần đo production và chốt thời hạn lưu thực tế.
+- Security headers V0.7.0 thêm HSTS, COOP và tắt DNS prefetch. Recovery API kiểm tra Auth, Origin, schema input và Owner permission ở database.
+
+### Runbook khôi phục
+
+1. Nếu lỗi chỉ ảnh hưởng một record vừa xóa: dùng **Thêm → Backup & Recovery → Thùng rác**.
+2. Nếu cần quay lại một trạng thái logic cũ của chuyến: restore app backup thành chuyến mới, đối chiếu dữ liệu rồi quyết định sử dụng bản mới.
+3. Nếu database/project gặp sự cố diện rộng: dùng PostgreSQL/Supabase backup/PITR độc lập; không dùng app backup làm phương án duy nhất.
+4. Mọi restore production cần kiểm tra Finance Integrity, số hoạt động, media link và quyền truy cập sau phục hồi.

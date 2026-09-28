@@ -73,6 +73,12 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202609280003_v070_backup_recovery_operations.sql",
+      "utf8",
+    ),
+  );
   await asUser(owner);
   const trip = await mutation("trip", "create", {
     name: "Test cloud",
@@ -421,6 +427,34 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   );
   await asUser(owner);
   await db.query("select public.tf_admin_set_user_status($1,'active')", [viewer]);
+
+  // V0.7.0 app-level backup + recycle-bin recovery. Restore is always a new trip.
+  const backup = (
+    await db.query<{ result: Record<string, any> }>(
+      "select public.tf_create_trip_backup($1,'Smoke backup') as result",
+      [tripId],
+    )
+  ).rows[0].result;
+  assert.equal(backup.source_trip_id, tripId);
+  assert.ok(backup.checksum);
+  const overview = (
+    await db.query<{ result: Record<string, any> }>(
+      "select public.tf_recovery_overview($1) as result",
+      [tripId],
+    )
+  ).rows[0].result;
+  assert.equal(overview.backups.length, 1);
+  assert.ok(overview.tombstones.some((x: any) => x.entity === "item" && x.id === item.id));
+  await db.query("select public.tf_restore_deleted($1,'item',$2)", [tripId, item.id]);
+  assert.equal((await rows("itinerary_items")).find((x) => x.id === item.id)?.deleted_at, null);
+  const restored = (
+    await db.query<{ result: Record<string, any> }>(
+      "select public.tf_restore_trip_backup($1,null) as result",
+      [backup.id],
+    )
+  ).rows[0].result;
+  assert.notEqual(restored.trip_id, tripId);
+  assert.equal((await rows("trips")).some((x) => x.id === restored.trip_id), true);
 
   await db.close();
 });

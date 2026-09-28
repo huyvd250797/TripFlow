@@ -1,4 +1,4 @@
-export const VERSION = "0.6.0";
+export const VERSION = "0.7.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -249,4 +249,54 @@ export type QueuedMutation = {
   createdAt: string;
   updatedAt: string;
   error?: string;
+};
+
+
+export type RecoveryBackup = {
+  id: string;
+  source_trip_id: string | null;
+  title: string;
+  checksum: string;
+  size_bytes: number;
+  created_at: string;
+  expires_at: string;
+};
+export type RecoveryTombstone = {
+  entity: "item" | "budget" | "expense" | "media" | "participant";
+  id: string;
+  title: string;
+  deleted_at: string;
+  purge_after: string;
+};
+export type RecoveryDeletedTrip = {
+  id: string;
+  name: string;
+  destination: string;
+  deleted_at: string;
+  purge_after: string;
+};
+export type RecoveryOverview = {
+  policy: {
+    recovery_days: number;
+    backup_days: number;
+    receipt_days: number;
+    audit_days: number;
+  };
+  deleted_trips: RecoveryDeletedTrip[];
+  backups: RecoveryBackup[];
+  tombstones: RecoveryTombstone[];
+  health: {
+    last_backup_at: string | null;
+    backup_count: number;
+    tombstone_count: number;
+    eligible_for_purge: number;
+    audit_count: number;
+    receipt_count: number;
+    note: string;
+  };
+};
+
+export type RecoveryBackupPackage = RecoveryBackup & {
+  format_version: number;
+  payload: Record<string, unknown>;
 };

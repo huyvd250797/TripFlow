@@ -52,6 +52,15 @@ export async function GET(req: NextRequest) {
       if (error) throw error;
       return reply(data);
     }
+    if (mode === "ops") {
+      const { data, error } = await a.s.rpc("tf_admin_ops_health");
+      if (error) {
+        if (String(error.code || "") === "PGRST202" || String(error.message || "").includes("tf_admin_ops_health"))
+          return reply({ error: "Database chưa được nâng cấp V0.7.0. Hãy chạy migration 202609280003_v070_backup_recovery_operations.sql.", code: "V070_MIGRATION_REQUIRED" }, 503);
+        throw error;
+      }
+      return reply(data);
+    }
     return reply({ error: "Chế độ quản trị không hợp lệ." }, 400);
   } catch (e) {
     const [message, status] = dbError(e instanceof Error ? e.message : "");

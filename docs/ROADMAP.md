@@ -58,11 +58,18 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Persistent Storage request để giảm nguy cơ trình duyệt dọn cache offline khi thiết bị thiếu bộ nhớ.
 - Tối ưu render bằng `content-visibility` cho các khối nội dung dài.
 
-## ➡️ V0.7.0 — Backup, Recovery & Operations
+## ✅ V0.7.0 — Backup, Recovery & Operations
 
-Backup/restore, tombstone, retention, recovery, security hardening, vận hành và giám sát production.
+- Backup snapshot cấp ứng dụng lưu server-side với checksum, kích thước và thời hạn retention.
+- Backup chỉ Owner tạo/đọc; backup immutable và restore luôn tạo **chuyến đi mới**, không ghi đè dữ liệu đang dùng.
+- Restore remap ID cho itinerary, budget, expense/refund, media và participant; baseline/revision được dựng lại từ snapshot.
+- Thùng rác/tombstone cho trip và các dữ liệu nghiệp vụ đã soft-delete; khôi phục có kiểm tra dependency.
+- Recovery policy mặc định: 30 ngày tombstone, 90 ngày backup; V0.7.0 chỉ đánh dấu thời hạn, **không tự purge production**.
+- Operations health hiển thị số backup, tombstone, audit, mutation receipt; audit ghi nhận tạo/restore backup.
+- Security headers bổ sung HSTS, COOP và tắt DNS prefetch; API Recovery kiểm tra Origin, Auth, quyền Owner và giới hạn payload.
+- Backup trong app không thay thế backup/PITR độc lập của PostgreSQL/Supabase.
 
-## V0.8.0 — Trip Analytics & Post-Trip Report
+## ➡️ V0.8.0 — Trip Analytics & Post-Trip Report
 
 Dashboard tổng kết chuyến, thống kê ngân sách/lịch trình, báo cáo sau chuyến và export nâng cao.
 

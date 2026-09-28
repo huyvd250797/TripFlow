@@ -51,9 +51,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V0.7.0",
     title: "Backup, Recovery & Operations",
-    done: false,
+    done: true,
     description:
-      "Backup/restore, tombstone, audit, recovery, security hardening, retention và vận hành production.",
+      "Backup snapshot có checksum, khôi phục thành bản sao an toàn, thùng rác/tombstone, retention không tự purge, health vận hành và recovery có audit.",
   },
   {
     version: "V0.8.0",
