@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0 — Trip Analytics & Post-Trip Report
+
+- Dashboard tổng kết mới trong **Thêm**, kèm thẻ tóm tắt trên Tổng quan.
+- KPI lịch trình: hoàn thành/bỏ qua/đang xử lý, tỷ lệ completion, số check-in, độ trễ trung bình/lớn nhất và thời lượng kế hoạch/thực tế.
+- KPI tài chính: dự toán gốc/hiện tại, thực chi ròng, mức sử dụng ngân sách, chênh lệch, chi phí/người, nhóm chi nhiều nhất và số nhóm vượt dự toán.
+- Tổng kết theo ngày kết hợp hoạt động + thực chi; thống kê media/tài liệu và mức gắn với activity.
+- Post-trip readiness cảnh báo chuyến chưa kết thúc, activity còn mở, thiếu baseline, integrity warning và thực chi chưa liên kết.
+- Export mới: CSV tổng kết, JSON báo cáo và bản in HTML tự chứa.
+- Analytics được tính từ dữ liệu nguồn, không lưu tổng độc lập và không cần migration database mới.
+- Service worker cache shell nâng lên `tripflow-shell-v080`.
+- Roadmap đánh dấu V0.8.0 ✅; phiên bản tiếp theo là V0.9.0 Release Candidate & Hardening.
+
 ## 0.7.0 — Backup, Recovery & Operations
 
 - Backup snapshot server-side cho từng chuyến, checksum MD5 để phát hiện payload bị thay đổi, metadata kích thước/thời hạn.

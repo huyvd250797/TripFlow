@@ -1,4 +1,4 @@
-export const VERSION = "0.7.0";
+export const VERSION = "0.8.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -191,6 +191,63 @@ export type FinanceReport = {
     issues: FinanceIntegrityIssue[];
   };
 };
+
+export type TripAnalyticsDay = {
+  day: string;
+  item_count: number;
+  done: number;
+  skipped: number;
+  actual: number;
+};
+
+export type TripAnalyticsReport = {
+  generated_at: string;
+  report_state: "live" | "post_trip";
+  readiness: "ready" | "needs_attention";
+  trip_days: number;
+  itinerary: {
+    total: number;
+    done: number;
+    skipped: number;
+    active: number;
+    planned: number;
+    processed: number;
+    completion_rate: number;
+    processed_rate: number;
+    checked_in: number;
+    late_checkins: number;
+    average_checkin_delay_minutes: number;
+    max_checkin_delay_minutes: number;
+    planned_duration_minutes: number;
+    actual_duration_minutes: number;
+  };
+  finance: {
+    original_budget: number;
+    current_budget: number;
+    net_actual: number;
+    current_variance: number;
+    budget_usage_percent: number | null;
+    per_person: number;
+    unlinked_actual: number;
+    expense_count: number;
+    refund_count: number;
+    top_category: string | null;
+    top_category_actual: number;
+    over_budget_categories: number;
+  };
+  media: {
+    total: number;
+    albums: number;
+    photos: number;
+    videos: number;
+    documents: number;
+    linked_to_activity: number;
+  };
+  days: TripAnalyticsDay[];
+  highlights: string[];
+  warnings: string[];
+};
+
 
 export type Audit = {
   id: number;

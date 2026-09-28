@@ -69,11 +69,17 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Security headers bổ sung HSTS, COOP và tắt DNS prefetch; API Recovery kiểm tra Origin, Auth, quyền Owner và giới hạn payload.
 - Backup trong app không thay thế backup/PITR độc lập của PostgreSQL/Supabase.
 
-## ➡️ V0.8.0 — Trip Analytics & Post-Trip Report
+## ✅ V0.8.0 — Trip Analytics & Post-Trip Report
 
-Dashboard tổng kết chuyến, thống kê ngân sách/lịch trình, báo cáo sau chuyến và export nâng cao.
+- Dashboard tổng kết chuyến đi từ dữ liệu nguồn hiện tại, không lưu thêm bảng tổng độc lập.
+- KPI lịch trình: completion/processed, check-in, độ trễ và thời lượng.
+- KPI tài chính: budget usage, per-person, variance, khoản ngoài dự toán, nhóm chi lớn nhất và nhóm vượt dự toán.
+- Tổng kết theo ngày kết hợp số hoạt động/hoàn thành/bỏ qua với thực chi.
+- Media summary và cảnh báo readiness trước khi coi báo cáo là hoàn chỉnh.
+- Export CSV/JSON và bản in HTML cho báo cáo sau chuyến.
+- Không có migration database mới ở V0.8.0.
 
-## V0.9.0 — Release Candidate & Hardening
+## ➡️ V0.9.0 — Release Candidate & Hardening
 
 Dừng mở rộng lớn; tập trung UAT, thiết bị thật, bảo mật, hiệu năng, mạng gián đoạn, migration và sửa lỗi.
 

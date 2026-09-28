@@ -1,4 +1,4 @@
-# Kiểm tra bản 0.7.0
+# Kiểm tra bản 0.8.0
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
@@ -122,3 +122,14 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Xóa một trip thử nghiệm; khi không còn trip active vẫn vào **Thêm** và khôi phục được deleted trip.
 - [ ] Operations health cập nhật backup/tombstone/audit/receipt.
 - [ ] V0.7 không tự purge sau retention; production vẫn có PostgreSQL backup/PITR riêng.
+
+## Trip Analytics & Post-Trip Report V0.8.0
+
+- [ ] Dashboard analytics hiển thị trên **Thêm** và thẻ tóm tắt hiển thị trên Tổng quan.
+- [ ] Completion rate dùng số `done / total`, processed rate dùng `(done + skipped) / total`.
+- [ ] Check-in delay chỉ tính độ trễ dương so với `start_at`.
+- [ ] Tổng kết theo ngày ghép đúng activity theo timezone chuyến và expense theo `spent_on`.
+- [ ] Chi phí/người không chia cho 0 nếu dữ liệu cũ có `people=0`.
+- [ ] Readiness cảnh báo đúng khi trip chưa completed, còn activity mở, thiếu baseline, integrity warning hoặc có unlinked actual.
+- [ ] CSV/JSON/HTML export tải được; CSV chống formula injection và HTML escape nội dung người dùng.
+- [ ] V0.8.0 không yêu cầu migration mới; database V0.7.0 hoạt động trực tiếp.

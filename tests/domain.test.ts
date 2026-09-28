@@ -9,6 +9,10 @@ import {
   csv,
   buildFinanceReport,
   financeJson,
+  buildTripAnalytics,
+  postTripCsv,
+  postTripJson,
+  postTripHtml,
 } from "../lib/domain";
 import { mutationSchema } from "../lib/validation";
 import type { Budget, Expense, Item, Bundle } from "../lib/types";
@@ -137,4 +141,71 @@ test("live trip derives Current/Next/Late and delay minutes", () => {
   assert.equal(r.lateMinutes[0]?.minutes, 30);
   assert.equal(r.next?.id, "next");
   assert.equal(r.nextInMinutes, 60);
+});
+
+
+test("trip analytics summarizes itinerary, finance, media and post-trip exports", () => {
+  const bundle = {
+    trip: {
+      id: "t",
+      name: "=Đà Lạt",
+      destination: "Đà Lạt",
+      start_date: "2026-09-25",
+      end_date: "2026-09-27",
+      timezone: "Asia/Ho_Chi_Minh",
+      people: 2,
+      status: "completed",
+    },
+    role: "owner",
+    items: [
+      {
+        id: "i1",
+        title: "Nhận phòng <script>",
+        status: "done",
+        start_at: "2026-09-25T01:00:00Z",
+        end_at: "2026-09-25T02:00:00Z",
+        checked_in_at: "2026-09-25T01:10:00Z",
+        completed_at: "2026-09-25T02:05:00Z",
+      },
+      {
+        id: "i2",
+        title: "Ăn tối",
+        status: "skipped",
+        start_at: "2026-09-26T11:00:00Z",
+        end_at: "2026-09-26T12:00:00Z",
+        checked_in_at: null,
+        completed_at: null,
+      },
+    ],
+    budgets: [
+      { id: "b1", amount: 1000000, category: "Lưu trú", item_id: "i1" },
+    ],
+    expenses: [
+      { id: "e1", title: "KS", amount: 800000, kind: "payment", category: "Lưu trú", budget_id: "b1", refund_of: null, spent_on: "2026-09-25" },
+    ],
+    snapshots: [
+      { id: "s1", snapshot_no: 1, snapshot_kind: "baseline", created_at: "2026-09-24T00:00:00Z", data: [{ id: "b1", amount: 1000000, category: "Lưu trú" }] },
+    ],
+    media: [{ id: "m1", kind: "album", item_id: "i1" }],
+    participants: [],
+    members: [],
+    invitations: [],
+    audits: [],
+  } as unknown as Bundle;
+  const analytics = buildTripAnalytics(bundle);
+  assert.equal(analytics.report_state, "post_trip");
+  assert.equal(analytics.trip_days, 3);
+  assert.equal(analytics.itinerary.completion_rate, 50);
+  assert.equal(analytics.itinerary.processed_rate, 100);
+  assert.equal(analytics.itinerary.late_checkins, 1);
+  assert.equal(analytics.itinerary.average_checkin_delay_minutes, 10);
+  assert.equal(analytics.finance.net_actual, 800000);
+  assert.equal(analytics.finance.per_person, 400000);
+  assert.equal(analytics.media.total, 1);
+  assert.equal(analytics.readiness, "ready");
+  assert.match(postTripCsv(bundle), /"'=Đà Lạt"/);
+  assert.match(postTripJson(bundle), /"format": "tripflow-post-trip-report"/);
+  const html = postTripHtml(bundle);
+  assert.match(html, /Nhận phòng &lt;script&gt;/);
+  assert.doesNotMatch(html, /Nhận phòng <script>/);
 });

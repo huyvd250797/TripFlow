@@ -58,9 +58,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V0.8.0",
     title: "Trip Analytics & Post-Trip Report",
-    done: false,
+    done: true,
     description:
-      "Dashboard tổng kết, thống kê chi phí/lịch trình, báo cáo sau chuyến và export nâng cao.",
+      "Dashboard tổng kết lịch trình/tài chính/media, chỉ số theo ngày, cảnh báo cần rà soát và export CSV/JSON/bản in báo cáo sau chuyến.",
   },
   {
     version: "V0.9.0",
