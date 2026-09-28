@@ -31,7 +31,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
 
   const check = useCallback(async () => {
     if (!online) {
-      setError("Cần online để xác minh database Release Candidate.");
+      setError("Cần online để xác minh trạng thái Production.");
       return;
     }
     setLoading(true);
@@ -39,11 +39,11 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
     try {
       const res = await fetch("/api/release", { cache: "no-store" });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Không kiểm tra được Release Candidate.");
+      if (!res.ok) throw new Error(body.error || "Không kiểm tra được trạng thái Production.");
       setState(body as ReleaseState);
     } catch (e) {
       setState(null);
-      setError(e instanceof Error ? e.message : "Không kiểm tra được Release Candidate.");
+      setError(e instanceof Error ? e.message : "Không kiểm tra được trạng thái Production.");
     } finally {
       setLoading(false);
     }
@@ -54,20 +54,25 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
   }, [check]);
 
   const clientReady = clientChecks.every((x) => x.ok);
-  const ready = Boolean(state?.ready && clientReady);
+  const ready = Boolean(
+    state?.ready &&
+      state.app_version === VERSION &&
+      state.database_version === VERSION &&
+      clientReady,
+  );
 
   return (
     <section className="panel release-panel">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">RELEASE CANDIDATE · V{VERSION}</span>
-          <h2>Kiểm tra sẵn sàng phát hành</h2>
+          <span className="eyebrow">STABLE PRODUCTION · V{VERSION}</span>
+          <h2>Trạng thái Production</h2>
           <p className="muted">
-            Xác minh migration, RLS, các guard dữ liệu quan trọng và khả năng nền tảng trước khi lên V1.0.0.
+            Xác minh schema V1.0.0, RLS, các guard dữ liệu quan trọng và khả năng nền tảng của môi trường đang vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>
-          {ready ? "RC sẵn sàng" : "Cần kiểm tra"}
+          {ready ? "Production sẵn sàng" : "Cần xử lý"}
         </span>
       </div>
 
@@ -107,7 +112,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <RefreshCw size={17} className={loading ? "spin" : ""} />
           {loading ? "Đang kiểm tra…" : "Kiểm tra lại"}
         </button>
-        <span className="release-version"><ShieldCheck size={16} /> App {VERSION} · {state?.channel || "release-candidate"}</span>
+        <span className="release-version"><ShieldCheck size={16} /> App {VERSION} · {state?.channel || "stable"}</span>
       </div>
     </section>
   );

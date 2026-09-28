@@ -1,4 +1,4 @@
-# Kiến trúc TripFlow 0.9.0
+# Kiến trúc TripFlow 1.0.0
 
 ## Công nghệ và luồng dữ liệu
 
@@ -91,3 +91,11 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - `/api/release` yêu cầu phiên đăng nhập và dùng để hiển thị release readiness.
 - Mutation endpoints tiếp tục dùng RPC làm cổng ghi duy nhất; V0.9 bổ sung same-origin/content-type/payload guards ở HTTP layer.
 - CSP và các security headers áp dụng ở Next.js; RLS/RPC vẫn là lớp quyết định quyền cuối cùng.
+
+
+## V1.0.0 Stable Production
+
+- `tf_schema_versions` có marker `1.0.0`; migration Stable thay `tf_release_readiness()` để trả `app_version/database_version = 1.0.0` và `channel = stable`.
+- `/api/release` còn kiểm tra chéo kết quả RPC với `VERSION`; source V1.0.0 không chấp nhận database V0.9.0 là production-ready.
+- V1.0.0 không thay đổi schema nghiệp vụ, quyền hoặc dữ liệu chuyến đi; migration chỉ chốt marker/capability kiểm tra phát hành.
+- Roadmap 1.0 kết thúc tại V1.0.0; frontend xử lý trạng thái không còn `NEXT_VERSION` thay vì giả định luôn có bản kế tiếp.

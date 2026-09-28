@@ -1,6 +1,6 @@
-# TripFlow V0.9.0 — Release Candidate checklist
+# TripFlow V1.0.0 — Stable Production checklist
 
-Chỉ lên V1.0.0 khi toàn bộ mục Critical/High đã đạt hoặc có quyết định chấp nhận rủi ro được ghi lại.
+Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High đã đạt hoặc có quyết định chấp nhận rủi ro được ghi lại.
 
 ## Build & migration
 
@@ -9,8 +9,9 @@ Chỉ lên V1.0.0 khi toàn bộ mục Critical/High đã đạt hoặc có quy�
 - [ ] `npm run typecheck` đạt.
 - [ ] `npm test` đạt.
 - [ ] `npm run build` đạt.
-- [ ] Migration V0.9.0 đã chạy đúng môi trường.
-- [ ] Thêm → Release Candidate báo database `0.9.0` và tất cả server checks đạt.
+- [ ] Migration V0.9.0 và V1.0.0 đã chạy đúng môi trường theo thứ tự.
+- [ ] `tf_release_readiness()` trả app/database `1.0.0`, channel `stable`, ready `true`.
+- [ ] **Thêm → Trạng thái Production** báo database `1.0.0` và tất cả server/client checks đạt.
 
 ## Auth & permission
 
@@ -55,3 +56,12 @@ Chỉ lên V1.0.0 khi toàn bộ mục Critical/High đã đạt hoặc có quy�
 - [ ] Thùng rác restore dependency đúng.
 - [ ] Operations health không có cảnh báo bất thường chưa xử lý.
 - [ ] Có backup/PITR database độc lập theo gói Supabase đang dùng.
+
+
+## Production cutover
+
+- [ ] Ghi lại deployment Vercel đang chạy và Supabase project/ref đúng môi trường.
+- [ ] Backup/PITR hoặc bản sao database phù hợp gói dịch vụ đã được xác nhận trước cutover.
+- [ ] Smoke test sau deploy đạt theo `docs/PRODUCTION-RUNBOOK.md`.
+- [ ] Không còn lỗi Critical/High mở; Medium có owner và kế hoạch xử lý.
+- [ ] Có đường rollback frontend rõ ràng và người chịu trách nhiệm vận hành.

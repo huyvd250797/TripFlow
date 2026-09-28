@@ -32,8 +32,8 @@ export async function GET() {
         return reply(
           {
             error:
-              "Database chưa được nâng cấp V0.9.0. Hãy chạy migration 202609280004_v090_release_candidate_hardening.sql.",
-            code: "V090_MIGRATION_REQUIRED",
+              "Database chưa có capability kiểm tra phát hành. Hãy chạy các migration còn thiếu đến V1.0.0.",
+            code: "V100_MIGRATION_REQUIRED",
           },
           503,
         );
@@ -41,9 +41,27 @@ export async function GET() {
         return reply({ error: "Tài khoản đã bị hủy kích hoạt.", code: "ACCOUNT_DEACTIVATED" }, 403);
       throw error;
     }
+
+    const state = data as { app_version?: string; database_version?: string | null; channel?: string } | null;
+    if (
+      !state ||
+      state.app_version !== VERSION ||
+      state.database_version !== VERSION ||
+      state.channel !== "stable"
+    ) {
+      return reply(
+        {
+          error:
+            "Database chưa được nâng cấp V1.0.0. Hãy chạy migration 202609280005_v100_stable_production_release.sql.",
+          code: "V100_MIGRATION_REQUIRED",
+          currentDatabaseVersion: state?.database_version || null,
+        },
+        503,
+      );
+    }
     return reply(data);
   } catch (error) {
-    console.error("TripFlow release readiness failed", error instanceof Error ? error.message : "unknown");
-    return reply({ error: "Không kiểm tra được trạng thái Release Candidate." }, 500);
+    console.error("TripFlow production readiness failed", error instanceof Error ? error.message : "unknown");
+    return reply({ error: "Không kiểm tra được trạng thái Production." }, 500);
   }
 }

@@ -1,4 +1,4 @@
-# Kiểm tra bản 0.9.0
+# Kiểm tra bản 1.0.0
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
@@ -146,3 +146,14 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Response API private có `Cache-Control: private, no-store`.
 - [ ] CSP không chặn Supabase Auth/Realtime trên domain production.
 - [ ] Chạy đầy đủ `docs/RELEASE-CHECKLIST.md` trên Safari iOS, Chrome Android và desktop.
+
+
+## Stable Production V1.0.0
+
+- [ ] Chạy migration `202609280005_v100_stable_production_release.sql` sau V0.9.0.
+- [ ] `select public.tf_release_readiness();` khi đăng nhập trả `app_version = 1.0.0`, `database_version = 1.0.0`, `channel = stable`, `ready = true`.
+- [ ] Source V1.0.0 trên database chỉ mới V0.9.0 trả `V100_MIGRATION_REQUIRED`, không báo Production sẵn sàng.
+- [ ] **Thêm → Trạng thái Production** hiển thị `Production sẵn sàng` sau khi server checks và client checks đều đạt.
+- [ ] Roadmap hiển thị V1.0.0 ✅ và trạng thái `ROADMAP 1.0 HOÀN TẤT`, không crash vì thiếu phiên bản tiếp theo.
+- [ ] Service worker đang dùng `tripflow-shell-v100`; cập nhật từ V0.9.0 không cache API/Auth và không mất queue IndexedDB.
+- [ ] Hoàn tất `docs/RELEASE-CHECKLIST.md` trên staging và smoke test lại production sau deploy.

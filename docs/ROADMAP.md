@@ -87,6 +87,11 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Security headers bổ sung CSP, CORP và cross-domain policy.
 - UAT checklist cho permission, offline, realtime, backup/restore và responsive trước V1.0.0.
 
-## ➡️ V1.0.0 — Stable Production Release
+## ✅ V1.0.0 — Stable Production Release
 
-Bản ổn định chính thức với tài liệu vận hành, checklist release và tiêu chuẩn production.
+- Chốt channel `stable` và marker database V1.0.0.
+- Production-readiness yêu cầu source/database/channel khớp V1.0.0 và các guard quan trọng đều đạt.
+- Hoàn thiện checklist, runbook deploy/smoke-test/rollback và tài liệu vận hành.
+- Không thêm nghiệp vụ lớn ở bản chốt; ưu tiên ổn định, khả năng phục hồi và tính nhất quán.
+
+**Roadmap 1.0 đã hoàn tất.** Các phiên bản sau V1.0.0 chỉ được mở khi phạm vi mới được chốt; không có phiên bản tiếp theo mặc định trong source hiện tại.

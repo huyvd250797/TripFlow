@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0 — Stable Production Release
+
+- Chốt kênh phát hành `stable`; app, API và database marker cùng xác minh phiên bản `1.0.0`.
+- Thêm migration `202609280005_v100_stable_production_release.sql`; database V0.9.0 sẽ bị nhận diện rõ là chưa đủ cho source V1.0.0.
+- Màn hình Release Candidate chuyển thành **Trạng thái Production** và chỉ báo sẵn sàng khi app/database/channel khớp V1.0.0.
+- Roadmap 1.0 được đóng hoàn toàn: V0.1.0 → V1.0.0 đều ✅; không tự bịa phiên bản tiếp theo khi chưa chốt phạm vi mới.
+- Service worker cache shell nâng lên `tripflow-shell-v100`.
+- Bổ sung `docs/UPGRADE-V1.0.0.md` và `docs/PRODUCTION-RUNBOOK.md`; checklist được cập nhật cho phát hành Stable.
+- Không thêm nghiệp vụ mới và không thay đổi dữ liệu chuyến đi ở V1.0.0; mục tiêu là phát hành ổn định, vận hành và khả năng rollback có kiểm soát.
+
 ## 0.9.0 — Release Candidate & Hardening
 
 - Thêm migration `202609280004_v090_release_candidate_hardening.sql` với schema marker và RPC `tf_release_readiness()`.

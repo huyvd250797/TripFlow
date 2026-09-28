@@ -72,10 +72,10 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V1.0.0",
     title: "Stable Production Release",
-    done: false,
+    done: true,
     description:
-      "Bản ổn định chính thức với tài liệu vận hành, checklist phát hành và tiêu chuẩn production.",
+      "Bản ổn định chính thức: schema marker production, kiểm tra health trước vận hành, tài liệu runbook/checklist và đóng roadmap 1.0.",
   },
 ];
 
-export const NEXT_VERSION = ROADMAP.find((item) => !item.done)!;
+export const NEXT_VERSION = ROADMAP.find((item) => !item.done) ?? null;

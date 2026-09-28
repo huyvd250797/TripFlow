@@ -12,13 +12,13 @@ Dữ liệu chi phí, email thành viên, lịch trình và audit là dữ liệ
 - CSV phục vụ bảng tính, không phải định dạng khôi phục database.
 - Quản trị viên cấu hình backup PostgreSQL phù hợp gói Supabase và giữ bản sao độc lập theo chính sách riêng. Xem hướng dẫn chính thức: https://supabase.com/docs/guides/platform/backups và https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore . Khả năng backup/PITR phụ thuộc gói, không được giả định có sẵn.
 - Thử restore vào **project staging mới** trước; kiểm tra schema public/private và quan hệ với auth.users, đăng nhập, quyền, tổng chi phí và lịch trình. Không dùng JSON export để thay thế backup Auth.
-- Soft delete không phải xóa vĩnh viễn. V0.2 chưa có nút khôi phục/xóa vĩnh viễn trong app; quản trị viên phải có backup, kiểm tra khóa ngoại và thực hiện thủ công theo yêu cầu cụ thể. Không cung cấp câu lệnh xóa hàng loạt mặc định.
+- Soft delete không phải xóa vĩnh viễn. Từ V0.7.0, Owner có Backup & Recovery/Thùng rác với kiểm tra dependency; V1.0.0 vẫn không tự purge production. Xóa vĩnh viễn cần chính sách retention đã duyệt, backup và thao tác vận hành có kiểm soát.
 
 ## Nâng cấp
 
 Commit source vào repo của bạn. Mỗi thay đổi schema tạo migration mới, thử trên staging trước; backup trước khi áp dụng production. Kiểm tra rollback tương thích phiên bản frontend/API cũ. Vercel rollback frontend không tự rollback database.
 
-Theo dõi tăng trưởng audit, admin audit và mutation receipts. V0.2 chưa có cron xóa dữ liệu; không tự xóa receipt gần đây vì sẽ làm mất khả năng nhận diện thao tác retry. Chọn thời hạn lưu sau khi có số liệu vận hành.
+Theo dõi tăng trưởng audit, admin audit và mutation receipts. V0.7.0 có retention/health nhưng không tự purge production; không tự xóa receipt gần đây vì sẽ làm mất khả năng nhận diện thao tác retry. Chỉ purge khi có chính sách lưu giữ và quy trình kiểm chứng/rollback.
 
 ## Sự cố thường gặp
 
@@ -86,3 +86,13 @@ Sau mỗi deploy RC/production:
 3. Nếu báo `V090_MIGRATION_REQUIRED`, chạy `202609280004_v090_release_candidate_hardening.sql`; không chạy lại migration cũ.
 4. Nếu một capability fail dù migration V0.9 đã có, dừng phát hành và đối chiếu migration trước đó thay vì bỏ qua cảnh báo.
 5. Lưu request-id từ response/log khi điều tra lỗi API để đối chiếu log Vercel.
+
+
+## V1.0.0 — Stable Production operations
+
+1. Trước deploy: backup/PITR theo khả năng gói Supabase, hoàn tất checklist staging, chạy migration V1.0.0 rồi mới deploy source.
+2. Sau deploy: đăng nhập tài khoản Owner và Master thử nghiệm, mở **Thêm → Trạng thái Production**, xác nhận database `1.0.0`, channel `stable`, tất cả check đạt.
+3. Smoke test tối thiểu: tải chuyến, thêm/sửa một activity test, ghi một expense test, mở Finance report, kiểm tra Realtime bằng thiết bị thứ hai, tạo backup test và xóa dữ liệu test sau khi xác nhận.
+4. Theo dõi lỗi 5xx/429/403 bất thường, Supabase database/auth/realtime health và Vercel function logs. Dùng `X-Request-Id` để đối chiếu request.
+5. Rollback frontend có thể dùng deployment V0.9.0; không rollback migration V1.0.0 chỉ để rollback frontend vì migration Stable không đổi dữ liệu nghiệp vụ. Nếu cần rollback database vì lý do khác, thực hiện trên staging trước và có backup xác minh được.
+6. Không sửa trực tiếp audit/history/snapshot để “chữa nhanh” production; tạo repair script/migration riêng có điều kiện và ghi nhận thay đổi.
