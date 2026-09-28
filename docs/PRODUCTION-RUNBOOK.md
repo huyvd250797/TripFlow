@@ -36,3 +36,8 @@
 - Không UPDATE trực tiếp snapshot/audit/history để che lỗi.
 - Dùng Backup & Recovery nếu phạm vi phù hợp; restore backup luôn tạo chuyến mới.
 - Với lỗi quan hệ/tổng tiền/RLS, tạo repair migration/script có điều kiện, log trước/sau và kiểm thử staging.
+
+
+## V1.1.0 UI/brand release
+
+V1.1.0 không thay đổi database. Production readiness hợp lệ khi **App 1.1.0 / DB 1.0.0 / stable** và các guard đều đạt. Rollback frontend về V1.0.0 không yêu cầu rollback database.

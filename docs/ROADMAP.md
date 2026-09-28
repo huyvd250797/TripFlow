@@ -94,4 +94,29 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Hoàn thiện checklist, runbook deploy/smoke-test/rollback và tài liệu vận hành.
 - Không thêm nghiệp vụ lớn ở bản chốt; ưu tiên ổn định, khả năng phục hồi và tính nhất quán.
 
-**Roadmap 1.0 đã hoàn tất.** Các phiên bản sau V1.0.0 chỉ được mở khi phạm vi mới được chốt; không có phiên bản tiếp theo mặc định trong source hiện tại.
+## ✅ V1.1.0 — Brand Refresh, Professional UI & Travel Identity
+
+- Logo/app icon mới theo concept Location Pin + Travel Route.
+- Splash loading, auth landing, desktop shell và mobile navigation được làm mới theo travel identity.
+- Chuẩn hóa màu Ocean Teal + Sunset, typography, card, button, form, modal và trạng thái loading.
+- Không đổi schema; database Stable V1.0.0 tiếp tục tương thích.
+
+## ⬜ V1.2.0 — Smart Trip Workspace & Quick Actions
+
+- Quick add cho hoạt động/chi phí/check-in theo ngữ cảnh.
+- Search trong chuyến đi, shortcut và widget tổng quan thông minh hơn.
+- Giảm số bước thao tác trên mobile.
+
+## ⬜ V1.3.0 — Media, Memories & Storytelling
+
+- Album theo ngày/hoạt động, cover chuyến đi, highlight và báo cáo chia sẻ đẹp hơn.
+
+## ⬜ V1.4.0 — Smart Planning Templates & Reuse
+
+- Template, duplicate trip thông minh, checklist và tái sử dụng kế hoạch/ngân sách.
+
+## ⬜ V1.5.0 — Growth, Sharing & Expansion
+
+- Sharing/public-private view, export nâng cao và nền mở rộng cho đa tiền tệ/tích hợp dịch vụ/AI khi có nhu cầu rõ ràng.
+
+**Roadmap hiện tại:** V1.1.0 đã hoàn thành; phiên bản tiếp theo là **V1.2.0 – Smart Trip Workspace & Quick Actions**.

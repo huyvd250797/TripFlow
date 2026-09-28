@@ -99,3 +99,10 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - `/api/release` còn kiểm tra chéo kết quả RPC với `VERSION`; source V1.0.0 không chấp nhận database V0.9.0 là production-ready.
 - V1.0.0 không thay đổi schema nghiệp vụ, quyền hoặc dữ liệu chuyến đi; migration chỉ chốt marker/capability kiểm tra phát hành.
 - Roadmap 1.0 kết thúc tại V1.0.0; frontend xử lý trạng thái không còn `NEXT_VERSION` thay vì giả định luôn có bản kế tiếp.
+
+
+## V1.1.0 Brand/UI compatibility
+
+- `VERSION = 1.1.0` đại diện source/app release; `DATABASE_VERSION = 1.0.0` là schema compatibility floor cho bản này.
+- `/api/release` xác minh RPC Stable V1.0.0 và trả lại app version hiện tại, tránh buộc migration database cho thay đổi chỉ thuộc UI/brand.
+- Logo inline nằm ở `components/brand.tsx`; PWA assets nằm ở `public/icon.svg`, `icon-192.png`, `icon-512.png`.

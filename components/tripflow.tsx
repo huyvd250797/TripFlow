@@ -83,6 +83,7 @@ import {
 import { MasterAdmin } from "./admin";
 import { ProductRoadmap } from "./roadmap";
 import { ReleaseReadiness } from "./release-readiness";
+import { BrandMark, BrandName } from "./brand";
 import {
   cacheBundle,
   cacheTrips,
@@ -259,6 +260,7 @@ function App() {
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const swReloadingRef = useRef(false);
   const restoredViewRef = useRef("");
+  const initialSplashRef = useRef(true);
   const notify = useCallback((s: string) => setToast(s), []);
   useEffect(() => {
     if (toast) {
@@ -267,13 +269,20 @@ function App() {
     }
   }, [toast]);
   const loadAuth = useCallback(async () => {
+    const splashStartedAt = performance.now();
     if (!configured()) {
       setAuthLoading(false);
+      initialSplashRef.current = false;
       return;
     }
     const s = browserClient();
     const { data } = await s.auth.getUser();
     setUser(data.user);
+    if (initialSplashRef.current) {
+      const remaining = Math.max(0, 680 - (performance.now() - splashStartedAt));
+      if (remaining) await new Promise((resolve) => setTimeout(resolve, remaining));
+      initialSplashRef.current = false;
+    }
     setAuthLoading(false);
   }, []);
   useEffect(() => {
@@ -1083,9 +1092,23 @@ function App() {
   }
   if (authLoading)
     return (
-      <div className="loading-screen">
-        <Compass size={42} />
-        <p>Đang mở TripFlow…</p>
+      <div className="loading-screen" role="status" aria-live="polite">
+        <div className="splash-orbit splash-orbit-one" />
+        <div className="splash-orbit splash-orbit-two" />
+        <div className="splash-content">
+          <div className="splash-mark-wrap">
+            <BrandMark />
+            <span className="splash-pulse" />
+          </div>
+          <BrandName />
+          <p>Sắp xếp hành trình của bạn</p>
+          <div className="splash-route" aria-hidden="true">
+            <span />
+            <i />
+            <span />
+          </div>
+          <small>PLAN · GO · REMEMBER</small>
+        </div>
       </div>
     );
   if (!configured() || !user || recover)
@@ -1285,9 +1308,9 @@ function App() {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <a className="brand" href="/">
-          <Compass />
-          <b>TripFlow</b>
+        <a className="brand" href="/" aria-label="TripFlow · Trang chủ">
+          <BrandMark />
+          <BrandName />
         </a>
         <span className="side-caption">KHÔNG GIAN CHUYẾN ĐI</span>
         <nav>
@@ -1312,7 +1335,7 @@ function App() {
           )}
         </nav>
         <div className="side-footer">
-          <span className="version">V{VERSION} · BACKUP & RECOVERY</span>
+          <span className="version">V{VERSION} · TRAVEL EDITION</span>
           <p>
             Đi cùng nhau.
             <br />
@@ -1329,9 +1352,9 @@ function App() {
       </aside>
       <div className="app-body">
         <header className="topbar">
-          <div className="mobile-brand">
-            <Compass />
-            <b>TripFlow</b>
+          <div className="mobile-brand" aria-label="TripFlow">
+            <BrandMark />
+            <BrandName />
           </div>
           <span className="breadcrumb">
             Chuyến đi <ChevronRight size={14} /> {trip?.name || "Của bạn"}

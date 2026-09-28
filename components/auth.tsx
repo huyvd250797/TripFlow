@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
-  Compass,
   ArrowRight,
   LockKeyhole,
   Map,
@@ -9,6 +8,8 @@ import {
   Mail,
 } from "lucide-react";
 import { browserClient, configured } from "@/lib/supabase/client";
+import { BrandMark, BrandName } from "./brand";
+import { VERSION } from "@/lib/types";
 export function Auth({
   recovery = false,
   onDone,
@@ -94,9 +95,9 @@ export function Auth({
   return (
     <div className="auth-layout">
       <aside className="auth-story">
-        <a className="brand" href="/">
-          <Compass />
-          <b>TripFlow</b>
+        <a className="brand" href="/" aria-label="TripFlow · Trang chủ">
+          <BrandMark />
+          <BrandName />
         </a>
         <span className="eyebrow">KẾ HOẠCH CHO NHỮNG NGÀY ĐÁNG NHỚ</span>
         <h1>
@@ -119,12 +120,12 @@ export function Auth({
             <LockKeyhole /> Dữ liệu riêng của bạn
           </span>
         </div>
-        <small>TRIPFLOW · STABLE PRODUCTION · 1.0.0</small>
+        <small>TRIPFLOW · TRAVEL EDITION · {VERSION}</small>
       </aside>
       <main className="auth-main">
         <div className="auth-card">
-          <div className="mobile-auth-brand">
-            <Compass /> TripFlow
+          <div className="mobile-auth-brand" aria-label="TripFlow">
+            <BrandMark /> <BrandName />
           </div>
           {!configured() ? (
             <>

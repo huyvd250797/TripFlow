@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0 — Brand Refresh, Professional UI & Travel Identity
+
+- Thiết kế lại logo/app icon theo concept **Location Pin + Travel Route**, đồng bộ favicon/PWA icon 192/512.
+- Làm mới hệ màu **Ocean Teal + Sunset**, typography, card, button, form, modal, navigation, Live Trip và dashboard để giao diện nhất quán/professional hơn.
+- Splash loading ban đầu mới với logo, route animation và tagline `PLAN · GO · REMEMBER`; giữ thời gian tối thiểu ngắn để tránh flash trắng.
+- Auth trở thành travel landing experience với nền gradient, waypoint visual và feature chips; mobile login giữ giao diện gọn.
+- Bottom navigation mobile chuyển thành floating glass dock; sidebar/topbar desktop nâng cấp glass/surface/shadow.
+- Service worker cache shell nâng lên `tripflow-shell-v110`.
+- V1.1.0 **không đổi schema database**; app version 1.1.0 tiếp tục tương thích database Stable 1.0.0, release-readiness hiển thị riêng App/DB.
+- Roadmap mở giai đoạn 1.x: V1.1.0 ✅, tiếp theo V1.2.0 Smart Trip Workspace & Quick Actions, sau đó V1.3–V1.5.
+
 ## 1.0.0 — Stable Production Release
 
 - Chốt kênh phát hành `stable`; app, API và database marker cùng xác minh phiên bản `1.0.0`.

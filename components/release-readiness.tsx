@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
-import { VERSION } from "@/lib/types";
+import { DATABASE_VERSION, VERSION } from "@/lib/types";
 
 type ServerCheck = { key: string; label: string; ok: boolean };
 type ReleaseState = {
   app_version: string;
   channel: string;
   database_version: string | null;
+  database_required_version?: string;
   checked_at: string;
   ready: boolean;
   checks: ServerCheck[];
@@ -57,7 +58,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
   const ready = Boolean(
     state?.ready &&
       state.app_version === VERSION &&
-      state.database_version === VERSION &&
+      state.database_version === DATABASE_VERSION &&
       clientReady,
   );
 
@@ -65,10 +66,10 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
     <section className="panel release-panel">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">STABLE PRODUCTION · V{VERSION}</span>
+          <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            Xác minh schema V1.0.0, RLS, các guard dữ liệu quan trọng và khả năng nền tảng của môi trường đang vận hành.
+            V1.1.0 là bản UI/brand không đổi schema. Ứng dụng xác minh nền database Stable V{DATABASE_VERSION}, RLS và các guard dữ liệu quan trọng.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>
@@ -112,7 +113,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <RefreshCw size={17} className={loading ? "spin" : ""} />
           {loading ? "Đang kiểm tra…" : "Kiểm tra lại"}
         </button>
-        <span className="release-version"><ShieldCheck size={16} /> App {VERSION} · {state?.channel || "stable"}</span>
+        <span className="release-version"><ShieldCheck size={16} /> App {VERSION} · DB {state?.database_version || DATABASE_VERSION} · {state?.channel || "stable"}</span>
       </div>
     </section>
   );

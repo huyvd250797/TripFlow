@@ -65,3 +65,11 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Smoke test sau deploy đạt theo `docs/PRODUCTION-RUNBOOK.md`.
 - [ ] Không còn lỗi Critical/High mở; Medium có owner và kế hoạch xử lý.
 - [ ] Có đường rollback frontend rõ ràng và người chịu trách nhiệm vận hành.
+
+
+## V1.1.0 UI/brand compatibility
+
+- [ ] Source App version hiển thị `1.1.0`.
+- [ ] Database version vẫn `1.0.0` và channel `stable`; không tạo migration V1.1.0 chỉ để đổi UI.
+- [ ] Splash, logo/icon, auth, desktop shell và mobile dock đã smoke-test trên thiết bị thật.
+- [ ] PWA đã nhận `tripflow-shell-v110` sau refresh/đóng mở app.

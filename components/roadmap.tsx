@@ -7,7 +7,7 @@ export function ProductRoadmap() {
     <section className="panel roadmap-panel">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">LỘ TRÌNH SẢN PHẨM</span>
+          <span className="eyebrow">LỘ TRÌNH SẢN PHẨM · 1.X</span>
           <h2>TripFlow roadmap</h2>
         </div>
       </div>
@@ -40,10 +40,10 @@ export function ProductRoadmap() {
       ) : (
         <div className="next-version-card roadmap-complete-card">
           <div>
-            <span className="eyebrow">ROADMAP 1.0 HOÀN TẤT</span>
-            <h3>V1.0.0 – Stable Production Release</h3>
+            <span className="eyebrow">ROADMAP HIỆN TẠI HOÀN TẤT</span>
+            <h3>TripFlow · Roadmap hoàn tất</h3>
             <p>
-              Toàn bộ roadmap 1.0 đã hoàn thành. Các phiên bản sau V1.0.0 chỉ mở khi có phạm vi sản phẩm mới được chốt.
+              Toàn bộ phiên bản trong roadmap hiện tại đã hoàn thành. Mở roadmap mới khi phạm vi sản phẩm tiếp theo được chốt.
             </p>
           </div>
           <CheckCircle2 size={24} />

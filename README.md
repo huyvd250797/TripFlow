@@ -1,4 +1,4 @@
-# TripFlow 1.0.0 · Stable Production Release
+# TripFlow 1.1.0 · Brand Refresh, Professional UI & Travel Identity
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -7,6 +7,9 @@ Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu ti
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
 
 ## Đã có trong phiên bản này
+
+- **Brand Refresh V1.1.0:** logo/app icon chủ đề du lịch mới, splash loading có thương hiệu, hệ màu Ocean Teal + Sunset, shell/app navigation chuyên nghiệp hơn, auth/travel landing và card/form/modal được chuẩn hóa lại.
+- **Không có migration database ở V1.1.0:** source V1.1.0 tương thích database Stable V1.0.0; không chạy thêm SQL chỉ để nâng UI/brand.
 
 - Đăng ký, xác nhận email, đăng nhập, quên/đổi mật khẩu, đăng xuất.
 - Nhiều chuyến đi: ngày, múi giờ, số người, trạng thái, ghi chú.
@@ -29,7 +32,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V1.0.0 đều được đánh dấu ✅. Roadmap 1.0 đã hoàn tất; chưa tự mở phiên bản mới khi phạm vi chưa được chốt.
+- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V1.1.0 đều được đánh dấu ✅. Phiên bản tiếp theo đã chốt là V1.2.0 – Smart Trip Workspace & Quick Actions.
 
 **Phạm vi offline:** cho phép thêm thực chi, cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -46,7 +49,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609280003_v070_backup_recovery_operations.sql` — Backup, Recovery & Operations V0.7.0.
    - `supabase/migrations/202609280004_v090_release_candidate_hardening.sql` — Release Candidate marker + release-readiness V0.9.0.
    - `supabase/migrations/202609280005_v100_stable_production_release.sql` — Stable Production marker + production-readiness V1.0.0.
-   **V0.6.0 và V0.8.0 không có migration database.** Nếu database đang ở V0.9.0, chỉ chạy migration V1.0.0 ở trên rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   **V0.6.0, V0.8.0 và V1.1.0 không có migration database.** Nếu database đang ở V0.9.0, chỉ chạy migration V1.0.0 ở trên rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
@@ -265,3 +268,13 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Email templates: https://supabase.com/docs/guides/auth/auth-email-templates
 - Vercel deploy CLI: https://vercel.com/docs/cli/deploying-from-cli
 - Vercel environment variables: https://vercel.com/docs/environment-variables
+
+
+## 1.10. Brand Refresh V1.1.0
+
+- Không có migration database mới. Giữ database ở marker Stable V1.0.0.
+- Deploy source bằng Node 24.x; service worker tự chuyển cache shell sang `tripflow-shell-v110`.
+- App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
+- Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
+- Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
+- Roadmap 1.x mở đến V1.5.0; V1.2.0 là bản tiếp theo.

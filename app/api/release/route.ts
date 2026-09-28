@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { serverClient } from "@/lib/supabase/server";
-import { VERSION } from "@/lib/types";
+import { DATABASE_VERSION, VERSION } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -42,24 +42,28 @@ export async function GET() {
       throw error;
     }
 
-    const state = data as { app_version?: string; database_version?: string | null; channel?: string } | null;
+    const state = data as { app_version?: string; database_version?: string | null; channel?: string; ready?: boolean } | null;
     if (
       !state ||
-      state.app_version !== VERSION ||
-      state.database_version !== VERSION ||
+      state.database_version !== DATABASE_VERSION ||
       state.channel !== "stable"
     ) {
       return reply(
         {
           error:
-            "Database chưa được nâng cấp V1.0.0. Hãy chạy migration 202609280005_v100_stable_production_release.sql.",
+            "Database chưa đạt nền Stable V1.0.0. Hãy chạy migration 202609280005_v100_stable_production_release.sql trước khi dùng V1.1.0.",
           code: "V100_MIGRATION_REQUIRED",
           currentDatabaseVersion: state?.database_version || null,
         },
         503,
       );
     }
-    return reply(data);
+    return reply({
+      ...state,
+      app_version: VERSION,
+      database_required_version: DATABASE_VERSION,
+      ui_release: "brand-refresh",
+    });
   } catch (error) {
     console.error("TripFlow production readiness failed", error instanceof Error ? error.message : "unknown");
     return reply({ error: "Không kiểm tra được trạng thái Production." }, 500);

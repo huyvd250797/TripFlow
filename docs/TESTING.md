@@ -157,3 +157,14 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Roadmap hiển thị V1.0.0 ✅ và trạng thái `ROADMAP 1.0 HOÀN TẤT`, không crash vì thiếu phiên bản tiếp theo.
 - [ ] Service worker đang dùng `tripflow-shell-v100`; cập nhật từ V0.9.0 không cache API/Auth và không mất queue IndexedDB.
 - [ ] Hoàn tất `docs/RELEASE-CHECKLIST.md` trên staging và smoke test lại production sau deploy.
+
+
+## Brand Refresh V1.1.0
+
+- [ ] Splash không flash trắng, logo/route animation hiển thị ổn và không giữ app quá lâu.
+- [ ] Logo mới hiển thị ở sidebar, mobile topbar, auth và PWA icon.
+- [ ] Desktop 1280+/tablet/mobile 320–430 px không overflow ngang.
+- [ ] Bottom navigation floating dock không đè nội dung hoặc home indicator.
+- [ ] Modal/form mobile vẫn full visual viewport và footer không bị bàn phím che.
+- [ ] `Thêm → Trạng thái Production` hiển thị App 1.1.0 / DB 1.0.0 và vẫn ready khi guard đạt.
+- [ ] PWA update xóa shell cache cũ và dùng `tripflow-shell-v110`.

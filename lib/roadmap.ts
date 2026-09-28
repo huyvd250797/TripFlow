@@ -76,6 +76,41 @@ export const ROADMAP: RoadmapItem[] = [
     description:
       "Bản ổn định chính thức: schema marker production, kiểm tra health trước vận hành, tài liệu runbook/checklist và đóng roadmap 1.0.",
   },
+  {
+    version: "V1.1.0",
+    title: "Brand Refresh, Professional UI & Travel Identity",
+    done: true,
+    description:
+      "Làm mới nhận diện TripFlow theo chủ đề du lịch, logo/app icon mới, splash loading có thương hiệu, hệ màu travel premium và chuẩn hóa UI desktop/mobile.",
+  },
+  {
+    version: "V1.2.0",
+    title: "Smart Trip Workspace & Quick Actions",
+    done: false,
+    description:
+      "Tăng tốc thao tác hằng ngày bằng quick add, shortcut theo ngữ cảnh, tìm kiếm trong chuyến đi, widget tổng quan và điều hướng thông minh hơn.",
+  },
+  {
+    version: "V1.3.0",
+    title: "Media, Memories & Storytelling",
+    done: false,
+    description:
+      "Nâng trải nghiệm ảnh/video theo ngày và hoạt động, cover chuyến đi, highlight hành trình và báo cáo chia sẻ đẹp hơn sau chuyến đi.",
+  },
+  {
+    version: "V1.4.0",
+    title: "Smart Planning Templates & Reuse",
+    done: false,
+    description:
+      "Template chuyến đi, duplicate thông minh, checklist theo loại hành trình và tái sử dụng lịch trình/ngân sách cho chuyến mới.",
+  },
+  {
+    version: "V1.5.0",
+    title: "Growth, Sharing & Expansion",
+    done: false,
+    description:
+      "Mở rộng chia sẻ, public/private trip view, export nâng cao và chuẩn bị nền cho đa tiền tệ, tích hợp dịch vụ hoặc AI khi có nhu cầu rõ ràng.",
+  },
 ];
 
 export const NEXT_VERSION = ROADMAP.find((item) => !item.done) ?? null;
