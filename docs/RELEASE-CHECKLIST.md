@@ -73,3 +73,12 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Database version vẫn `1.0.0` và channel `stable`; không tạo migration V1.1.0 chỉ để đổi UI.
 - [ ] Splash, logo/icon, auth, desktop shell và mobile dock đã smoke-test trên thiết bị thật.
 - [ ] PWA đã nhận `tripflow-shell-v110` sau refresh/đóng mở app.
+
+## V1.2.0 Smart Workspace compatibility
+
+- [ ] Source App version hiển thị `1.2.0`.
+- [ ] Database version vẫn `1.0.0`; không tạo migration chỉ cho workspace/search.
+- [ ] Search không trả dữ liệu ngoài bundle/chuyến đang mở.
+- [ ] Viewer không được mở quick mutation từ Smart Workspace.
+- [ ] 320/390px không horizontal overflow ở Tổng quan và search dialog.
+- [ ] Service worker shell đã là `tripflow-shell-v120`.

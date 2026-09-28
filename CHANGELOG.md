@@ -1,13 +1,25 @@
-## 1.1.0 Mobile Layout Hotfix
+# Changelog
+
+## 1.2.0 — Smart Trip Workspace & Quick Actions
+
+- Thêm **Smart Workspace** trên Tổng quan với quick add cho chi tiêu, hoạt động, media và hành động Live Trip theo Current/Next.
+- Tìm kiếm xuyên chuyến đi cho lịch trình, chi tiêu, dự toán, media và người tham gia; so khớp không dấu tiếng Việt và điều hướng đúng module/ngày.
+- Thêm nút search trên topbar và phím tắt `/` trên desktop; dialog tìm kiếm có gợi ý thao tác nhanh khi chưa nhập từ khóa.
+- Quick Expense tự gắn budget của activity hiện tại/tiếp theo khi có thể; Quick Media tự gắn activity theo ngữ cảnh.
+- Bổ sung responsive styles riêng cho workspace/search để không tái phát lỗi overflow mobile của V1.1.x.
+- Service worker cache shell nâng lên `tripflow-shell-v120`.
+- Không đổi schema database; App V1.2.0 tiếp tục dùng Database Stable V1.0.0.
+- Roadmap đánh dấu V1.2.0 ✅; tiếp theo V1.3.0 – Media, Memories & Storytelling.
+
+## 1.1.1 — Mobile Layout Fix
 
 - Sửa lỗi CSS cascade của Brand Refresh làm `.app-body` vẫn giữ `margin-left: 248px` trên màn hình điện thoại, khiến toàn bộ nội dung bị ép sang phải và tiêu đề vỡ chữ.
 - Re-assert mobile shell/topbar/main padding ở breakpoint `<= 760px`; giữ safe-area cho iPhone nhưng không cộng trùng khoảng đệm.
 - Tối ưu page heading và trip selector ở màn hình nhỏ để không đẩy nút thao tác ra ngoài viewport.
 - Thêm regression test kiểm tra `.app-body` phải bắt đầu từ mép trái và chiếm đủ chiều rộng viewport ở 320/390px.
 - Bump PWA shell cache sang `tripflow-shell-v110-hotfix1` để thiết bị đã cài app nhận CSS mới.
-- Không có migration database mới; app/database version vẫn giữ V1.1.0 / V1.0.0.
+- Không có migration database mới; app tăng PATCH lên V1.1.1, database vẫn giữ V1.0.0.
 
-# Changelog
 
 ## 1.1.0 — Brand Refresh, Professional UI & Travel Identity
 

@@ -43,6 +43,10 @@ import {
   Radio,
   History,
   Timer,
+  Search,
+  Zap,
+  CirclePlus,
+  Navigation,
 } from "lucide-react";
 import { browserClient, configured } from "@/lib/supabase/client";
 import { Auth } from "./auth";
@@ -84,6 +88,7 @@ import { MasterAdmin } from "./admin";
 import { ProductRoadmap } from "./roadmap";
 import { ReleaseReadiness } from "./release-readiness";
 import { BrandMark, BrandName } from "./brand";
+import { searchTripWorkspace, type WorkspaceSearchResult } from "@/lib/workspace";
 import {
   cacheBundle,
   cacheTrips,
@@ -230,6 +235,8 @@ function App() {
     [category, setCategory] = useState("all");
   const [spec, setSpec] = useState<EditSpec | null>(null),
     [tripPicker, setTripPicker] = useState(false),
+    [workspaceSearch, setWorkspaceSearch] = useState(false),
+    [searchTerm, setSearchTerm] = useState(""),
     [toast, setToast] = useState(""),
     [error, setError] = useState(""),
     [working, setWorking] = useState(false),
@@ -462,6 +469,25 @@ function App() {
       // sessionStorage có thể bị chặn ở private mode; app vẫn hoạt động bình thường.
     }
   }, [user, selectedId, account?.role]);
+  useEffect(() => {
+    if (!user || !selectedId) return;
+    const openWorkspaceSearch = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable;
+      if (typing || event.defaultPrevented) return;
+      if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        setWorkspaceSearch(true);
+      }
+    };
+    window.addEventListener("keydown", openWorkspaceSearch);
+    return () => window.removeEventListener("keydown", openWorkspaceSearch);
+  }, [user, selectedId]);
+
   useEffect(() => {
     if (!user || !selectedId) return;
     const restoreKey = `${user.id}:${selectedId}`;
@@ -1133,6 +1159,42 @@ function App() {
     ? live(data.items, now || new Date().toISOString())
     : null;
   const current = progress?.current;
+  const workspaceResults = data ? searchTripWorkspace(data, searchTerm) : [];
+  const workspaceFocusItem = progress?.active || current || progress?.next || null;
+  const workspaceFocusBudget =
+    workspaceFocusItem && data
+      ? data.budgets.find((budget) => budget.item_id === workspaceFocusItem.id) || null
+      : null;
+  const workspaceStatusItem =
+    progress?.active ||
+    (current?.status === "planned" ? current : null) ||
+    progress?.next ||
+    null;
+  const openWorkspaceSearch = () => {
+    setSearchTerm("");
+    setWorkspaceSearch(true);
+  };
+  const openWorkspaceResult = (result: WorkspaceSearchResult) => {
+    if (result.day) setDay(result.day);
+    navigate(result.tab);
+    setWorkspaceSearch(false);
+    setSearchTerm("");
+  };
+  const quickExpense = () =>
+    setSpec({
+      entity: "expense",
+      defaults: workspaceFocusBudget
+        ? {
+            budget_id: workspaceFocusBudget.id,
+            category: workspaceFocusBudget.category,
+          }
+        : undefined,
+    });
+  const quickMedia = () =>
+    setSpec({
+      entity: "media",
+      defaults: workspaceFocusItem ? { item_id: workspaceFocusItem.id } : undefined,
+    });
   const orderedSnapshots = data?.snapshots.toSorted((a, b) =>
     (a.snapshot_no ?? 999999) - (b.snapshot_no ?? 999999) ||
     a.created_at.localeCompare(b.created_at),
@@ -1371,6 +1433,16 @@ function App() {
                 <span>{queuePending || queueIssues}</span>
               </button>
             )}
+            {trip && (
+              <button
+                className="icon-btn workspace-search-top"
+                aria-label="Tìm trong chuyến đi"
+                title="Tìm trong chuyến đi (/)"
+                onClick={openWorkspaceSearch}
+              >
+                <Search size={19} />
+              </button>
+            )}
             <button
               className="icon-btn"
               aria-label="Tải lại dữ liệu"
@@ -1594,6 +1666,107 @@ function App() {
                     </span>
                     <span className="pill">{TRIP_STATUS[trip.status]}</span>
                   </div>
+                  <section className="smart-workspace" aria-label="Smart Trip Workspace">
+                    <div className="smart-workspace-head">
+                      <div>
+                        <span className="eyebrow">SMART WORKSPACE · V1.2.0</span>
+                        <h2>Thao tác nhanh cho chuyến đi</h2>
+                        <p className="muted">
+                          Tìm mọi thứ trong chuyến hoặc thực hiện thao tác theo đúng ngữ cảnh hiện tại.
+                        </p>
+                      </div>
+                      <button className="workspace-search-launcher" onClick={openWorkspaceSearch}>
+                        <Search size={18} />
+                        <span>Tìm trong chuyến đi</span>
+                        <kbd>/</kbd>
+                      </button>
+                    </div>
+                    <div className="workspace-actions">
+                      {writable && (
+                        <button className="workspace-action" onClick={quickExpense}>
+                          <span className="workspace-action-icon"><Receipt size={20} /></span>
+                          <span>
+                            <b>Ghi chi tiêu</b>
+                            <small>{workspaceFocusBudget ? `Gắn ${workspaceFocusBudget.title}` : "Ghi nhanh khoản phát sinh"}</small>
+                          </span>
+                          <ChevronRight size={17} />
+                        </button>
+                      )}
+                      {writable && (
+                        <button className="workspace-action" onClick={() => edit("item")}>
+                          <span className="workspace-action-icon"><CirclePlus size={20} /></span>
+                          <span>
+                            <b>Thêm hoạt động</b>
+                            <small>Bổ sung ngay vào lịch trình</small>
+                          </span>
+                          <ChevronRight size={17} />
+                        </button>
+                      )}
+                      {writable && workspaceStatusItem ? (
+                        <button
+                          className="workspace-action contextual"
+                          onClick={() =>
+                            status(
+                              workspaceStatusItem,
+                              workspaceStatusItem.status === "active" ? "done" : "active",
+                            )
+                          }
+                        >
+                          <span className="workspace-action-icon"><Navigation size={20} /></span>
+                          <span>
+                            <b>{workspaceStatusItem.status === "active" ? "Hoàn thành chặng" : "Tôi đã đến"}</b>
+                            <small>{workspaceStatusItem.title}</small>
+                          </span>
+                          <ChevronRight size={17} />
+                        </button>
+                      ) : (
+                        <button className="workspace-action" onClick={() => navigate("route")}>
+                          <span className="workspace-action-icon"><Route size={20} /></span>
+                          <span>
+                            <b>Xem lịch trình</b>
+                            <small>{data.items.length ? `${data.items.length} hoạt động` : "Chưa có hoạt động"}</small>
+                          </span>
+                          <ChevronRight size={17} />
+                        </button>
+                      )}
+                      {writable ? (
+                        <button className="workspace-action" onClick={quickMedia}>
+                          <span className="workspace-action-icon"><Images size={20} /></span>
+                          <span>
+                            <b>Gắn media</b>
+                            <small>{workspaceFocusItem ? workspaceFocusItem.title : "Ảnh, video hoặc tài liệu"}</small>
+                          </span>
+                          <ChevronRight size={17} />
+                        </button>
+                      ) : (
+                        <button className="workspace-action" onClick={openWorkspaceSearch}>
+                          <span className="workspace-action-icon"><Search size={20} /></span>
+                          <span>
+                            <b>Tìm nhanh</b>
+                            <small>Lịch trình, chi phí và media</small>
+                          </span>
+                          <ChevronRight size={17} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="workspace-context">
+                      <span><Zap size={15} /> Gợi ý theo ngữ cảnh</span>
+                      <b>
+                        {workspaceFocusItem
+                          ? `${workspaceFocusItem.title}${workspaceFocusItem.location ? ` · ${workspaceFocusItem.location}` : ""}`
+                          : "Thêm hoạt động đầu tiên để TripFlow đưa ra shortcut phù hợp."}
+                      </b>
+                      <small>
+                        {queueIssues
+                          ? `${queueIssues} thao tác đồng bộ cần xử lý`
+                          : queuePending
+                            ? `${queuePending} thao tác đang chờ đồng bộ`
+                            : online
+                              ? "Dữ liệu đang đồng bộ với cloud"
+                              : "Đang offline · thao tác được hỗ trợ sẽ vào hàng đợi"}
+                      </small>
+                    </div>
+                  </section>
                   {liveCard()}
                   <div className="stats">
                     <div className="stat">
@@ -3464,6 +3637,105 @@ function App() {
           onClose={() => setSpec(null)}
           onSave={save}
         />
+      )}
+      {workspaceSearch && data && (
+        <Dialog
+          open
+          onClose={() => {
+            setWorkspaceSearch(false);
+            setSearchTerm("");
+          }}
+          title="Tìm trong chuyến đi"
+        >
+          <div className="dialog-body workspace-search-dialog">
+            <div className="workspace-search-box">
+              <Search size={19} />
+              <input
+                autoFocus
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Tìm hoạt động, chi phí, dự toán, media, người tham gia…"
+                aria-label="Tìm trong chuyến đi"
+              />
+              {searchTerm && (
+                <button className="icon-btn" aria-label="Xóa từ khóa" onClick={() => setSearchTerm("")}>
+                  ×
+                </button>
+              )}
+            </div>
+            {!searchTerm.trim() ? (
+              <div className="workspace-search-empty">
+                <span className="eyebrow">GỢI Ý NHANH</span>
+                <div className="workspace-suggestions">
+                  {writable && (
+                    <button onClick={() => { setWorkspaceSearch(false); quickExpense(); }}>
+                      <Receipt size={18} />
+                      <span><b>Ghi chi tiêu</b><small>Thêm khoản chi mới</small></span>
+                    </button>
+                  )}
+                  {writable && (
+                    <button onClick={() => { setWorkspaceSearch(false); edit("item"); }}>
+                      <CirclePlus size={18} />
+                      <span><b>Thêm hoạt động</b><small>Mở form lịch trình</small></span>
+                    </button>
+                  )}
+                  <button onClick={() => { setWorkspaceSearch(false); navigate("route"); }}>
+                    <Route size={18} />
+                    <span><b>Mở lịch trình</b><small>Xem toàn bộ chặng</small></span>
+                  </button>
+                  <button onClick={() => { setWorkspaceSearch(false); navigate("money"); }}>
+                    <Wallet size={18} />
+                    <span><b>Mở tài chính</b><small>Dự toán và thực chi</small></span>
+                  </button>
+                </div>
+                <p className="hint">Mẹo: trên máy tính nhấn phím <kbd>/</kbd> để mở tìm kiếm từ bất kỳ màn hình nào.</p>
+              </div>
+            ) : workspaceResults.length ? (
+              <div className="workspace-search-results">
+                <small>{workspaceResults.length} kết quả phù hợp</small>
+                {workspaceResults.map((result) => {
+                  const ResultIcon =
+                    result.kind === "item"
+                      ? Navigation
+                      : result.kind === "expense"
+                        ? Receipt
+                        : result.kind === "budget"
+                          ? Wallet
+                          : result.kind === "media"
+                            ? Images
+                            : Users;
+                  const label =
+                    result.kind === "item"
+                      ? "Lịch trình"
+                      : result.kind === "expense"
+                        ? "Chi tiêu"
+                        : result.kind === "budget"
+                          ? "Dự toán"
+                          : result.kind === "media"
+                            ? "Media"
+                            : "Người tham gia";
+                  return (
+                    <button key={`${result.kind}:${result.id}`} onClick={() => openWorkspaceResult(result)}>
+                      <span className="workspace-result-icon"><ResultIcon size={18} /></span>
+                      <span>
+                        <b>{result.title}</b>
+                        <small>{result.subtitle}</small>
+                      </span>
+                      <em>{label}</em>
+                      <ChevronRight size={17} />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="workspace-search-empty no-results">
+                <Search size={34} />
+                <b>Không tìm thấy kết quả</b>
+                <p>Thử tên địa điểm, nội dung chi, nhóm ngân sách hoặc tên người tham gia.</p>
+              </div>
+            )}
+          </div>
+        </Dialog>
       )}
       {tripPicker && (
         <Dialog open onClose={() => setTripPicker(false)} title="Các chuyến đi">

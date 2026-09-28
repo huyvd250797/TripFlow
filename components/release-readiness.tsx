@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V1.1.0 là bản UI/brand không đổi schema. Ứng dụng xác minh nền database Stable V{DATABASE_VERSION}, RLS và các guard dữ liệu quan trọng.
+            V1.2.0 bổ sung Smart Workspace/Quick Actions nhưng không đổi schema. Ứng dụng tiếp tục xác minh nền database Stable V{DATABASE_VERSION}, RLS và các guard dữ liệu quan trọng.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

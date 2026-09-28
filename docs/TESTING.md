@@ -168,3 +168,15 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Modal/form mobile vẫn full visual viewport và footer không bị bàn phím che.
 - [ ] `Thêm → Trạng thái Production` hiển thị App 1.1.0 / DB 1.0.0 và vẫn ready khi guard đạt.
 - [ ] PWA update xóa shell cache cũ và dùng `tripflow-shell-v110`.
+
+## Smart Workspace V1.2.0
+
+- [ ] Tổng quan hiển thị Smart Workspace không overflow ở 320px/390px/tablet/desktop.
+- [ ] Owner/Editor thấy quick expense, thêm hoạt động, action Current/Next và gắn media; Viewer không thấy shortcut ghi dữ liệu.
+- [ ] Quick expense tự chọn budget gắn với activity hiện tại/tiếp theo khi có.
+- [ ] Quick media tự chọn activity hiện tại/tiếp theo khi có.
+- [ ] Search tìm được hoạt động, chi tiêu, dự toán, media và participant bằng từ khóa có dấu hoặc không dấu.
+- [ ] Kết quả lịch trình điều hướng sang đúng ngày; kết quả finance/media/participant sang đúng module.
+- [ ] Phím `/` mở search trên desktop nhưng không chặn khi đang gõ trong input/textarea/select.
+- [ ] Topbar search và dialog không làm bể mobile layout đã fix ở V1.1.1.
+- [ ] Production readiness hiển thị App 1.2.0 / DB 1.0.0 / stable.

@@ -41,3 +41,7 @@
 ## V1.1.0 UI/brand release
 
 V1.1.0 không thay đổi database. Production readiness hợp lệ khi **App 1.1.0 / DB 1.0.0 / stable** và các guard đều đạt. Rollback frontend về V1.0.0 không yêu cầu rollback database.
+
+## V1.2.0 Smart Workspace release
+
+V1.2.0 không thay đổi database. Production readiness hợp lệ khi **App 1.2.0 / DB 1.0.0 / stable** và các guard đều đạt. Sau deploy, xác nhận service worker `tripflow-shell-v120`, test search/quick actions ở mobile thật và có thể rollback frontend về V1.1.1 mà không rollback database.

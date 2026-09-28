@@ -101,11 +101,18 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Chuẩn hóa màu Ocean Teal + Sunset, typography, card, button, form, modal và trạng thái loading.
 - Không đổi schema; database Stable V1.0.0 tiếp tục tương thích.
 
-## ⬜ V1.2.0 — Smart Trip Workspace & Quick Actions
+## ✅ V1.1.1 — Mobile Layout Fix
 
-- Quick add cho hoạt động/chi phí/check-in theo ngữ cảnh.
-- Search trong chuyến đi, shortcut và widget tổng quan thông minh hơn.
-- Giảm số bước thao tác trên mobile.
+- Sửa CSS cascade làm app shell mobile bị ép sang phải sau Brand Refresh.
+- Khóa lại topbar/main/bottom navigation và safe-area ở 320/390 px.
+- Theo quy tắc SemVer, bản fix tăng PATCH thay vì giữ nguyên V1.1.0.
+
+## ✅ V1.2.0 — Smart Trip Workspace & Quick Actions
+
+- Smart Workspace trên Tổng quan với quick add chi tiêu/hoạt động/media và hành động Current/Next theo ngữ cảnh.
+- Search xuyên lịch trình, chi phí, dự toán, media và người tham gia; hỗ trợ tiếng Việt không dấu.
+- Shortcut `/` trên desktop, search topbar trên mobile/desktop và điều hướng đúng module/ngày.
+- Giảm số bước thao tác; quick expense/media tự gắn activity/budget phù hợp khi có thể.
 
 ## ⬜ V1.3.0 — Media, Memories & Storytelling
 
@@ -119,4 +126,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Sharing/public-private view, export nâng cao và nền mở rộng cho đa tiền tệ/tích hợp dịch vụ/AI khi có nhu cầu rõ ràng.
 
-**Roadmap hiện tại:** V1.1.0 đã hoàn thành; phiên bản tiếp theo là **V1.2.0 – Smart Trip Workspace & Quick Actions**.
+**Roadmap hiện tại:** V1.2.0 đã hoàn thành; phiên bản tiếp theo là **V1.3.0 – Media, Memories & Storytelling**.

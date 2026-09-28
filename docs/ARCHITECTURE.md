@@ -106,3 +106,10 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - `VERSION = 1.1.0` đại diện source/app release; `DATABASE_VERSION = 1.0.0` là schema compatibility floor cho bản này.
 - `/api/release` xác minh RPC Stable V1.0.0 và trả lại app version hiện tại, tránh buộc migration database cho thay đổi chỉ thuộc UI/brand.
 - Logo inline nằm ở `components/brand.tsx`; PWA assets nằm ở `public/icon.svg`, `icon-192.png`, `icon-512.png`.
+
+## V1.2.0 Smart Workspace compatibility
+
+- `VERSION = 1.2.0`; `DATABASE_VERSION = 1.0.0` tiếp tục là schema compatibility floor.
+- Smart Workspace là lớp client trên `Bundle` hiện có; không tạo bảng/index/search service mới và không tạo nguồn dữ liệu thứ hai.
+- Search chạy cục bộ trên bundle của chuyến đang mở, normalize Unicode để hỗ trợ tìm không dấu. Kết quả chỉ chứa navigation metadata, không cache thêm dữ liệu riêng.
+- Quick actions tái sử dụng `Editor`, `status()` và mutation API hiện hữu nên tiếp tục chịu RLS/account gate/idempotency như các thao tác chuẩn.

@@ -84,11 +84,18 @@ export const ROADMAP: RoadmapItem[] = [
       "Làm mới nhận diện TripFlow theo chủ đề du lịch, logo/app icon mới, splash loading có thương hiệu, hệ màu travel premium và chuẩn hóa UI desktop/mobile.",
   },
   {
+    version: "V1.1.1",
+    title: "Mobile Layout Fix",
+    done: true,
+    description:
+      "Sửa CSS cascade làm giao diện mobile bị ép sang phải; khóa lại app shell, topbar, safe-area và responsive ở 320/390 px.",
+  },
+  {
     version: "V1.2.0",
     title: "Smart Trip Workspace & Quick Actions",
-    done: false,
+    done: true,
     description:
-      "Tăng tốc thao tác hằng ngày bằng quick add, shortcut theo ngữ cảnh, tìm kiếm trong chuyến đi, widget tổng quan và điều hướng thông minh hơn.",
+      "Quick add theo ngữ cảnh, tìm kiếm xuyên suốt chuyến đi, shortcut Current/Next, widget workspace và điều hướng nhanh hơn trên mobile/desktop.",
   },
   {
     version: "V1.3.0",

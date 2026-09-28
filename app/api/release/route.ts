@@ -51,7 +51,7 @@ export async function GET() {
       return reply(
         {
           error:
-            "Database chưa đạt nền Stable V1.0.0. Hãy chạy migration 202609280005_v100_stable_production_release.sql trước khi dùng V1.1.0.",
+            "Database chưa đạt nền Stable V1.0.0. Hãy chạy migration 202609280005_v100_stable_production_release.sql trước khi dùng V1.2.0.",
           code: "V100_MIGRATION_REQUIRED",
           currentDatabaseVersion: state?.database_version || null,
         },
@@ -62,7 +62,7 @@ export async function GET() {
       ...state,
       app_version: VERSION,
       database_required_version: DATABASE_VERSION,
-      ui_release: "brand-refresh",
+      ui_release: "smart-workspace",
     });
   } catch (error) {
     console.error("TripFlow production readiness failed", error instanceof Error ? error.message : "unknown");

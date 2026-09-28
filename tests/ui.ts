@@ -185,7 +185,7 @@ async function main() {
   await page.route("**/api/release", async (route) => {
     await route.fulfill({
       json: {
-        app_version: "1.1.0",
+        app_version: "1.2.0",
         channel: "stable",
         database_version: "1.0.0",
         checked_at: new Date().toISOString(),
