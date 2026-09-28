@@ -161,8 +161,18 @@ export async function GET(req: NextRequest) {
       throw invResult.error || auditResult.error;
     if (financeResult.error)
       throw new Error("V030_FINANCE_MIGRATION_REQUIRED:" + financeResult.error.message);
-    if (collaborationResult.error)
-      throw new Error("V050_COLLABORATION_MIGRATION_REQUIRED:" + collaborationResult.error.message);
+    if (collaborationResult.error) {
+      const code = String(collaborationResult.error.code || "");
+      if (code === "42P01")
+        throw new Error(
+          "V050_COLLABORATION_MIGRATION_REQUIRED:" + collaborationResult.error.message,
+        );
+      if (code === "42501")
+        throw new Error(
+          "V050_COLLABORATION_POLICY_FIX_REQUIRED:" + collaborationResult.error.message,
+        );
+      throw collaborationResult.error;
+    }
     const role =
       trip.owner_id === user.id
         ? "owner"
@@ -218,6 +228,15 @@ export async function GET(req: NextRequest) {
           error:
             "Database chưa được nâng cấp V0.5.0. Hãy chạy migration 202609280001_v050_collaboration_permission_control.sql.",
           code: "V050_MIGRATION_REQUIRED",
+        },
+        503,
+      );
+    if (message.startsWith("V050_COLLABORATION_POLICY_FIX_REQUIRED:"))
+      return reply(
+        {
+          error:
+            "Database đã có V0.5.0 nhưng policy Collaboration chưa đúng. Hãy chạy hotfix 202609280002_v050_collaboration_access_policy_fix.sql.",
+          code: "V050_POLICY_FIX_REQUIRED",
         },
         503,
       );

@@ -48,11 +48,17 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Khi member bị thu hồi, RLS và mutation gate mất quyền ngay trên server; client đồng thời refetch danh sách chuyến và bundle.
 - Realtime mở rộng cho `trip_members`, `trip_invitations`, `trip_participants` và access event.
 
-## ➡️ V0.6.0 — Mobile UX & PWA Stabilization
+## ✅ V0.6.0 — Mobile UX & PWA Stabilization
 
-Tối ưu mobile, form fullscreen, bàn phím, scroll/filter state, Safari iOS/Chrome Android, service worker update và hiệu năng cảm nhận.
+- Safe-area cho iPhone/Android và layout theo `visualViewport`.
+- Dialog/form fullscreen trên mobile; nội dung cuộn riêng, footer lưu nằm trong vùng nhìn thấy khi bàn phím mở.
+- Giữ tab, ngày, filter Finance và vị trí scroll theo user/chuyến/tab bằng `sessionStorage`.
+- PWA install flow cho trình duyệt hỗ trợ; hướng dẫn cài thủ công trên Safari iOS.
+- Service worker `tripflow-shell-v060`, update prompt có kiểm soát, không cache API/Auth riêng tư.
+- Persistent Storage request để giảm nguy cơ trình duyệt dọn cache offline khi thiết bị thiếu bộ nhớ.
+- Tối ưu render bằng `content-visibility` cho các khối nội dung dài.
 
-## V0.7.0 — Backup, Recovery & Operations
+## ➡️ V0.7.0 — Backup, Recovery & Operations
 
 Backup/restore, tombstone, retention, recovery, security hardening, vận hành và giám sát production.
 

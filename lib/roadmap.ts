@@ -44,9 +44,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V0.6.0",
     title: "Mobile UX & PWA Stabilization",
-    done: false,
+    done: true,
     description:
-      "Tối ưu mobile, form fullscreen, bàn phím, scroll/filter state, PWA iOS/Android và hiệu năng cảm nhận.",
+      "Tối ưu safe-area iPhone/Android, form fullscreen theo visual viewport, giữ trạng thái màn hình/scroll, cài đặt & cập nhật PWA, bảo vệ cache offline và hiệu năng cảm nhận.",
   },
   {
     version: "V0.7.0",

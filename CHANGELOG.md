@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 — Mobile UX & PWA Stabilization
+
+- Mobile safe-area cho iPhone/Android; topbar, bottom nav, auth và footer tôn trọng vùng hệ thống.
+- Dialog/editor fullscreen trên mobile và dùng `visualViewport` để footer thao tác không bị bàn phím che.
+- Ghi nhớ tab/filter/scroll theo chuyến trong phiên trình duyệt.
+- PWA install/update lifecycle: prompt cài, hướng dẫn Safari iOS, worker update có nút xác nhận và cache shell `v060`.
+- Bổ sung yêu cầu Persistent Storage cho cache offline khi trình duyệt hỗ trợ.
+- Giữ hotfix policy Collaboration V0.5.0 trong migration riêng và phân biệt lỗi thiếu migration với lỗi policy.
+- Roadmap đánh dấu V0.6.0 ✅; phiên bản tiếp theo là V0.7.0 Backup, Recovery & Operations.
+
 ## 0.5.0 — Collaboration & Permission Control
 
 - UI cộng tác mới hiển thị quyền hiện tại, số account có quyền, lời mời đang chờ và số participant thực tế.

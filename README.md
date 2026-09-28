@@ -1,4 +1,4 @@
-# TripFlow 0.5.0 · Collaboration & Permission Control
+# TripFlow 0.6.0 · Mobile UX & PWA Stabilization
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -17,6 +17,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Finance V0.3.0:** lần chốt đầu tiên là baseline dự toán gốc bất biến; các lần sau là revision có số thứ tự. Đối chiếu dự toán gốc / hiện tại / tổng chi / hoàn tiền / thực chi ròng / chênh lệch.
 - **Live Trip V0.4.0:** Current / Next / Late, cảnh báo trễ, check-in giao dịch, lịch sử trạng thái bất biến và Realtime nhiều thiết bị với refetch fallback.
 - **Collaboration V0.5.0:** ma trận Owner/Editor/Viewer, lời mời chống trùng, chặn mời tài khoản đã có quyền, Realtime member/invitation/participant và access-event để phản ánh đổi/thu hồi quyền nhanh trên thiết bị online.
+- **Mobile UX & PWA V0.6.0:** safe-area iPhone/Android, dialog/form fullscreen theo `visualViewport`, footer lưu không bị bàn phím che, giữ tab/filter/scroll theo chuyến, luồng cài PWA, cập nhật service worker có kiểm soát và yêu cầu lưu trữ cache bền vững khi trình duyệt hỗ trợ.
 - Báo cáo tài chính theo nhóm, ngày và hoạt động; theo dõi khoản ngoài dự toán; tab Data Integrity phát hiện refund/link/snapshot không nhất quán.
 - Export tài chính CSV và JSON; CSV chống formula injection.
 - Gắn link Google Drive/HTTPS cho album, ảnh, video, tài liệu; liên kết với hoạt động. Media mở tại nguồn, không upload vào app.
@@ -25,7 +26,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V0.5.0 được đánh dấu ✅; phiên bản tiếp theo là V0.6.0 – Mobile UX & PWA Stabilization.
+- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V0.6.0 được đánh dấu ✅; phiên bản tiếp theo là V0.7.0 – Backup, Recovery & Operations.
 
 **Phạm vi offline:** cho phép thêm thực chi, cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -38,7 +39,8 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609270002_v030_finance_reporting_integrity.sql` — nâng cấp V0.3.0.
    - `supabase/migrations/202609270003_v040_live_trip_realtime.sql` — nâng cấp V0.4.0.
    - `supabase/migrations/202609280001_v050_collaboration_permission_control.sql` — nâng cấp V0.5.0.
-   Nếu database đang chạy V0.4.0 thì **chỉ chạy migration V0.5.0**. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   - `supabase/migrations/202609280002_v050_collaboration_access_policy_fix.sql` — hotfix policy V0.5.0, được giữ lại trong source V0.6.0 cho database mới/cũ chưa áp dụng hotfix.
+   **V0.6.0 không thay đổi schema database**, nên nếu database của bạn đã chạy V0.5.0 + hotfix trên thì không cần chạy SQL mới cho V0.6.0. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
@@ -93,6 +95,17 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - Event history dùng cùng `operation_id` với mutation để retry/offline sync không tạo dòng trùng.
 - Realtime subscribe `trips`, `itinerary_items`, `itinerary_events`, `expenses`; app vẫn refetch 30 giây khi Realtime chậm hoặc không khả dụng.
 - Check-in timestamp lấy từ database `now()`, không lấy đồng hồ điện thoại làm nguồn sự thật. GPS chỉ mở khi người dùng yêu cầu và không tự xác nhận check-in.
+
+
+## 1.5. Mobile UX & PWA Stabilization V0.6.0
+
+- V0.6.0 không thêm bảng/RPC mới; nâng cấp chủ yếu ở frontend/PWA.
+- Mobile dùng `env(safe-area-inset-*)` và `visualViewport` để tránh tai thỏ/Dynamic Island, thanh home và bàn phím phần mềm che nội dung.
+- Dialog/form trên màn hình ≤760px mở fullscreen; body cuộn độc lập, footer hành động luôn nằm trong visual viewport.
+- Tab, ngày, nhóm chi phí, tab Finance và vị trí cuộn được giữ trong `sessionStorage` theo user/chuyến/tab; reload hoặc quay lại màn hình không tự nhảy về đầu.
+- Service worker V0.6.0 không cache API/Auth; cache shell được version hóa `tripflow-shell-v060`. Khi có worker mới, app hiển thị nút **Cập nhật TripFlow** thay vì tự thay giữa thao tác.
+- Chrome/Edge Android có thể nhận prompt cài PWA; Safari iOS hiển thị hướng dẫn **Chia sẻ → Thêm vào Màn hình chính**.
+- Nút **Bảo vệ cache offline** gọi Persistent Storage API khi trình duyệt hỗ trợ. Đây chỉ giúp giảm khả năng browser dọn cache; Supabase vẫn là nguồn dữ liệu chính thức.
 
 
 ## 2. Deploy lên Vercel

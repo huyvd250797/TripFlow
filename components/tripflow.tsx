@@ -96,6 +96,11 @@ const tabs = [
   { id: "media", label: "Media", Icon: Images },
   { id: "more", label: "Thêm", Icon: Ellipsis },
 ];
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
 class ApiError extends Error {
   status: number;
   code?: string;
@@ -226,8 +231,20 @@ function App() {
     [syncing, setSyncing] = useState(false),
     [realtimeState, setRealtimeState] = useState<
       "idle" | "connecting" | "live" | "offline" | "error"
-    >("idle");
+    >("idle"),
+    [pwaState, setPwaState] = useState({
+      standalone: false,
+      installable: false,
+      updateReady: false,
+      serviceWorkerReady: false,
+      storagePersisted: false,
+      ios: false,
+    });
   const syncLock = useRef(false);
+  const installPromptRef = useRef<InstallPromptEvent | null>(null);
+  const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const swReloadingRef = useRef(false);
+  const restoredViewRef = useRef("");
   const notify = useCallback((s: string) => setToast(s), []);
   useEffect(() => {
     if (toast) {
@@ -270,9 +287,98 @@ function App() {
     };
   }, [loadAuth]);
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-  }, []);
+    const nav = navigator as Navigator & { standalone?: boolean };
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches || nav.standalone === true;
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setPwaState((x) => ({ ...x, standalone, ios }));
+
+    const syncViewport = () => {
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty(
+        "--tf-viewport-height",
+        `${Math.round(viewportHeight)}px`,
+      );
+      const keyboardOpen = window.innerHeight - viewportHeight > 120;
+      document.documentElement.dataset.keyboard = keyboardOpen ? "open" : "closed";
+    };
+    syncViewport();
+    window.visualViewport?.addEventListener("resize", syncViewport);
+    window.visualViewport?.addEventListener("scroll", syncViewport);
+    window.addEventListener("orientationchange", syncViewport);
+
+    const beforeInstall = (event: Event) => {
+      event.preventDefault();
+      installPromptRef.current = event as InstallPromptEvent;
+      setPwaState((x) => ({ ...x, installable: true }));
+    };
+    const installed = () => {
+      installPromptRef.current = null;
+      setPwaState((x) => ({ ...x, standalone: true, installable: false }));
+      notify("TripFlow đã được cài trên thiết bị.");
+    };
+    window.addEventListener("beforeinstallprompt", beforeInstall);
+    window.addEventListener("appinstalled", installed);
+
+    if (navigator.storage?.persisted) {
+      void navigator.storage.persisted().then((value) =>
+        setPwaState((x) => ({ ...x, storagePersisted: value })),
+      );
+    }
+
+    let updateTimer: ReturnType<typeof setInterval> | undefined;
+    let onFocus: (() => void) | undefined;
+    let controllerChanged: (() => void) | undefined;
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          swRegistrationRef.current = registration;
+          setPwaState((x) => ({
+            ...x,
+            serviceWorkerReady: true,
+            updateReady: Boolean(registration.waiting && navigator.serviceWorker.controller),
+          }));
+          const watchInstalling = () => {
+            const worker = registration.installing;
+            if (!worker) return;
+            worker.addEventListener("statechange", () => {
+              if (
+                worker.state === "installed" &&
+                navigator.serviceWorker.controller
+              )
+                setPwaState((x) => ({ ...x, updateReady: true }));
+            });
+          };
+          registration.addEventListener("updatefound", watchInstalling);
+          onFocus = () => void registration.update().catch(() => undefined);
+          window.addEventListener("focus", onFocus);
+          updateTimer = setInterval(
+            () => void registration.update().catch(() => undefined),
+            60 * 60 * 1000,
+          );
+        })
+        .catch(() => undefined);
+      controllerChanged = () => {
+        if (swReloadingRef.current) return;
+        swReloadingRef.current = true;
+        window.location.reload();
+      };
+      navigator.serviceWorker.addEventListener("controllerchange", controllerChanged);
+    }
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("scroll", syncViewport);
+      window.removeEventListener("orientationchange", syncViewport);
+      window.removeEventListener("beforeinstallprompt", beforeInstall);
+      window.removeEventListener("appinstalled", installed);
+      if (onFocus) window.removeEventListener("focus", onFocus);
+      if (controllerChanged)
+        navigator.serviceWorker?.removeEventListener("controllerchange", controllerChanged);
+      if (updateTimer) clearInterval(updateTimer);
+    };
+  }, [notify]);
   const tripsQ = useQuery<TripListResponse>({
     queryKey: ["trips", user?.id],
     queryFn: async () => {
@@ -304,6 +410,60 @@ function App() {
   const selectedId = trips.some((t) => t.id === selected)
     ? selected
     : trips[0]?.id || "";
+  useEffect(() => {
+    if (!user || !selectedId) return;
+    const restoreKey = `${user.id}:${selectedId}`;
+    if (restoredViewRef.current === restoreKey) return;
+    restoredViewRef.current = restoreKey;
+    try {
+      const saved = JSON.parse(
+        sessionStorage.getItem(`tripflow:view:${restoreKey}`) || "{}",
+      ) as { tab?: string; day?: string; category?: string; financeTab?: string };
+      const canRestoreTab = Boolean(
+        saved.tab &&
+          (tabs.some((x) => x.id === saved.tab) ||
+            (saved.tab === "admin" && account?.role === "master")),
+      );
+      if (canRestoreTab && saved.tab) setTab(saved.tab);
+      if (saved.day) setDay(saved.day);
+      if (saved.category) setCategory(saved.category);
+      if (saved.financeTab) setFinanceTab(saved.financeTab);
+      requestAnimationFrame(() => {
+        const activeTab = canRestoreTab && saved.tab ? saved.tab : "home";
+        const y = Number(
+          sessionStorage.getItem(`tripflow:scroll:${restoreKey}:${activeTab}`) || 0,
+        );
+        window.scrollTo({ top: Number.isFinite(y) ? y : 0, behavior: "instant" });
+      });
+    } catch {
+      // sessionStorage có thể bị chặn ở private mode; app vẫn hoạt động bình thường.
+    }
+  }, [user, selectedId, account?.role]);
+  useEffect(() => {
+    if (!user || !selectedId) return;
+    const restoreKey = `${user.id}:${selectedId}`;
+    try {
+      sessionStorage.setItem(
+        `tripflow:view:${restoreKey}`,
+        JSON.stringify({ tab, day, category, financeTab }),
+      );
+    } catch {}
+    const rememberScroll = () => {
+      try {
+        sessionStorage.setItem(
+          `tripflow:scroll:${restoreKey}:${tab}`,
+          String(Math.max(0, Math.round(window.scrollY))),
+        );
+      } catch {}
+    };
+    window.addEventListener("scroll", rememberScroll, { passive: true });
+    window.addEventListener("pagehide", rememberScroll);
+    return () => {
+      rememberScroll();
+      window.removeEventListener("scroll", rememberScroll);
+      window.removeEventListener("pagehide", rememberScroll);
+    };
+  }, [user, selectedId, tab, day, category, financeTab]);
   const bq = useQuery<Bundle>({
     queryKey: ["trip", user?.id, selectedId],
     queryFn: async () => {
@@ -646,8 +806,64 @@ function App() {
     );
   }
   function navigate(id: string) {
+    if (user && selectedId) {
+      const restoreKey = `${user.id}:${selectedId}`;
+      try {
+        sessionStorage.setItem(
+          `tripflow:scroll:${restoreKey}:${tab}`,
+          String(Math.max(0, Math.round(window.scrollY))),
+        );
+      } catch {}
+      setTab(id);
+      requestAnimationFrame(() => {
+        const y = Number(
+          sessionStorage.getItem(`tripflow:scroll:${restoreKey}:${id}`) || 0,
+        );
+        window.scrollTo({ top: Number.isFinite(y) ? y : 0, behavior: "instant" });
+      });
+      return;
+    }
     setTab(id);
     window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  async function installPwa() {
+    const prompt = installPromptRef.current;
+    if (!prompt) {
+      notify(
+        pwaState.ios
+          ? "Trên iPhone/iPad: mở Chia sẻ → Thêm vào Màn hình chính."
+          : "Trình duyệt chưa cung cấp nút cài. Hãy dùng menu Cài đặt/Install app của trình duyệt.",
+      );
+      return;
+    }
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    if (choice.outcome === "accepted") {
+      installPromptRef.current = null;
+      setPwaState((x) => ({ ...x, installable: false }));
+    }
+  }
+  function applyPwaUpdate() {
+    const worker = swRegistrationRef.current?.waiting;
+    if (!worker) {
+      void swRegistrationRef.current?.update();
+      notify("Đang kiểm tra bản TripFlow mới…");
+      return;
+    }
+    worker.postMessage({ type: "SKIP_WAITING" });
+  }
+  async function protectOfflineStorage() {
+    if (!navigator.storage?.persist) {
+      notify("Trình duyệt này không hỗ trợ yêu cầu lưu trữ bền vững.");
+      return;
+    }
+    const granted = await navigator.storage.persist();
+    setPwaState((x) => ({ ...x, storagePersisted: granted }));
+    notify(
+      granted
+        ? "Đã ưu tiên giữ cache TripFlow trên thiết bị."
+        : "Trình duyệt chưa cấp lưu trữ bền vững; dữ liệu server vẫn an toàn và cache có thể được dọn khi thiếu bộ nhớ.",
+    );
   }
   async function logout() {
     const pending = queueRows.length;
@@ -885,7 +1101,7 @@ function App() {
           )}
         </nav>
         <div className="side-footer">
-          <span className="version">V{VERSION} · COLLABORATION & PERMISSION</span>
+          <span className="version">V{VERSION} · MOBILE UX & PWA</span>
           <p>
             Đi cùng nhau.
             <br />
@@ -2512,6 +2728,59 @@ function App() {
                             </div>
                           </div>
                         ))}
+                  </section>
+                  <section className="panel pwa-panel">
+                    <div className="section-heading">
+                      <div>
+                        <span className="eyebrow">MOBILE UX & PWA · V0.6.0</span>
+                        <h2>Ứng dụng trên thiết bị</h2>
+                        <p className="muted">
+                          Safe-area iPhone/Android, form mobile fullscreen, cập nhật service worker có kiểm soát và cache offline theo tài khoản.
+                        </p>
+                      </div>
+                      <span className={`status-chip ${pwaState.standalone ? "active" : ""}`}>
+                        {pwaState.standalone ? "Đã cài" : "Trình duyệt"}
+                      </span>
+                    </div>
+                    <div className="pwa-summary">
+                      <div>
+                        <Compass size={19} />
+                        <span><b>{pwaState.standalone ? "Standalone" : "Web"}</b><small>Chế độ hiển thị</small></span>
+                      </div>
+                      <div>
+                        <RefreshCw size={19} />
+                        <span><b>{pwaState.updateReady ? "Có bản mới" : pwaState.serviceWorkerReady ? "Sẵn sàng" : "Đang kiểm tra"}</b><small>Service worker</small></span>
+                      </div>
+                      <div>
+                        <ShieldCheck size={19} />
+                        <span><b>{pwaState.storagePersisted ? "Được bảo vệ" : "Tiêu chuẩn"}</b><small>Cache offline</small></span>
+                      </div>
+                    </div>
+                    <div className="actions">
+                      {!pwaState.standalone && (
+                        <button className="btn secondary" onClick={() => void installPwa()}>
+                          <Download size={17} />
+                          {pwaState.installable ? "Cài TripFlow" : pwaState.ios ? "Cách cài trên iPhone" : "Cài ứng dụng"}
+                        </button>
+                      )}
+                      {pwaState.updateReady && (
+                        <button className="btn primary" onClick={applyPwaUpdate}>
+                          <RefreshCw size={17} />
+                          Cập nhật TripFlow
+                        </button>
+                      )}
+                      {!pwaState.storagePersisted && (
+                        <button className="btn secondary" onClick={() => void protectOfflineStorage()}>
+                          <ShieldCheck size={17} />
+                          Bảo vệ cache offline
+                        </button>
+                      )}
+                    </div>
+                    {pwaState.ios && !pwaState.standalone && (
+                      <p className="hint pwa-ios-hint">
+                        Safari iPhone/iPad: bấm Chia sẻ → <b>Thêm vào Màn hình chính</b>. iOS không cung cấp nút cài tự động như Chrome Android.
+                      </p>
+                    )}
                   </section>
                   <section className="panel">
                     <div className="section-heading">

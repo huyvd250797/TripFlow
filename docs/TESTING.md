@@ -1,4 +1,4 @@
-# Kiểm tra bản 0.5.0
+# Kiểm tra bản 0.6.0
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
@@ -94,3 +94,16 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Đổi Editor ↔ Viewer phát `trip_access_events` và thiết bị bị tác động refetch quyền qua Realtime.
 - [ ] Thu hồi member làm RLS/API mất quyền ngay; thiết bị online xóa cache bundle của chuyến sau access-event.
 - [ ] Mutation offline tạo trước khi bị thu hồi bị server từ chối khi sync sau đó.
+
+## Mobile UX & PWA Stabilization V0.6.0
+
+- Kiểm tra viewport 320, 390, 430, 768 và desktop; không có horizontal overflow ngoài table/permission matrix được thiết kế scroll ngang.
+- iPhone Safari: topbar tôn trọng safe-area phía trên, bottom nav tôn trọng home indicator.
+- Mở mọi form editor trên mobile: dialog chiếm toàn visual viewport; body form cuộn riêng; nút Hủy/Lưu luôn thao tác được khi bàn phím mở.
+- Chuyển tab sau khi đã cuộn, quay lại tab cũ và xác nhận vị trí scroll được phục hồi trong cùng session.
+- Chọn ngày lịch trình / category / tab Finance, chuyển màn hình rồi quay lại và xác nhận state được giữ.
+- PWA Chrome/Edge Android: `beforeinstallprompt` làm xuất hiện nút Cài TripFlow; sau `appinstalled` trạng thái hiển thị Đã cài.
+- Safari iOS: không phụ thuộc `beforeinstallprompt`; giao diện hướng dẫn Chia sẻ → Thêm vào Màn hình chính.
+- Deploy worker mới: worker cũ tiếp tục điều khiển phiên hiện tại, app hiện Cập nhật TripFlow; chỉ `SKIP_WAITING` sau khi người dùng bấm nút rồi reload qua `controllerchange`.
+- Cache Storage không chứa `/api/*` hoặc `/auth/*`; dữ liệu riêng tư offline nằm trong IndexedDB theo user.
+- Persistent Storage API: nếu browser từ chối thì app vẫn hoạt động, chỉ hiển thị cache ở chế độ tiêu chuẩn.
