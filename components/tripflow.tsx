@@ -84,6 +84,7 @@ import {
   listQueue,
   readCachedBundle,
   readCachedTrips,
+  removeCachedBundle,
   removeQueue,
   retryQueue,
   updateQueue,
@@ -385,6 +386,60 @@ function App() {
         },
         refreshTripAndList,
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trip_members",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTripAndList,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trip_invitations",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trip_participants",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trip_access_events",
+          filter: `target_user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          refreshTripAndList();
+          const event = payload.new as { trip_id?: string; event_type?: string; role?: string };
+          if (event.trip_id === selectedId) {
+            if (event.event_type === "revoked")
+              void removeCachedBundle(user.id, selectedId);
+            notify(
+              event.event_type === "revoked"
+                ? "Quyền truy cập chuyến đi vừa được thu hồi. Cache của chuyến đã được xóa khỏi thiết bị này."
+                : event.event_type === "role_changed"
+                  ? `Quyền của bạn vừa đổi thành ${event.role === "editor" ? "Chỉnh sửa" : "Chỉ xem"}.`
+                  : "Bạn vừa được cấp quyền chuyến đi.",
+            );
+          }
+        },
+      )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") setRealtimeState("live");
         else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT")
@@ -395,7 +450,7 @@ function App() {
       setRealtimeState("idle");
       void s.removeChannel(channel);
     };
-  }, [user, selectedId, qc, online]);
+  }, [user, selectedId, qc, online, notify]);
   const refreshQueue = useCallback(async () => {
     if (!user) {
       setQueueRows([]);
@@ -830,7 +885,7 @@ function App() {
           )}
         </nav>
         <div className="side-footer">
-          <span className="version">V{VERSION} · LIVE TRIP & REALTIME</span>
+          <span className="version">V{VERSION} · COLLABORATION & PERMISSION</span>
           <p>
             Đi cùng nhau.
             <br />
@@ -2341,9 +2396,12 @@ function App() {
                       )}
                     </section>
                   </div>
-                  <section className="panel">
+                  <section className="panel collaboration-panel">
                     <div className="section-heading">
-                      <h2>Chia sẻ chuyến đi</h2>
+                      <div>
+                        <span className="eyebrow">COLLABORATION · V0.5.0</span>
+                        <h2>Chia sẻ & phân quyền</h2>
+                      </div>
                       {owner && (
                         <button
                           className="btn secondary"
@@ -2355,10 +2413,40 @@ function App() {
                       )}
                     </div>
                     <p className="hint">
-                      Lời mời gắn với email và có hạn 7 ngày. Bạn sao chép liên
-                      kết để gửi cho người được mời; ứng dụng không tự gửi email
-                      mời.
+                      Tài khoản truy cập và người thực sự tham gia chuyến đi là hai danh sách độc lập.
+                      Lời mời gắn đúng email, có hạn 7 ngày và không cho tạo trùng khi lời mời cũ còn hiệu lực.
+                      Thay đổi Editor/Viewer hoặc thu hồi quyền có hiệu lực ngay ở server; thiết bị online nhận cập nhật qua Realtime.
                     </p>
+                    <div className="collab-summary">
+                      <div><ShieldCheck size={19} /><span><b>{data.role === "owner" ? "Owner" : data.role === "editor" ? "Editor" : "Viewer"}</b><small>Quyền của bạn</small></span></div>
+                      <div><Users size={19} /><span><b>{data.members.length + 1}</b><small>Tài khoản có quyền</small></span></div>
+                      <div><Clock size={19} /><span><b>{data.invitations.filter((x) => !x.used_at && !x.revoked_at && new Date(x.expires_at) >= new Date()).length}</b><small>Lời mời đang chờ</small></span></div>
+                      <div><Compass size={19} /><span><b>{data.participants.length}</b><small>Người đi thực tế</small></span></div>
+                    </div>
+                    <div className="permission-matrix" aria-label="Ma trận quyền cộng tác">
+                      <div className="permission-row head"><b>Quyền</b><b>Owner</b><b>Editor</b><b>Viewer</b></div>
+                      {[
+                        ["Xem dữ liệu", true, true, true],
+                        ["Sửa lịch / chi phí / media", true, true, false],
+                        ["Check-in Live Trip", true, true, false],
+                        ["Mời / đổi quyền / thu hồi", true, false, false],
+                        ["Xóa chuyến / chốt dự toán", true, false, false],
+                      ].map(([label, o, e, v]) => (
+                        <div className="permission-row" key={String(label)}>
+                          <span>{String(label)}</span>
+                          <span>{o ? "✓" : "—"}</span>
+                          <span>{e ? "✓" : "—"}</span>
+                          <span>{v ? "✓" : "—"}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="simple-row owner-row">
+                      <div>
+                        <b>Chủ chuyến đi</b>
+                        <small>Owner · toàn quyền quản lý cộng tác và dữ liệu nhạy cảm</small>
+                      </div>
+                      <span className="pill">Owner</span>
+                    </div>
                     {data.members.map((m) => (
                       <div className="simple-row" key={m.id}>
                         <div>
@@ -2398,7 +2486,8 @@ function App() {
                                 {new Date(i.expires_at) < new Date()
                                   ? "Đã hết hạn"
                                   : "Chờ chấp nhận"}{" "}
-                                · {dateLabel(i.expires_at)}
+                                · {i.role === "editor" ? "Editor" : "Viewer"}
+                                · hết hạn {dateLabel(i.expires_at)}
                               </small>
                             </div>
                             <div className="row-tools">

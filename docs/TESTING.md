@@ -1,4 +1,4 @@
-# Kiểm tra bản 0.4.0
+# Kiểm tra bản 0.5.0
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
@@ -84,3 +84,13 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Hoàn thành, bỏ qua, đặt lại tạo event tương ứng và hiển thị đúng theo timezone chuyến đi.
 - [ ] Activity `active` quá `end_at` hiển thị số phút/giờ trễ; activity planned đã qua giờ xuất hiện trong LATE.
 - [ ] Offline check-in đi vào queue; khi có mạng, mutation sync một lần và history được tạo sau khi server xác nhận.
+
+
+## Collaboration & Permission Control V0.5.0
+
+- [ ] Owner thấy ma trận Owner/Editor/Viewer và số account/participant/lời mời đang chờ.
+- [ ] Không thể tạo hai lời mời pending cho cùng email trong một chuyến.
+- [ ] Không thể mời lại owner hoặc member đã có quyền.
+- [ ] Đổi Editor ↔ Viewer phát `trip_access_events` và thiết bị bị tác động refetch quyền qua Realtime.
+- [ ] Thu hồi member làm RLS/API mất quyền ngay; thiết bị online xóa cache bundle của chuyến sau access-event.
+- [ ] Mutation offline tạo trước khi bị thu hồi bị server từ chối khi sync sau đó.

@@ -67,6 +67,12 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202609280001_v050_collaboration_permission_control.sql",
+      "utf8",
+    ),
+  );
   await asUser(owner);
   const trip = await mutation("trip", "create", {
     name: "Test cloud",
@@ -274,6 +280,13 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     email: editor + "@test.local",
     role: "editor",
   });
+  await assert.rejects(
+    mutation("invitation", "create", {
+      email: editor + "@test.local",
+      role: "viewer",
+    }),
+    /INVITE_PENDING_EXISTS/,
+  );
   await asUser(stranger);
   assert.equal((await rows("trips")).length, 0);
   assert.equal((await rows("expenses")).length, 0);
@@ -285,6 +298,10 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   await asUser(editor);
   await mutation("invitation", "accept", { token: inv.token });
   assert.equal((await rows("trips")).length, 1);
+  assert.equal(
+    (await rows("trip_access_events")).some((x) => x.target_user_id === editor && x.event_type === "granted"),
+    true,
+  );
   await mutation("participant", "create", { name: "Bé Bún", note: "" });
   await assert.rejects(
     mutation("invitation", "create", { email: "a@test.local", role: "viewer" }),
@@ -352,10 +369,20 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     ),
     /INVALID_LINK/,
   );
-  const member = (await rows("trip_members")).find(
+  let member = (await rows("trip_members")).find(
     (m) => m.user_id === editor,
   )!;
+  member = await mutation("member", "update", { role: "viewer" }, member);
+  assert.equal(
+    (await rows("trip_access_events")).some((x) => x.target_user_id === editor && x.event_type === "role_changed" && x.role === "viewer"),
+    true,
+  );
+  member = await mutation("member", "update", { role: "editor" }, member);
   await mutation("member", "delete", {}, member);
+  assert.equal(
+    (await rows("trip_access_events")).some((x) => x.target_user_id === editor && x.event_type === "revoked"),
+    true,
+  );
   await asUser(editor);
   assert.equal((await rows("trips")).length, 0);
   await assert.rejects(

@@ -121,6 +121,11 @@ export async function readCachedBundle(userId: string, tripId: string) {
   return row?.value;
 }
 
+export async function removeCachedBundle(userId: string, tripId: string) {
+  if (!available()) return;
+  await remove(CACHE, `bundle:${userId}:${tripId}`);
+}
+
 export function canQueueMutation(m: Mutation) {
   if (m.entity === "expense" && m.action === "create") return true;
   if (m.entity === "item" && ["status", "update"].includes(m.action)) return true;

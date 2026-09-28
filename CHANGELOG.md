@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 — Collaboration & Permission Control
+
+- UI cộng tác mới hiển thị quyền hiện tại, số account có quyền, lời mời đang chờ và số participant thực tế.
+- Ma trận Owner/Editor/Viewer hiển thị trực tiếp trong màn hình Chia sẻ & phân quyền.
+- Chặn lời mời trùng còn hiệu lực và chặn mời owner/member đã có quyền.
+- Thêm `updated_at` cho `trip_members` và `trip_invitations`.
+- Thêm `trip_access_events` + trigger phát sự kiện granted/role_changed/revoked cho đúng tài khoản bị tác động.
+- Realtime mở rộng cho members, invitations, participants và access events; khi quyền thay đổi client refetch trip list/bundle ngay.
+- Server RLS/mutation tiếp tục là nguồn quyết định quyền; thiết bị offline chỉ có cache cũ cho đến khi kết nối lại.
+- Roadmap đánh dấu V0.5.0 ✅; phiên bản tiếp theo là V0.6.0 Mobile UX & PWA Stabilization.
+- Migration mới `202609280001_v050_collaboration_permission_control.sql`.
+
 ## 0.4.0 — Live Trip & Realtime
 
 - Live dashboard mới với Current / Next / Late và thời gian còn lại/độ trễ.

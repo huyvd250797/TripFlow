@@ -1,6 +1,6 @@
 # Nâng cấp TripFlow V0.2.0 → V0.3.0
 
-> Tài liệu lịch sử. TripFlow hiện đã có V0.4.0; sau V0.3.0 hãy chạy tiếp `202609270003_v040_live_trip_realtime.sql`.
+> Tài liệu lịch sử. TripFlow hiện đã có V0.5.0; sau V0.3.0 hãy chạy tiếp `202609270003_v040_live_trip_realtime.sql`.
 
 ## Mục tiêu
 

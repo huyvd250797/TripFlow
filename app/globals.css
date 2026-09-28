@@ -2852,3 +2852,45 @@ dd {
     white-space: normal;
   }
 }
+
+/* TripFlow V0.5.0 · Collaboration & Permission Control */
+.collab-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.collab-summary > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft, rgba(127,127,127,.06));
+}
+.collab-summary span { display: grid; gap: 2px; }
+.collab-summary small { color: var(--muted); }
+.permission-matrix {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin: 12px 0 16px;
+}
+.permission-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(64px, .35fr));
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  align-items: center;
+}
+.permission-row:first-child { border-top: 0; }
+.permission-row > :not(:first-child) { text-align: center; }
+.permission-row.head { background: rgba(127,127,127,.07); }
+.owner-row { margin-bottom: 4px; }
+@media (max-width: 760px) {
+  .collab-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .permission-matrix { overflow-x: auto; }
+  .permission-row { min-width: 590px; }
+}

@@ -37,9 +37,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V0.5.0",
     title: "Collaboration & Permission Control",
-    done: false,
+    done: true,
     description:
-      "Hoàn thiện Owner/Editor/Viewer, participant tách account, thu hồi quyền tức thời và quản trị cộng tác.",
+      "Hoàn thiện Owner/Editor/Viewer, participant tách account, lời mời chống trùng, thay đổi quyền Realtime và thu hồi quyền tức thời ở server.",
   },
   {
     version: "V0.6.0",

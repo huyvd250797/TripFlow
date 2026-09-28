@@ -1,4 +1,4 @@
-# TripFlow 0.4.0 · Live Trip & Realtime
+# TripFlow 0.5.0 · Collaboration & Permission Control
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -16,6 +16,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - Ghi thực chi, người trả, ngày chi, link chứng từ; liên kết dự toán, chi ngoài kế hoạch và hoàn tiền.
 - **Finance V0.3.0:** lần chốt đầu tiên là baseline dự toán gốc bất biến; các lần sau là revision có số thứ tự. Đối chiếu dự toán gốc / hiện tại / tổng chi / hoàn tiền / thực chi ròng / chênh lệch.
 - **Live Trip V0.4.0:** Current / Next / Late, cảnh báo trễ, check-in giao dịch, lịch sử trạng thái bất biến và Realtime nhiều thiết bị với refetch fallback.
+- **Collaboration V0.5.0:** ma trận Owner/Editor/Viewer, lời mời chống trùng, chặn mời tài khoản đã có quyền, Realtime member/invitation/participant và access-event để phản ánh đổi/thu hồi quyền nhanh trên thiết bị online.
 - Báo cáo tài chính theo nhóm, ngày và hoạt động; theo dõi khoản ngoài dự toán; tab Data Integrity phát hiện refund/link/snapshot không nhất quán.
 - Export tài chính CSV và JSON; CSV chống formula injection.
 - Gắn link Google Drive/HTTPS cho album, ảnh, video, tài liệu; liên kết với hoạt động. Media mở tại nguồn, không upload vào app.
@@ -24,7 +25,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V0.4.0 được đánh dấu ✅; phiên bản tiếp theo là V0.5.0 – Collaboration & Permission Control.
+- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V0.5.0 được đánh dấu ✅; phiên bản tiếp theo là V0.6.0 – Mobile UX & PWA Stabilization.
 
 **Phạm vi offline:** cho phép thêm thực chi, cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -36,8 +37,9 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609270001_v020_offline_master_admin.sql` — nâng cấp V0.2.0.
    - `supabase/migrations/202609270002_v030_finance_reporting_integrity.sql` — nâng cấp V0.3.0.
    - `supabase/migrations/202609270003_v040_live_trip_realtime.sql` — nâng cấp V0.4.0.
-   Nếu database đang chạy V0.3.0 thì **chỉ chạy migration V0.4.0**. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
-3. V0.4.0 thêm bảng `itinerary_events`, wrapper mutation để ghi lịch sử trạng thái và cấu hình publication Realtime khi khả dụng. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
+   - `supabase/migrations/202609280001_v050_collaboration_permission_control.sql` — nâng cấp V0.5.0.
+   Nếu database đang chạy V0.4.0 thì **chỉ chạy migration V0.5.0**. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
 6. Auth: bật đăng nhập Email/Password và **Confirm email**. Đặt mật khẩu tối thiểu 8 ký tự. Cấu hình SMTP của bạn cho email dùng thật; kiểm tra giới hạn gửi của dịch vụ trước khi mời nhóm sử dụng.

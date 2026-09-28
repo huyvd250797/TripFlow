@@ -38,11 +38,17 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - UI hiển thị trạng thái kết nối Realtime và lịch sử Live Trip theo múi giờ chuyến đi.
 - Cảnh báo hoạt động đã qua giờ và activity active đang kéo dài quá thời gian kế hoạch.
 
-## ➡️ V0.5.0 — Collaboration & Permission Control
+## ✅ V0.5.0 — Collaboration & Permission Control
 
-Hoàn thiện Owner/Editor/Viewer, participant tách account, thu hồi quyền tức thời và các luồng cộng tác nhóm.
+- Hoàn thiện ma trận quyền **Owner / Editor / Viewer** ngay trong UI để người dùng hiểu rõ phạm vi thao tác.
+- Account truy cập và `trip_participants` tiếp tục là hai khái niệm độc lập: người đi thực tế không bắt buộc có tài khoản TripFlow.
+- Chặn mời trùng email khi lời mời trước còn hiệu lực và chặn mời tài khoản đã có quyền trong chuyến.
+- Bổ sung `updated_at` cho member/invitation để dữ liệu cộng tác có mốc thay đổi rõ ràng.
+- Bổ sung `trip_access_events` dành riêng cho người bị đổi quyền/thu hồi quyền; thiết bị online nhận thay đổi qua Realtime.
+- Khi member bị thu hồi, RLS và mutation gate mất quyền ngay trên server; client đồng thời refetch danh sách chuyến và bundle.
+- Realtime mở rộng cho `trip_members`, `trip_invitations`, `trip_participants` và access event.
 
-## V0.6.0 — Mobile UX & PWA Stabilization
+## ➡️ V0.6.0 — Mobile UX & PWA Stabilization
 
 Tối ưu mobile, form fullscreen, bàn phím, scroll/filter state, Safari iOS/Chrome Android, service worker update và hiệu năng cảm nhận.
 

@@ -17,6 +17,8 @@ const messages: Record<string, string> = {
   INVITE_INVALID: "Lời mời đã hết hạn, bị thu hồi hoặc không tồn tại.",
   INVITE_EMAIL_MISMATCH: "Hãy đăng nhập bằng đúng email được mời.",
   INVITE_ALREADY_USED: "Lời mời này đã được sử dụng.",
+  INVITE_PENDING_EXISTS: "Email này đã có lời mời đang chờ. Hãy dùng lại hoặc thu hồi lời mời cũ.",
+  ALREADY_MEMBER: "Tài khoản này đã có quyền trong chuyến đi.",
   ALREADY_OWNER: "Bạn đã là chủ chuyến đi.",
   INVALID_REFUND: "Không tìm thấy khoản chi gốc.",
   INVALID_TIMEZONE: "Múi giờ không hợp lệ.",
@@ -118,6 +120,7 @@ export async function GET(req: NextRequest) {
       invResult,
       auditResult,
       financeResult,
+      collaborationResult,
     ] = await Promise.all([
       all("itinerary_items"),
       all("budget_items"),
@@ -146,6 +149,11 @@ export async function GET(req: NextRequest) {
         .order("created_at", { ascending: false })
         .limit(50),
       s.rpc("tf_finance_report", { target_trip: tid }),
+      s
+        .from("trip_access_events")
+        .select("id")
+        .eq("target_user_id", user.id)
+        .limit(1),
     ]);
     if (liveEventResult.error)
       throw new Error("V040_LIVE_MIGRATION_REQUIRED:" + liveEventResult.error.message);
@@ -153,6 +161,8 @@ export async function GET(req: NextRequest) {
       throw invResult.error || auditResult.error;
     if (financeResult.error)
       throw new Error("V030_FINANCE_MIGRATION_REQUIRED:" + financeResult.error.message);
+    if (collaborationResult.error)
+      throw new Error("V050_COLLABORATION_MIGRATION_REQUIRED:" + collaborationResult.error.message);
     const role =
       trip.owner_id === user.id
         ? "owner"
@@ -199,6 +209,15 @@ export async function GET(req: NextRequest) {
           error:
             "Database chưa được nâng cấp V0.4.0. Hãy chạy migration 202609270003_v040_live_trip_realtime.sql.",
           code: "V040_MIGRATION_REQUIRED",
+        },
+        503,
+      );
+    if (message.startsWith("V050_COLLABORATION_MIGRATION_REQUIRED:"))
+      return reply(
+        {
+          error:
+            "Database chưa được nâng cấp V0.5.0. Hãy chạy migration 202609280001_v050_collaboration_permission_control.sql.",
+          code: "V050_MIGRATION_REQUIRED",
         },
         503,
       );

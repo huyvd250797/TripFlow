@@ -1,4 +1,4 @@
-# Kiến trúc TripFlow 0.4.0
+# Kiến trúc TripFlow 0.5.0
 
 ## Công nghệ và luồng dữ liệu
 

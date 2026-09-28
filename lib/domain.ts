@@ -1,5 +1,6 @@
 import {
   CATEGORIES,
+  VERSION,
   type Bundle,
   type Budget,
   type Expense,
@@ -311,7 +312,7 @@ export function csv(bundle: Bundle) {
   const report = bundle.finance_report || buildFinanceReport(bundle);
   const rows: unknown[][] = [
     ["TripFlow", bundle.trip.name],
-    ["BÁO CÁO TÀI CHÍNH", "V0.4.0"],
+    ["BÁO CÁO TÀI CHÍNH", `V${VERSION}`],
     ["Chỉ số", "Số tiền"],
     ["Dự toán gốc", report.baseline_snapshot_id ? report.totals.original_budget : "Chưa chốt"],
     ["Dự toán hiện tại", report.totals.current_budget],
