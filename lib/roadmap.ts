@@ -65,9 +65,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V0.9.0",
     title: "Release Candidate & Hardening",
-    done: false,
+    done: true,
     description:
-      "Dừng mở rộng lớn, tập trung UAT, thiết bị thật, bảo mật, hiệu năng, mạng gián đoạn và sửa lỗi.",
+      "Release readiness tự kiểm tra migration/RLS/guard dữ liệu, hardening HTTP/API, UAT đa thiết bị, kiểm thử mạng gián đoạn và đóng lỗi trước V1.0.0.",
   },
   {
     version: "V1.0.0",

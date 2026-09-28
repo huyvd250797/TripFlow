@@ -1,4 +1,4 @@
-# Kiểm tra bản 0.8.0
+# Kiểm tra bản 0.9.0
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
@@ -133,3 +133,16 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Readiness cảnh báo đúng khi trip chưa completed, còn activity mở, thiếu baseline, integrity warning hoặc có unlinked actual.
 - [ ] CSV/JSON/HTML export tải được; CSV chống formula injection và HTML escape nội dung người dùng.
 - [ ] V0.8.0 không yêu cầu migration mới; database V0.7.0 hoạt động trực tiếp.
+
+
+## Release Candidate & Hardening V0.9.0
+
+- [ ] Chạy migration `202609280004_v090_release_candidate_hardening.sql`.
+- [ ] `select public.tf_release_readiness();` khi đăng nhập trả `database_version = 0.9.0`.
+- [ ] Màn hình **Thêm → Kiểm tra sẵn sàng phát hành** không còn cảnh báo server.
+- [ ] POST không có `Content-Type: application/json` bị từ chối.
+- [ ] POST cross-site bị từ chối.
+- [ ] Payload vượt giới hạn bị trả 413.
+- [ ] Response API private có `Cache-Control: private, no-store`.
+- [ ] CSP không chặn Supabase Auth/Realtime trên domain production.
+- [ ] Chạy đầy đủ `docs/RELEASE-CHECKLIST.md` trên Safari iOS, Chrome Android và desktop.

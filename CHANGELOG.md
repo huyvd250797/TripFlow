@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.0 — Release Candidate & Hardening
+
+- Thêm migration `202609280004_v090_release_candidate_hardening.sql` với schema marker và RPC `tf_release_readiness()`.
+- Màn hình **Thêm → Kiểm tra sẵn sàng phát hành** xác minh database, RLS, idempotency, single-active guard và khả năng trình duyệt hiện tại.
+- API private bổ sung `Cache-Control: no-store`, `Pragma`, `X-TripFlow-Version`, `X-Request-Id`; mutation kiểm tra same-origin, JSON content type và kích thước payload.
+- Security headers bổ sung CSP, Cross-Origin-Resource-Policy và `X-Permitted-Cross-Domain-Policies`.
+- Service worker cache shell nâng lên `tripflow-shell-v090`.
+- Bổ sung `docs/RELEASE-CHECKLIST.md` và quy trình upgrade/rollback RC.
+- Roadmap đánh dấu V0.9.0 ✅; phiên bản tiếp theo là V1.0.0 Stable Production Release.
+
+
 ## 0.8.0 — Trip Analytics & Post-Trip Report
 
 - Dashboard tổng kết mới trong **Thêm**, kèm thẻ tóm tắt trên Tổng quan.

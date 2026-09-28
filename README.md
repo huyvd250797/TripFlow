@@ -1,4 +1,4 @@
-# TripFlow 0.8.0 · Trip Analytics & Post-Trip Report
+# TripFlow 0.9.0 · Release Candidate & Hardening
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -19,6 +19,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Collaboration V0.5.0:** ma trận Owner/Editor/Viewer, lời mời chống trùng, chặn mời tài khoản đã có quyền, Realtime member/invitation/participant và access-event để phản ánh đổi/thu hồi quyền nhanh trên thiết bị online.
 - **Backup, Recovery & Operations V0.7.0:** backup snapshot server-side có checksum, tải recovery JSON, restore thành chuyến mới, thùng rác/tombstone, retention policy và operations health.
 - **Trip Analytics & Post-Trip Report V0.8.0:** dashboard tổng kết lịch trình/tài chính/media, KPI theo ngày, độ trễ check-in, cảnh báo cần rà soát và export CSV/JSON/bản in HTML.
+- **Release Candidate V0.9.0:** release-readiness trong app, schema marker, kiểm tra RLS/guard dữ liệu, hardening API/HTTP và checklist UAT trước V1.0.0.
 - **Mobile UX & PWA V0.6.0:** safe-area iPhone/Android, dialog/form fullscreen theo `visualViewport`, giữ tab/filter/scroll, cài/cập nhật PWA và cache offline bền vững khi trình duyệt hỗ trợ.
 - Báo cáo tài chính theo nhóm, ngày và hoạt động; theo dõi khoản ngoài dự toán; tab Data Integrity phát hiện refund/link/snapshot không nhất quán.
 - Export tài chính CSV và JSON; CSV chống formula injection.
@@ -28,7 +29,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V0.8.0 được đánh dấu ✅; phiên bản tiếp theo là V0.9.0 – Release Candidate & Hardening.
+- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V0.9.0 được đánh dấu ✅; phiên bản tiếp theo là V1.0.0 – Stable Production Release.
 
 **Phạm vi offline:** cho phép thêm thực chi, cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -43,7 +44,8 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609280001_v050_collaboration_permission_control.sql` — nâng cấp V0.5.0.
    - `supabase/migrations/202609280002_v050_collaboration_access_policy_fix.sql` — hotfix policy V0.5.0, được giữ lại trong source V0.6.0 cho database mới/cũ chưa áp dụng hotfix.
    - `supabase/migrations/202609280003_v070_backup_recovery_operations.sql` — Backup, Recovery & Operations V0.7.0.
-   **V0.8.0 không có migration database mới.** Nếu database đã chạy V0.7.0 thì deploy source V0.8.0 trực tiếp. Nếu đang ở V0.5.0 + hotfix, chạy `202609280003_v070_backup_recovery_operations.sql` trước; V0.6.0 và V0.8.0 không có migration. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   - `supabase/migrations/202609280004_v090_release_candidate_hardening.sql` — Release Candidate marker + release-readiness V0.9.0.
+   **V0.6.0 và V0.8.0 không có migration database.** Nếu database đang ở V0.7.0/V0.8.0, chạy migration V0.9.0 ở trên rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
@@ -127,6 +129,15 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - Trạng thái **Báo cáo hoàn chỉnh** chỉ xuất hiện khi chuyến đã `completed` và không còn cảnh báo chính; khi đang đi, app hiển thị **Báo cáo tạm thời**.
 - Export V0.8.0: CSV tổng kết, JSON đầy đủ và bản in HTML tự chứa. CSV tiếp tục trung hòa formula injection.
 - V0.8.0 **không có migration database**. Nguồn dữ liệu vẫn là bảng/RPC hiện có; Analytics được tính lại khi mở hoặc export.
+
+
+## 1.8. Release Candidate & Hardening V0.9.0
+
+- Chạy migration `202609280004_v090_release_candidate_hardening.sql` trước khi deploy source V0.9.0.
+- **Thêm → Kiểm tra sẵn sàng phát hành** gọi `tf_release_readiness()` để xác minh account gate, Finance, Live Trip, Collaboration, Backup/Recovery, idempotency, single-active guard và RLS.
+- API mutation yêu cầu request same-origin, `application/json` và giới hạn payload; response private không cache và có request-id phục vụ truy vết lỗi.
+- CSP/CORP và security headers được bật trong `next.config.ts`.
+- Trước V1.0.0 phải chạy checklist tại `docs/RELEASE-CHECKLIST.md`, kiểm thử thiết bị thật và đóng lỗi Critical/High.
 
 
 ## 2. Deploy lên Vercel

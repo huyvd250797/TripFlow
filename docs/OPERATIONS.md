@@ -75,3 +75,14 @@ Mục tiêu: các bản Chrome/Edge/Safari/Firefox hiện đại hỗ trợ `Int
 2. Nếu cần quay lại một trạng thái logic cũ của chuyến: restore app backup thành chuyến mới, đối chiếu dữ liệu rồi quyết định sử dụng bản mới.
 3. Nếu database/project gặp sự cố diện rộng: dùng PostgreSQL/Supabase backup/PITR độc lập; không dùng app backup làm phương án duy nhất.
 4. Mọi restore production cần kiểm tra Finance Integrity, số hoạt động, media link và quyền truy cập sau phục hồi.
+
+
+## V0.9.0 — Release readiness
+
+Sau mỗi deploy RC/production:
+
+1. Mở **Thêm → Kiểm tra sẵn sàng phát hành** bằng tài khoản active.
+2. Xác nhận database version `0.9.0` và tất cả server checks đạt.
+3. Nếu báo `V090_MIGRATION_REQUIRED`, chạy `202609280004_v090_release_candidate_hardening.sql`; không chạy lại migration cũ.
+4. Nếu một capability fail dù migration V0.9 đã có, dừng phát hành và đối chiếu migration trước đó thay vì bỏ qua cảnh báo.
+5. Lưu request-id từ response/log khi điều tra lỗi API để đối chiếu log Vercel.

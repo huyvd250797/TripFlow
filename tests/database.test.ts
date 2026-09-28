@@ -75,7 +75,19 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   );
   await db.exec(
     await readFile(
+      "supabase/migrations/202609280002_v050_collaboration_access_policy_fix.sql",
+      "utf8",
+    ),
+  );
+  await db.exec(
+    await readFile(
       "supabase/migrations/202609280003_v070_backup_recovery_operations.sql",
+      "utf8",
+    ),
+  );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202609280004_v090_release_candidate_hardening.sql",
       "utf8",
     ),
   );
@@ -455,6 +467,18 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   ).rows[0].result;
   assert.notEqual(restored.trip_id, tripId);
   assert.equal((await rows("trips")).some((x) => x.id === restored.trip_id), true);
+
+  // V0.9.0 release-readiness must confirm the migration marker and critical guards.
+  const readiness = (
+    await db.query<{ result: Record<string, any> }>(
+      "select public.tf_release_readiness() as result",
+    )
+  ).rows[0].result;
+  assert.equal(readiness.app_version, "0.9.0");
+  assert.equal(readiness.database_version, "0.9.0");
+  assert.equal(readiness.ready, true);
+  assert.equal(Array.isArray(readiness.checks), true);
+  assert.equal(readiness.checks.every((x: any) => x.ok === true), true);
 
   await db.close();
 });

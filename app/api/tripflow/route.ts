@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { serverClient } from "@/lib/supabase/server";
 import { mutationSchema } from "@/lib/validation";
 import { z } from "zod";
+import { mutationRequestError, privateHeaders, readJsonText } from "@/lib/api-hardening";
 export const dynamic = "force-dynamic";
 const messages: Record<string, string> = {
   FORBIDDEN: "Bạn không có quyền truy cập chuyến đi này.",
@@ -29,7 +30,7 @@ const messages: Record<string, string> = {
 function reply(data: unknown, status = 200) {
   return NextResponse.json(data, {
     status,
-    headers: { "Cache-Control": "private, no-store" },
+    headers: privateHeaders(),
   });
 }
 async function auth() {
@@ -251,8 +252,9 @@ export async function GET(req: NextRequest) {
 }
 export async function POST(req: NextRequest) {
   try {
-    if (req.headers.get("origin") !== req.nextUrl.origin)
-      return reply({ error: "Nguồn yêu cầu không hợp lệ." }, 403);
+    const requestError = mutationRequestError(req, 50000);
+    if (requestError)
+      return reply({ error: requestError.message }, requestError.status);
     const a = await auth();
     if (!a)
       return reply({ error: "Phiên đã hết hạn. Vui lòng đăng nhập lại." }, 401);
@@ -262,8 +264,14 @@ export async function POST(req: NextRequest) {
         { error: messages.ACCOUNT_DEACTIVATED, code: "ACCOUNT_DEACTIVATED" },
         403,
       );
-    const raw = await req.text();
-    if (raw.length > 50000) return reply({ error: "Dữ liệu quá lớn." }, 413);
+    let raw: string;
+    try {
+      raw = await readJsonText(req, 50000);
+    } catch (e) {
+      if (e instanceof Error && e.message === "PAYLOAD_TOO_LARGE")
+        return reply({ error: "Dữ liệu quá lớn." }, 413);
+      throw e;
+    }
     let json;
     try {
       json = JSON.parse(raw);

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { serverClient } from "@/lib/supabase/server";
+import { mutationRequestError, privateHeaders, readJsonText } from "@/lib/api-hardening";
 
 export const dynamic = "force-dynamic";
 
 function reply(data: unknown, status = 200) {
   return NextResponse.json(data, {
     status,
-    headers: { "Cache-Control": "private, no-store" },
+    headers: privateHeaders(),
   });
 }
 
@@ -86,13 +87,20 @@ const bodySchema = z.discriminatedUnion("action", [
 ]);
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get("origin") !== req.nextUrl.origin)
-    return reply({ error: "Nguồn yêu cầu không hợp lệ." }, 403);
+  const requestError = mutationRequestError(req, 10000);
+  if (requestError)
+    return reply({ error: requestError.message }, requestError.status);
   const a = await auth();
   if (!a) return reply({ error: "Vui lòng đăng nhập." }, 401);
   try {
-    const raw = await req.text();
-    if (raw.length > 10000) return reply({ error: "Dữ liệu quá lớn." }, 413);
+    let raw: string;
+    try {
+      raw = await readJsonText(req, 10000);
+    } catch (e) {
+      if (e instanceof Error && e.message === "PAYLOAD_TOO_LARGE")
+        return reply({ error: "Dữ liệu quá lớn." }, 413);
+      throw e;
+    }
     const parsed = bodySchema.safeParse(JSON.parse(raw));
     if (!parsed.success) return reply({ error: "Dữ liệu recovery không hợp lệ." }, 400);
     let result;

@@ -182,6 +182,27 @@ async function main() {
     invitations: "trip_invitations",
     audits: "audit_logs",
   };
+  await page.route("**/api/release", async (route) => {
+    await route.fulfill({
+      json: {
+        app_version: "0.9.0",
+        channel: "release-candidate",
+        database_version: "0.9.0",
+        checked_at: new Date().toISOString(),
+        ready: true,
+        checks: [
+          { key: "account_gate", label: "Account gate V0.2", ok: true },
+          { key: "finance", label: "Finance integrity V0.3", ok: true },
+          { key: "live_trip", label: "Live Trip history V0.4", ok: true },
+          { key: "collaboration", label: "Collaboration V0.5", ok: true },
+          { key: "backup_recovery", label: "Backup & Recovery V0.7", ok: true },
+          { key: "idempotency", label: "Mutation idempotency", ok: true },
+          { key: "single_active", label: "Single active itinerary guard", ok: true },
+          { key: "rls", label: "RLS on protected tables", ok: true },
+        ],
+      },
+    });
+  });
   await page.route("**/api/tripflow*", async (route) => {
     try {
       let body: Record<string, unknown>;

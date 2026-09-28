@@ -3321,3 +3321,18 @@ html[data-keyboard="open"] .dialog-footer {
     flex: 1 1 calc(50% - 9px);
   }
 }
+
+/* V0.9.0 Release Candidate & Hardening */
+.release-panel .section-heading { align-items: flex-start; gap: 16px; }
+.release-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin-top: 16px; }
+.release-check-group { border: 1px solid var(--line); border-radius: 16px; padding: 15px; display: grid; gap: 9px; background: #f8faf7; }
+.release-check-group > small { color: var(--muted); margin-top: -5px; }
+.release-check { display: flex; align-items: center; gap: 9px; min-height: 28px; }
+.release-check svg { flex: 0 0 auto; }
+.release-check svg:first-child { color: var(--success,#2f7d57); }
+.release-check:has(svg.lucide-triangle-alert) svg { color: var(--danger,#b94a48); }
+.release-error { margin-top: 14px; }
+.release-version { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: .9rem; }
+.spin { animation: tripflow-spin .9s linear infinite; }
+@keyframes tripflow-spin { to { transform: rotate(360deg); } }
+@media (max-width: 760px) { .release-grid { grid-template-columns: 1fr; } }

@@ -82,6 +82,7 @@ import {
 } from "@/lib/domain";
 import { MasterAdmin } from "./admin";
 import { ProductRoadmap } from "./roadmap";
+import { ReleaseReadiness } from "./release-readiness";
 import {
   cacheBundle,
   cacheTrips,
@@ -1451,6 +1452,7 @@ function App() {
             tab === "more" ? (
               <>
                 {recoveryPanel(false)}
+                <ReleaseReadiness online={online} />
                 <ProductRoadmap />
                 <section className="panel">
                   <h2>Tài khoản & dữ liệu offline</h2>
@@ -3192,6 +3194,7 @@ function App() {
                       </p>
                     </section>
                   )}
+                  <ReleaseReadiness online={online} />
                   <section className="panel pwa-panel">
                     <div className="section-heading">
                       <div>

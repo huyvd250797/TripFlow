@@ -79,10 +79,14 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Export CSV/JSON và bản in HTML cho báo cáo sau chuyến.
 - Không có migration database mới ở V0.8.0.
 
-## ➡️ V0.9.0 — Release Candidate & Hardening
+## ✅ V0.9.0 — Release Candidate & Hardening
 
-Dừng mở rộng lớn; tập trung UAT, thiết bị thật, bảo mật, hiệu năng, mạng gián đoạn, migration và sửa lỗi.
+- Release readiness xác minh migration/RLS/các guard dữ liệu quan trọng ngay trong app.
+- Marker database V0.9.0 giúp phân biệt rõ source mới nhưng database chưa nâng cấp.
+- Hardening HTTP/API: same-origin, JSON content type, payload limits, no-store và request-id.
+- Security headers bổ sung CSP, CORP và cross-domain policy.
+- UAT checklist cho permission, offline, realtime, backup/restore và responsive trước V1.0.0.
 
-## V1.0.0 — Stable Production Release
+## ➡️ V1.0.0 — Stable Production Release
 
 Bản ổn định chính thức với tài liệu vận hành, checklist release và tiêu chuẩn production.

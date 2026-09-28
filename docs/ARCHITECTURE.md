@@ -1,4 +1,4 @@
-# Kiến trúc TripFlow 0.8.0
+# Kiến trúc TripFlow 0.9.0
 
 ## Công nghệ và luồng dữ liệu
 
@@ -82,3 +82,12 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 ## Live Trip V0.4.0
 
 `itinerary_items` vẫn là trạng thái hiện tại; `itinerary_events` là event history bất biến. Mutation status chạy qua `tf_mutate`, dùng trip advisory lock + unique active index, sau đó ghi event trong cùng transaction. `operation_id` + `(operation_id,item_id)` đảm bảo retry offline không nhân đôi lịch sử. Supabase Realtime chỉ đóng vai trò thông báo thay đổi; database/API vẫn là nguồn sự thật và client luôn có refetch dự phòng.
+
+
+## V0.9.0 Release Candidate hardening
+
+- `tf_schema_versions` là marker triển khai, không phải nguồn dữ liệu nghiệp vụ.
+- `tf_release_readiness()` chỉ trả capability/check trạng thái cần cho RC; không trả secret.
+- `/api/release` yêu cầu phiên đăng nhập và dùng để hiển thị release readiness.
+- Mutation endpoints tiếp tục dùng RPC làm cổng ghi duy nhất; V0.9 bổ sung same-origin/content-type/payload guards ở HTTP layer.
+- CSP và các security headers áp dụng ở Next.js; RLS/RPC vẫn là lớp quyết định quyền cuối cùng.
