@@ -76,3 +76,7 @@ V1.7.0 không có migration. Deploy App 1.7.0 trên Database 1.4.0, xác nhận 
 ## V1.8.0 Map, Places & Route Intelligence
 
 V1.8.0 không có migration. Deploy App 1.8.0 trên Database 1.4.0, xác nhận `tripflow-shell-v180`, kiểm tra chế độ Bản đồ trên itinerary và bottom taskbar ở PWA standalone. Route Intelligence chỉ là ước tính nội bộ; khi cần tuyến thực tế người dùng mở Google Maps qua link do app tạo.
+
+## V1.8.1 Map/Media/PWA patch
+
+V1.8.1 không có migration. Deploy App 1.8.1 trên Database 1.4.0, xác nhận `tripflow-shell-v181`. Route `/api/maps/resolve` chỉ outbound đến HTTPS Google domains đã allow-list để mở rộng link Maps rút gọn. Preview Google Drive phụ thuộc quyền và khả năng nhúng của nguồn; luôn giữ nút Mở nguồn làm fallback.

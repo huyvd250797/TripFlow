@@ -276,10 +276,33 @@ export function mediaPreviewUrl(media: Media) {
   try {
     const url = new URL(value);
     if (/\.(avif|gif|jpe?g|png|webp)$/i.test(url.pathname)) return value;
+    if (/^(?:lh3|lh4|lh5|lh6)\.googleusercontent\.com$/i.test(url.hostname)) return value;
+    if (url.hostname === "drive.usercontent.google.com" && url.searchParams.get("id")) return value;
     if (url.hostname === "drive.google.com") {
       const match = url.pathname.match(/\/file\/d\/([^/]+)/) || url.search.match(/[?&]id=([^&]+)/);
       const id = match?.[1];
-      if (id) return `https://drive.google.com/uc?export=view&id=${encodeURIComponent(id)}`;
+      if (id) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600`;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function mediaEmbedUrl(media: Media) {
+  const value = media.url.trim();
+  if (!value) return null;
+  if (media.kind === "photo") return mediaPreviewUrl(media);
+  try {
+    const url = new URL(value);
+    if (media.kind === "video" && /\.(mp4|webm|mov)$/i.test(url.pathname)) return value;
+    if (url.hostname === "drive.google.com") {
+      const fileMatch = url.pathname.match(/\/file\/d\/([^/]+)/) || url.search.match(/[?&]id=([^&]+)/);
+      const folderMatch = url.pathname.match(/\/(?:drive\/)?folders\/([^/?#]+)/);
+      if (media.kind === "album" && folderMatch?.[1])
+        return `https://drive.google.com/embeddedfolderview?id=${encodeURIComponent(folderMatch[1])}#grid`;
+      if ((media.kind === "video" || media.kind === "document") && fileMatch?.[1])
+        return `https://drive.google.com/file/d/${encodeURIComponent(fileMatch[1])}/preview`;
     }
   } catch {
     return null;

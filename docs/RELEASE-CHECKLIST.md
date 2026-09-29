@@ -148,3 +148,11 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] PWA taskbar được kiểm thử bằng scroll dài trên iPhone standalone và Chrome Android standalone.
 - [ ] Quick hide/reveal và dashboard declutter đạt.
 - [ ] Motion không gây layout shift và tôn trọng Reduce Motion.
+
+## V1.8.1 Map Link, Media Viewer & PWA Keyboard Fix
+
+- [ ] App version `1.8.1`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v181` active.
+- [ ] Link `maps.app.goo.gl` cũ và mới đều tự resolve tọa độ khi mở Map view.
+- [ ] Ảnh Google Drive mở được trong viewer TripFlow khi có quyền; album/video/document có fallback Mở nguồn.
+- [ ] iPhone PWA: keyboard không đẩy header/footer modal ra khỏi vùng nhìn thấy.

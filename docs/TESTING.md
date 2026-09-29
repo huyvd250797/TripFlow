@@ -257,3 +257,11 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Nút ⚡ có dấu × khi hiện; sau khi ẩn chỉ còn mũi tên; bấm mũi tên mở lại.
 - [ ] Tổng quan không còn card Command Center.
 - [ ] Reduce Motion của hệ điều hành làm animation gần như tắt.
+
+## V1.8.1 Map/Media/PWA fixes
+
+- Link `maps.app.goo.gl` được route `/api/maps/resolve` mở rộng an toàn; chỉ chấp nhận HTTPS Google Maps host.
+- Map view không báo thiếu tọa độ trong khi link rút gọn đang được resolve; khi resolve thành công phải tăng số điểm có tọa độ.
+- Google Drive photo preview dùng thumbnail; click ảnh mở viewer trong app.
+- Drive folder/album dùng embedded folder view khi được phép.
+- iOS keyboard: dialog bám visual viewport offset/height và footer vẫn thao tác được.

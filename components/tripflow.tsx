@@ -93,6 +93,7 @@ import {
   postTripHtml,
   buildTripStory,
   mediaPreviewUrl,
+  mediaEmbedUrl,
 } from "@/lib/domain";
 import { MasterAdmin } from "./admin";
 import { ProductRoadmap } from "./roadmap";
@@ -102,7 +103,7 @@ import { searchTripWorkspace, type WorkspaceSearchResult } from "@/lib/workspace
 import { parseQuickEntry } from "@/lib/quick-entry";
 import { buildSmartDefaults, expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
 import { moveItemToDay, planningDays, shiftItemMinutes } from "@/lib/planning";
-import { analyzeRouteDay, mapPointLayout } from "@/lib/route-intelligence";
+import { analyzeRouteDay, extractMapCoordinate, mapPointLayout } from "@/lib/route-intelligence";
 import {
   cacheBundle,
   cacheTrips,
@@ -272,6 +273,9 @@ function App() {
     [commandFabCollapsed, setCommandFabCollapsed] = useState(false),
     [planningView, setPlanningView] = useState<"timeline" | "board" | "map">("timeline"),
     [planningBusyId, setPlanningBusyId] = useState(""),
+    [resolvedMapLinks, setResolvedMapLinks] = useState<Record<string, string | null>>({}),
+    [mapResolveBusy, setMapResolveBusy] = useState(false),
+    [mediaViewerId, setMediaViewerId] = useState(""),
     [historyOpen, setHistoryOpen] = useState(false),
     [templateApply, setTemplateApply] = useState<TripTemplate | null>(null),
     [templateName, setTemplateName] = useState(""),
@@ -369,10 +373,16 @@ function App() {
     document.documentElement.dataset.pwa = standalone ? "standalone" : "browser";
 
     const syncViewport = () => {
-      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const visual = window.visualViewport;
+      const viewportHeight = visual?.height || window.innerHeight;
+      const viewportTop = Math.max(0, visual?.offsetTop || 0);
       document.documentElement.style.setProperty(
         "--tf-viewport-height",
         `${Math.round(viewportHeight)}px`,
+      );
+      document.documentElement.style.setProperty(
+        "--tf-viewport-top",
+        `${Math.round(viewportTop)}px`,
       );
       const keyboardOpen = window.innerHeight - viewportHeight > 120;
       document.documentElement.dataset.keyboard = keyboardOpen ? "open" : "closed";
@@ -625,6 +635,39 @@ function App() {
   });
   const data = bq.data,
     trip = data?.trip;
+  useEffect(() => {
+    if (!data || planningView !== "map" || !online) return;
+    const pending = data.items.filter((item) => {
+      if (!item.map_url || extractMapCoordinate(item.map_url)) return false;
+      return !Object.prototype.hasOwnProperty.call(resolvedMapLinks, item.id);
+    });
+    if (!pending.length) return;
+    let cancelled = false;
+    setMapResolveBusy(true);
+    void Promise.all(
+      pending.map(async (item) => {
+        try {
+          const result = await api<{ resolvedUrl?: string; coordinate?: { lat: number; lng: number } | null }>(
+            `/api/maps/resolve?url=${encodeURIComponent(item.map_url)}`,
+          );
+          return [item.id, result.coordinate && result.resolvedUrl ? result.resolvedUrl : null] as const;
+        } catch {
+          return [item.id, null] as const;
+        }
+      }),
+    ).then((rows) => {
+      if (cancelled) return;
+      setResolvedMapLinks((current) => {
+        const next = { ...current };
+        for (const [id, url] of rows) next[id] = url;
+        return next;
+      });
+      setMapResolveBusy(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, planningView, online, resolvedMapLinks]);
   const templatesQ = useQuery<TemplateListResponse>({
     queryKey: ["trip-templates", user?.id],
     queryFn: () => api<TemplateListResponse>("/api/templates"),
@@ -888,6 +931,15 @@ function App() {
     }
     if (m.entity === "invitation" && m.action === "create")
       setShareLink(location.origin + "/?invite=" + String(result.result.token));
+    if (m.entity === "item") {
+      const itemId = String(m.id || result.result.id || "");
+      if (itemId)
+        setResolvedMapLinks((current) => {
+          const next = { ...current };
+          delete next[itemId];
+          return next;
+        });
+    }
     await Promise.all([
       qc.invalidateQueries({ queryKey: ["trips"] }),
       qc.invalidateQueries({ queryKey: ["trip"] }),
@@ -1471,6 +1523,9 @@ function App() {
   const analytics = data ? buildTripAnalytics(data) : null;
   const story = data ? buildTripStory(data) : null;
   const storyCoverPreview = story?.cover ? mediaPreviewUrl(story.cover) : null;
+  const storyCoverEmbed = story?.cover ? mediaEmbedUrl(story.cover) : null;
+  const mediaViewer = mediaViewerId && data ? data.media.find((row) => row.id === mediaViewerId) || null : null;
+  const mediaViewerPreview = mediaViewer ? mediaEmbedUrl(mediaViewer) : null;
   const progress = data
     ? live(data.items, now || new Date().toISOString())
     : null;
@@ -1485,10 +1540,19 @@ function App() {
             ? localTime(progress.next.start_at, trip.timezone).slice(0, 10)
             : boardDays[0]
       : "";
+  const routeItems = data
+    ? data.items.map((item) => ({
+        ...item,
+        map_url: resolvedMapLinks[item.id] || item.map_url,
+      }))
+    : [];
   const routeAnalysis = data && trip && routeDay
-    ? analyzeRouteDay(data.items, trip.timezone, routeDay)
+    ? analyzeRouteDay(routeItems, trip.timezone, routeDay)
     : null;
   const routeMapPoints = routeAnalysis ? mapPointLayout(routeAnalysis.items) : [];
+  const routeUnresolvedLinkCount = routeAnalysis
+    ? routeAnalysis.items.filter((item) => item.map_url && !extractMapCoordinate(item.map_url)).length
+    : 0;
   const current = progress?.current;
   const workspaceResults = data ? searchTripWorkspace(data, searchTerm) : [];
   const workspaceFocusItem = progress?.active || current || progress?.next || null;
@@ -2787,8 +2851,25 @@ function App() {
                         <div><span>Thời gian di chuyển</span><b>{routeAnalysis.totalTravelMinutes ? `${routeAnalysis.totalTravelMinutes} phút` : "—"}</b></div>
                         <div className={routeAnalysis.warnings.length ? "warn" : "ok"}><span>Cảnh báo lịch trình</span><b>{routeAnalysis.warnings.length}</b></div>
                       </div>
+                      {(mapResolveBusy || routeUnresolvedLinkCount > 0) && (
+                        <div className={`route-coordinate-status ${mapResolveBusy ? "loading" : "warning"}`}>
+                          <MapPin size={18} />
+                          <div>
+                            <b>{mapResolveBusy ? "Đang đọc tọa độ từ link Google Maps…" : "Có link Google Maps chưa đọc được tọa độ"}</b>
+                            <p>
+                              {mapResolveBusy
+                                ? "TripFlow đang tự mở rộng link maps.app.goo.gl để lấy tọa độ. Bạn không cần nhập lại link."
+                                : `${routeUnresolvedLinkCount} hoạt động vẫn dùng link rút gọn/không chứa tọa độ. Hãy mở link rồi sao chép URL đầy đủ nếu Google không cho phép TripFlow mở rộng link.`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       {routeMapPoints.length > 0 ? (
                         <div className="route-spatial-map">
+                          <div className="route-map-caption">
+                            <b>Sơ đồ vị trí tương đối</b>
+                            <small>TripFlow dựng từ tọa độ đã đọc; bấm “Mở tuyến Google Maps” để xem bản đồ và đường đi thực tế.</small>
+                          </div>
                           <div className="route-map-grid" aria-hidden="true" />
                           <svg className="route-map-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                             {routeMapPoints.slice(0, -1).map((point, index) => {
@@ -2814,8 +2895,8 @@ function App() {
                       ) : (
                         <div className="route-map-empty">
                           <MapPin size={28} />
-                          <b>Chưa có tọa độ để dựng bản đồ</b>
-                          <p>Gắn link Google Maps có tọa độ cho hoạt động. TripFlow vẫn có thể mở tuyến theo tên địa điểm.</p>
+                          <b>{mapResolveBusy ? "Đang đọc link Google Maps…" : "Chưa lấy được tọa độ để dựng sơ đồ"}</b>
+                          <p>TripFlow hỗ trợ cả link Google Maps đầy đủ và link rút gọn maps.app.goo.gl. Link rút gọn sẽ được tự mở rộng khi có mạng; nếu không đọc được, tuyến vẫn có thể mở theo tên địa điểm.</p>
                         </div>
                       )}
                       <div className="route-legs">
@@ -3564,9 +3645,20 @@ function App() {
               {tab === "media" && data && story && (
                 <>
                   <section className="story-hero panel">
-                    <div className="story-hero-visual">
+                    <div
+                      className={`story-hero-visual ${story.cover && storyCoverEmbed ? "media-clickable" : ""}`}
+                      onClick={() => story.cover && storyCoverEmbed && setMediaViewerId(story.cover.id)}
+                      role={story.cover && storyCoverEmbed ? "button" : undefined}
+                      tabIndex={story.cover && storyCoverEmbed ? 0 : undefined}
+                      onKeyDown={(event) => {
+                        if (story.cover && storyCoverEmbed && (event.key === "Enter" || event.key === " ")) {
+                          event.preventDefault();
+                          setMediaViewerId(story.cover.id);
+                        }
+                      }}
+                    >
                       {storyCoverPreview ? (
-                        <img src={storyCoverPreview} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                        <img src={storyCoverPreview} alt={story.cover?.title || trip.name} onError={(event) => { event.currentTarget.style.display = "none"; }} />
                       ) : (
                         <div className="story-hero-placeholder">
                           <Compass size={42} />
@@ -3588,7 +3680,8 @@ function App() {
                       </div>
                       <div className="actions">
                         {writable && <button className="btn primary" onClick={() => edit("media")}><Camera size={17} /> Thêm kỷ niệm</button>}
-                        {story.cover && <Link url={story.cover.url}>Mở media bìa</Link>}
+                        {story.cover && storyCoverEmbed && <button className="btn secondary" onClick={() => setMediaViewerId(story.cover!.id)}><Images size={17} /> Xem trong TripFlow</button>}
+                        {story.cover && <Link url={story.cover.url}>Mở nguồn</Link>}
                       </div>
                     </div>
                   </section>
@@ -3612,10 +3705,22 @@ function App() {
                       <div className="highlight-grid">
                         {story.highlights.map((m) => {
                           const preview = mediaPreviewUrl(m);
+                          const embed = mediaEmbedUrl(m);
                           return (
                             <article className="highlight-card" key={m.id}>
-                              <div className="highlight-visual">
-                                {preview ? <img src={preview} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} /> : <span><Sparkles size={28} /></span>}
+                              <div
+                                className={`highlight-visual ${embed ? "media-clickable" : ""}`}
+                                onClick={() => embed && setMediaViewerId(m.id)}
+                                role={embed ? "button" : undefined}
+                                tabIndex={embed ? 0 : undefined}
+                                onKeyDown={(event) => {
+                                  if (embed && (event.key === "Enter" || event.key === " ")) {
+                                    event.preventDefault();
+                                    setMediaViewerId(m.id);
+                                  }
+                                }}
+                              >
+                                {preview ? <img src={preview} alt={m.title} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : <span><Sparkles size={28} /></span>}
                                 <div className="highlight-badges">
                                   {m.is_cover && <em><Crown size={12} /> Cover</em>}
                                   {m.is_highlight && <em><Sparkles size={12} /> Highlight</em>}
@@ -3663,10 +3768,22 @@ function App() {
                               <div className="memory-media-grid">
                                 {memoryDay.media.map((m) => {
                                   const preview = mediaPreviewUrl(m);
+                                  const embed = mediaEmbedUrl(m);
                                   return (
                                     <section className={`memory-media-card ${m.is_highlight ? "highlighted" : ""}`} key={m.id}>
-                                      <div className="memory-media-preview">
-                                        {preview ? <img src={preview} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} /> : m.kind === "document" ? <FileText size={28} /> : <Images size={28} />}
+                                      <div
+                                        className={`memory-media-preview ${embed ? "media-clickable" : ""}`}
+                                        onClick={() => embed && setMediaViewerId(m.id)}
+                                        role={embed ? "button" : undefined}
+                                        tabIndex={embed ? 0 : undefined}
+                                        onKeyDown={(event) => {
+                                          if (embed && (event.key === "Enter" || event.key === " ")) {
+                                            event.preventDefault();
+                                            setMediaViewerId(m.id);
+                                          }
+                                        }}
+                                      >
+                                        {preview ? <img src={preview} alt={m.title} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : m.kind === "document" ? <FileText size={28} /> : <Images size={28} />}
                                         <span>{({ album: "ALBUM", photo: "ẢNH", video: "VIDEO", document: "TÀI LIỆU" } as const)[m.kind]}</span>
                                       </div>
                                       <div className="memory-media-body">
@@ -3708,7 +3825,7 @@ function App() {
                 <>
                   <section className="more-hub-intro">
                     <div>
-                      <span className="eyebrow">TRIPFLOW MODULE HUB · V1.8.0</span>
+                      <span className="eyebrow">TRIPFLOW MODULE HUB · V1.8.1</span>
                       <h2>Thêm & quản lý</h2>
                       <p>Thông tin được gom theo module. Mở đúng nhóm bạn cần để màn hình gọn và dễ tập trung hơn.</p>
                     </div>
@@ -4779,6 +4896,42 @@ function App() {
               </div>
             )}
           </div>
+        </Dialog>
+      )}
+      {mediaViewer && (
+        <Dialog
+          open
+          onClose={() => setMediaViewerId("")}
+          title={mediaViewer.title || "Media chuyến đi"}
+          description={mediaViewer.note || undefined}
+        >
+          <div className="dialog-body media-viewer-body">
+            {mediaViewerPreview ? (
+              mediaViewer.kind === "album" || mediaViewer.kind === "document" || mediaViewerPreview.includes("/preview") || mediaViewerPreview.includes("embeddedfolderview") ? (
+                <iframe
+                  className="media-viewer-frame"
+                  src={mediaViewerPreview}
+                  title={mediaViewer.title}
+                  allow="autoplay; fullscreen"
+                />
+              ) : mediaViewer.kind === "video" ? (
+                <video className="media-viewer-media" src={mediaViewerPreview} controls playsInline />
+              ) : (
+                <img className="media-viewer-media" src={mediaViewerPreview} alt={mediaViewer.title} />
+              )
+            ) : (
+              <div className="media-viewer-fallback">
+                <Images size={38} />
+                <b>Không thể xem trực tiếp media này</b>
+                <p>Nguồn có thể yêu cầu quyền Google Drive hoặc không cho phép nhúng. Bạn vẫn có thể mở ở nguồn.</p>
+              </div>
+            )}
+            {mediaViewer.note && <p className="prewrap media-viewer-caption">{mediaViewer.note}</p>}
+          </div>
+          <footer className="dialog-footer">
+            <button className="btn secondary" onClick={() => setMediaViewerId("")}>Đóng</button>
+            <Link url={mediaViewer.url}>Mở nguồn</Link>
+          </footer>
         </Dialog>
       )}
       {tripPicker && (

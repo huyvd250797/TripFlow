@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.1 — Map Link, Media Viewer & PWA Keyboard Fix
+
+- Tự động resolve link Google Maps rút gọn `maps.app.goo.gl` ở server để lấy URL đầy đủ/tọa độ, đồng thời chuẩn hóa link khi lưu activity và tự xử lý các activity cũ khi mở tab Bản đồ.
+- Làm rõ Map view trong app là **sơ đồ vị trí tương đối**; tuyến thực tế vẫn mở bằng Google Maps. Có trạng thái đang đọc tọa độ và cảnh báo khi Google không trả được tọa độ.
+- Fix editor/PWA trên iOS khi bàn phím mở bằng cách bám `visualViewport.offsetTop + height`, giữ header/body/footer trong vùng nhìn thấy thay vì bị đẩy/ép bất thường.
+- Media hỗ trợ preview Google Drive tốt hơn bằng thumbnail; ảnh mở trực tiếp trong lightbox TripFlow, album Drive có thể mở dạng embedded grid và video/document Drive dùng preview khi nguồn cho phép.
+- App version `1.8.1`, service worker `tripflow-shell-v181`, Database yêu cầu vẫn `1.4.0`; không có migration mới.
+- Phiên bản tiếp theo: V1.9.0 – Expense Intelligence & Travel Wallet.
+
 ## 1.8.0 — Map, Places & Route Intelligence
 
 - Thêm chế độ **Bản đồ** bên cạnh Timeline/Board; chọn ngày, xem điểm dừng, mở từng địa điểm hoặc toàn tuyến trên Google Maps.

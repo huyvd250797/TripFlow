@@ -167,3 +167,11 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
 **Roadmap hiện tại:** V1.8.0 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.
+
+## ✅ V1.8.1 — Map Link, Media Viewer & PWA Keyboard Fix
+
+- Resolve link Google Maps rút gọn để lấy tọa độ cho Map view.
+- Làm rõ sơ đồ tuyến nội bộ và trạng thái đọc tọa độ.
+- Xem ảnh/album/video Drive trong TripFlow khi nguồn cho phép.
+- Fix editor khi bàn phím iOS/PWA mở.
+- Không có migration; Database giữ V1.4.0.

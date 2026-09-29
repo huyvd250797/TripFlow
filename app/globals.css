@@ -6247,3 +6247,130 @@ h3 {
   .planning-view-switch { width: 100%; flex: 1 1 100%; }
   .planning-gps-btn { margin-left: auto; }
 }
+
+/* TripFlow V1.8.1 · Map link resolution, keyboard-safe editor, in-app media viewer */
+.route-coordinate-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #cfe1e3;
+  border-radius: 14px;
+  background: #f7fbfb;
+  color: #365c61;
+}
+.route-coordinate-status.loading { border-color: #b8dfe3; background: #effafb; }
+.route-coordinate-status.warning { border-color: #ead7ae; background: #fffaf0; color: #735c31; }
+.route-coordinate-status svg { flex: 0 0 auto; margin-top: 2px; }
+.route-coordinate-status b { display: block; font-size: 13px; color: #0c5f69; }
+.route-coordinate-status.warning b { color: #775c25; }
+.route-coordinate-status p { margin: 4px 0 0; font-size: 12px; line-height: 1.5; }
+.route-map-caption {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 12px;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  pointer-events: none;
+}
+.route-map-caption b {
+  font-size: 12px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #0a6670;
+}
+.route-map-caption small {
+  max-width: 430px;
+  text-align: right;
+  color: #71898d;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.route-spatial-map { padding-top: 44px; }
+
+.media-clickable { cursor: zoom-in; }
+.media-clickable:focus-visible { outline: 3px solid rgba(20,145,157,.26); outline-offset: 3px; }
+.media-viewer-body {
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  background: #071d21;
+  padding: 16px;
+  min-height: min(68vh, 620px);
+}
+.media-viewer-media,
+.media-viewer-frame {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: min(62vh, 620px);
+  border: 0;
+  border-radius: 14px;
+  object-fit: contain;
+  background: #06171a;
+}
+.media-viewer-frame { min-height: 460px; }
+.media-viewer-caption {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.08);
+  color: #eef9fa;
+  font-size: 13px;
+}
+.media-viewer-fallback {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 8px;
+  min-height: 280px;
+  color: #d8e9eb;
+}
+.media-viewer-fallback p { max-width: 430px; margin: 0; color: #9eb9bd; }
+
+@media (max-width: 760px) {
+  .route-map-caption { position: relative; inset: auto; padding: 0 2px 10px; display: block; }
+  .route-map-caption small { display: block; text-align: left; margin-top: 4px; max-width: none; }
+  .route-spatial-map { padding-top: 12px; }
+  .media-viewer-body { min-height: 0; padding: 10px; }
+  .media-viewer-media,
+  .media-viewer-frame { height: min(58vh, 540px); border-radius: 10px; }
+  .media-viewer-frame { min-height: 360px; }
+
+  /* Follow the iOS visual viewport when the keyboard pans/resizes the screen. */
+  .dialog-overlay {
+    top: var(--tf-viewport-top, 0px);
+    bottom: auto;
+    height: var(--tf-viewport-height, 100dvh);
+  }
+  .dialog-content {
+    top: var(--tf-viewport-top, 0px);
+    bottom: auto;
+    height: var(--tf-viewport-height, 100dvh);
+    max-height: var(--tf-viewport-height, 100dvh);
+  }
+  html[data-keyboard="open"] .dialog-header {
+    min-height: 60px;
+    padding-top: 10px;
+    padding-bottom: 9px;
+  }
+  html[data-keyboard="open"] .dialog-header .eyebrow { display: none; }
+  html[data-keyboard="open"] .dialog-header h2 { font-size: 18px; }
+  html[data-keyboard="open"] .dialog-body {
+    padding-top: 12px;
+    padding-bottom: 14px;
+    scroll-padding-top: 74px;
+    scroll-padding-bottom: 86px;
+  }
+  html[data-keyboard="open"] .dialog-footer {
+    min-height: 62px;
+    padding-top: 9px;
+    padding-bottom: max(9px, env(safe-area-inset-bottom));
+  }
+}

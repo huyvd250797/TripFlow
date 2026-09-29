@@ -15,6 +15,7 @@ import {
   postTripHtml,
   buildTripStory,
   mediaPreviewUrl,
+  mediaEmbedUrl,
   dateLabel,
 } from "../lib/domain";
 import { mutationSchema } from "../lib/validation";
@@ -232,6 +233,14 @@ test("V1.3 trip story groups memories, cover and highlights", () => {
   assert.equal(story.memory_days, 1);
   assert.equal(story.days[0].media.length, 2);
   assert.equal(mediaPreviewUrl(bundle.media[0]), "https://example.com/a.jpg");
+  assert.equal(
+    mediaPreviewUrl({ ...bundle.media[0], url: "https://drive.google.com/file/d/abc123/view" }),
+    "https://drive.google.com/thumbnail?id=abc123&sz=w1600",
+  );
+  assert.equal(
+    mediaEmbedUrl({ ...bundle.media[1], url: "https://drive.google.com/drive/folders/folder123" }),
+    "https://drive.google.com/embeddedfolderview?id=folder123#grid",
+  );
   assert.match(postTripJson(bundle), /"story"/);
   assert.match(postTripHtml(bundle), /Câu chuyện chuyến đi/);
 });
