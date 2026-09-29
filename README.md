@@ -1,4 +1,4 @@
-# TripFlow 1.5.0 · Quick Entry & Command Center
+# TripFlow 1.5.1 · Quick Entry & Command Center — Deploy Typecheck Fix
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -39,7 +39,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V1.5.0 (bao gồm V1.1.1 Mobile Layout Fix) đều được đánh dấu ✅. Phiên bản tiếp theo là V1.6.0 – Smart Defaults & Context Automation.
+- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V1.5.1 (bao gồm V1.1.1 Mobile Layout Fix) đều được đánh dấu ✅. Phiên bản tiếp theo là V1.6.0 – Smart Defaults & Context Automation.
 
 **Phạm vi offline:** cho phép thêm thực chi, thêm/cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -286,7 +286,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap 1.x hiện đã hoàn thành đến V1.5.0; phiên bản tiếp theo là V1.6.0 – Smart Defaults & Context Automation.
+- Roadmap 1.x hiện đã hoàn thành đến V1.5.1; phiên bản tiếp theo là V1.6.0 – Smart Defaults & Context Automation.
 
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
@@ -327,4 +327,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **1.5.0**; Database version yêu cầu: **1.4.0**; không có migration V1.5.0.
+- App version: **1.5.1**; Database version yêu cầu: **1.4.0**; V1.5.1 không có migration database.

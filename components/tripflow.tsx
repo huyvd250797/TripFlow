@@ -1532,7 +1532,7 @@ function App() {
     }
   };
   const repeatLastExpense = () => {
-    const last = data.expenses.toSorted((a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at))[0];
+    const last = data?.expenses.toSorted((a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at))[0];
     if (!last) return quickExpense();
     setSpec({
       entity: "expense",

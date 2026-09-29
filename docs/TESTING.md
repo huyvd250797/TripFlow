@@ -218,3 +218,10 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Lưu nhanh/Lưu & nhập tiếp/offline queue hoạt động.
 - [ ] Floating button không che bottom navigation ở 320/390 px.
 - [ ] App 1.5.0 chạy với Database 1.4.0; không yêu cầu migration giả.
+
+
+## Deploy typecheck regression V1.5.1
+
+- [ ] `repeatLastExpense` hoạt động an toàn khi Bundle chưa tải.
+- [ ] `tests/domain.test.ts` import và gọi `dateLabel` hợp lệ.
+- [ ] `npm run build` qua type-check trên Node 24.x.

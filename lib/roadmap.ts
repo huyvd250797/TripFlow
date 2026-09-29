@@ -119,6 +119,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Command Center toàn app, Quick Entry một dòng nhận tiền/ngày/giờ, lưu nhanh hoặc mở form, lịch sử lệnh gần đây, lặp khoản chi và phím tắt Ctrl/Cmd+K.",
   },
   {
+    version: "V1.5.1",
+    title: "Deploy Typecheck Fix",
+    done: true,
+    description:
+      "Sửa lỗi build TypeScript: bảo vệ Bundle chưa tải khi lặp khoản chi gần nhất và bổ sung import dateLabel cho test domain; không đổi schema database.",
+  },
+  {
     version: "V1.6.0",
     title: "Smart Defaults & Context Automation",
     done: false,

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.1 — Deploy Typecheck Fix
+
+- Sửa lỗi `TS18048: data is possibly undefined` ở thao tác **Lặp khoản chi gần nhất** bằng optional access trước khi đọc `expenses`.
+- Sửa lỗi `TS2304: Cannot find name dateLabel` trong domain test bằng import đúng `dateLabel` từ `lib/domain`.
+- Tăng App version lên `1.5.1` và service worker cache lên `tripflow-shell-v151`.
+- Không có migration database; Database requirement vẫn là `1.4.0`.
+
 ## 1.5.0 — Quick Entry & Command Center
 
 - Thay **Thao tác nhanh** bằng **Command Center** có Quick Entry một dòng; hỗ trợ nhập trực tiếp từ dashboard hoặc nút ⚡ nổi toàn app.

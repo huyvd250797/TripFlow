@@ -58,3 +58,7 @@ Chạy `202609290001_v140_smart_planning_templates_reuse.sql` sau V1.3.0 rồi d
 ## V1.5.0 Quick Entry release
 
 V1.5.0 không có migration database. Deploy frontend V1.5.0 sau khi database đã ở V1.4.0, xác nhận **Trạng thái Production** hiển thị App 1.5.0 / DB 1.4.0 / stable, thử `Ctrl/Cmd + K`, Quick Entry và offline queue. Service worker mới là `tripflow-shell-v150`.
+
+## V1.5.1 Deploy Typecheck Fix
+
+V1.5.1 là patch frontend, không có migration. Deploy source bằng Node 24.x trên Database V1.4.0, xác nhận App `1.5.1` / DB `1.4.0` / stable và service worker `tripflow-shell-v151`. Chạy `npm run build` trước production để xác nhận hai lỗi type-check của V1.5.0 không tái phát.

@@ -138,3 +138,7 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - Parser chỉ tạo preview; mutation cuối vẫn đi qua `/api/tripflow`, Zod, quyền/RLS và idempotency hiện có.
 - Recent command chỉ là tiện ích localStorage theo user/trip, không phải nguồn dữ liệu nghiệp vụ.
 - App `VERSION = 1.5.0`; `DATABASE_VERSION = 1.4.0`.
+
+## V1.5.1 patch architecture
+
+Không thay đổi kiến trúc hay schema. Patch chỉ làm an toàn đường đọc Bundle khi UI chưa tải dữ liệu (`data?.expenses`) và sửa import test cho `dateLabel`. Runtime App `1.5.1`, Database requirement `1.4.0`.

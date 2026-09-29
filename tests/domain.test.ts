@@ -15,6 +15,7 @@ import {
   postTripHtml,
   buildTripStory,
   mediaPreviewUrl,
+  dateLabel,
 } from "../lib/domain";
 import { mutationSchema } from "../lib/validation";
 import type { Budget, Expense, Item, Bundle } from "../lib/types";

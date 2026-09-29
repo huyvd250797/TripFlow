@@ -131,6 +131,12 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Floating ⚡ button + `Ctrl/Cmd + K`; giữ Search `/`; recent command và lặp khoản chi gần nhất.
 - Không đổi schema; App V1.5.0 dùng Database V1.4.0.
 
+## ✅ V1.5.1 — Deploy Typecheck Fix
+
+- Sửa `TS18048` khi `Bundle` chưa tải ở thao tác **Lặp khoản chi gần nhất**.
+- Sửa `TS2304` trong `tests/domain.test.ts` bằng cách import `dateLabel` đúng từ domain.
+- Không đổi schema; App V1.5.1 tiếp tục dùng Database V1.4.0.
+
 ## ⬜ V1.6.0 — Smart Defaults & Context Automation
 
 - Tự điền người trả, category, activity, budget, ngày/giờ dựa trên context và lựa chọn gần nhất.
@@ -152,4 +158,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.5.0 đã hoàn thành; phiên bản tiếp theo là **V1.6.0 – Smart Defaults & Context Automation**.
+**Roadmap hiện tại:** V1.5.1 đã hoàn thành; phiên bản tiếp theo là **V1.6.0 – Smart Defaults & Context Automation**.

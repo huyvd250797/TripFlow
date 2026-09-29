@@ -110,3 +110,11 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Quick Entry parser smoke test pass; Command Center usable trên mobile/desktop.
 - [ ] Offline queue không tạo duplicate khi retry Quick Entry.
 - [ ] Service worker `tripflow-shell-v150` active sau deploy.
+
+
+## V1.5.1 Deploy Typecheck Fix
+
+- [ ] `npm run build` không còn TS18048 ở `components/tripflow.tsx`.
+- [ ] `npm run build` không còn TS2304 `dateLabel` ở `tests/domain.test.ts`.
+- [ ] App version `1.5.1`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v151` active sau deploy.
