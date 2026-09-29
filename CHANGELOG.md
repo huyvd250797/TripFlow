@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0 — Quick Entry & Command Center
+
+- Thay **Thao tác nhanh** bằng **Command Center** có Quick Entry một dòng; hỗ trợ nhập trực tiếp từ dashboard hoặc nút ⚡ nổi toàn app.
+- Parser rule-based hiểu số tiền kiểu `350k`, `1tr2`, `1.250.000`, ngày `hôm nay/ngày mai/DD/MM` và giờ `7:30/14h`; không phụ thuộc AI.
+- Tự phân loại nhanh khoản chi theo nội dung phổ biến (Di chuyển/Ăn uống/Lưu trú/Tham quan/Mua sắm), chỉ tự gắn budget theo ngữ cảnh khi category khớp để tránh liên kết sai.
+- Preview trước khi lưu, **Lưu nhanh**, **Lưu & nhập tiếp** hoặc chuyển sang form đầy đủ; thao tác offline được đưa vào queue hiện có.
+- Lưu tối đa 6 câu nhập gần đây theo user/chuyến trong localStorage và cho chọn lại bằng một chạm.
+- Bổ sung **Lặp khoản chi gần nhất** ở Command Center và shortcut `Ctrl/Cmd + K`; `/` tiếp tục mở tìm kiếm xuyên chuyến đi.
+- Floating Quick button được đặt trên desktop/mobile, tránh làm dày dashboard.
+- Service worker nâng cache shell lên `tripflow-shell-v150`.
+- Không có migration database mới; App V1.5.0 tiếp tục dùng Database V1.4.0.
+- Roadmap đổi hướng sang nhập nhanh/thông minh: tiếp theo **V1.6.0 – Smart Defaults & Context Automation**.
+
 ## 1.4.0 — Smart Planning Templates & Reuse
 
 - Thêm Planning Templates cá nhân: lưu chuyến hiện tại làm mẫu, tạo chuyến mới và tự dời lịch theo ngày bắt đầu mới.
@@ -9,7 +22,7 @@
 - Dashboard chuyển Smart Workspace vào nút ⚡ để giảm mật độ thông tin; lịch sử lịch trình chuyển vào dialog riêng.
 - Bổ sung nút **Ghi chi tiêu** trong tab Thực chi và nút ✓ lấy ngày/giờ hiện tại ở trường ngày giờ.
 - Database nâng lên **V1.4.0** qua migration `202609290001_v140_smart_planning_templates_reuse.sql`.
-- Roadmap đánh dấu V1.4.0 ✅; tiếp theo **V1.5.0 – Growth, Sharing & Expansion**.
+- Roadmap đánh dấu V1.4.0 ✅; V1.5.0 được điều chỉnh thành **Quick Entry & Command Center** theo roadmap tối ưu thao tác.
 
 ## 1.3.0 — Media, Memories & Storytelling
 

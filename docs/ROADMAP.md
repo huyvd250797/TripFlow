@@ -125,8 +125,31 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Tái sử dụng dự toán và người tham gia; không sao chép dữ liệu thực tế của chuyến cũ.
 - Ngày/giờ kết thúc tùy chọn, input tiền có phân cách hàng nghìn và UX dashboard/lịch trình gọn hơn.
 
-## ⬜ V1.5.0 — Growth, Sharing & Expansion
+## ✅ V1.5.0 — Quick Entry & Command Center
 
-- Sharing/public-private view, export nâng cao và nền mở rộng cho đa tiền tệ/tích hợp dịch vụ/AI khi có nhu cầu rõ ràng.
+- Command Center toàn app với Quick Entry một dòng, parser tiền/ngày/giờ và preview trước khi lưu.
+- Floating ⚡ button + `Ctrl/Cmd + K`; giữ Search `/`; recent command và lặp khoản chi gần nhất.
+- Không đổi schema; App V1.5.0 dùng Database V1.4.0.
 
-**Roadmap hiện tại:** V1.4.0 đã hoàn thành; phiên bản tiếp theo là **V1.5.0 – Growth, Sharing & Expansion**.
+## ⬜ V1.6.0 — Smart Defaults & Context Automation
+
+- Tự điền người trả, category, activity, budget, ngày/giờ dựa trên context và lựa chọn gần nhất.
+- Cảnh báo/xác nhận thông minh trước khi lưu để giảm nhập lặp và lỗi dữ liệu.
+
+## ⬜ V1.7.0 — Planning Board & Timeline Pro
+
+- Timeline kéo thả, vùng chưa xếp lịch, dời activity giữa ngày và giảm phụ thuộc modal.
+
+## ⬜ V1.8.0 — Map, Places & Route Intelligence
+
+- Map itinerary, khoảng cách/thời gian di chuyển và cảnh báo lịch trình phi thực tế.
+
+## ⬜ V1.9.0 — Expense Intelligence & Travel Wallet
+
+- Travel Wallet, favorite/recent expense, gợi ý category và cảnh báo tốc độ chi tiêu.
+
+## ⬜ V2.0.0 — TripFlow Pro Travel Operating System
+
+- Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
+
+**Roadmap hiện tại:** V1.5.0 đã hoàn thành; phiên bản tiếp theo là **V1.6.0 – Smart Defaults & Context Automation**.

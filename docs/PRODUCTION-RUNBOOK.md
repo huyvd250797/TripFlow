@@ -54,3 +54,7 @@ Chạy `202609280006_v130_media_memories_storytelling.sql` trước khi deploy f
 ## V1.4.0 Smart Planning release
 
 Chạy `202609290001_v140_smart_planning_templates_reuse.sql` sau V1.3.0 rồi deploy frontend V1.4.0. Xác nhận Production Readiness App/DB 1.4.0, bảng `trip_templates` bật RLS, RPC save/apply template tồn tại, `trips.end_date` và `itinerary_items.end_at` nullable, và service worker `tripflow-shell-v140` đã active.
+
+## V1.5.0 Quick Entry release
+
+V1.5.0 không có migration database. Deploy frontend V1.5.0 sau khi database đã ở V1.4.0, xác nhận **Trạng thái Production** hiển thị App 1.5.0 / DB 1.4.0 / stable, thử `Ctrl/Cmd + K`, Quick Entry và offline queue. Service worker mới là `tripflow-shell-v150`.

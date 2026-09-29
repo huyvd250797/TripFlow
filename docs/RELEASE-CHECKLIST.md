@@ -102,3 +102,11 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Kiểm thử save/apply/delete template với Owner và Editor; Viewer bị chặn save.
 - [ ] Kiểm thử tạo chuyến từ template không sao chép thực chi/media/history.
 - [ ] Service worker là `tripflow-shell-v140`.
+
+
+## V1.5.0 Quick Entry & Command Center
+
+- [ ] App version `1.5.0`; Database required `1.4.0`; channel `stable`.
+- [ ] Quick Entry parser smoke test pass; Command Center usable trên mobile/desktop.
+- [ ] Offline queue không tạo duplicate khi retry Quick Entry.
+- [ ] Service worker `tripflow-shell-v150` active sau deploy.

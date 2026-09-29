@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V1.4.0 bổ sung Smart Planning Templates & Reuse, cho phép ngày/giờ kết thúc tùy chọn và kiểm tra schema tái sử dụng kế hoạch. Ứng dụng xác minh Database V{DATABASE_VERSION}, RLS và khả năng backup/restore tương thích.
+            V1.5.0 bổ sung Quick Entry & Command Center ở frontend; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

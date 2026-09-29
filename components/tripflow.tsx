@@ -79,6 +79,7 @@ import {
   money,
   dateLabel,
   localTime,
+  utcTime,
   live,
   csv,
   planned,
@@ -97,6 +98,7 @@ import { ProductRoadmap } from "./roadmap";
 import { ReleaseReadiness } from "./release-readiness";
 import { BrandMark, BrandName } from "./brand";
 import { searchTripWorkspace, type WorkspaceSearchResult } from "@/lib/workspace";
+import { parseQuickEntry } from "@/lib/quick-entry";
 import {
   cacheBundle,
   cacheTrips,
@@ -245,6 +247,9 @@ function App() {
     [tripPicker, setTripPicker] = useState(false),
     [workspaceSearch, setWorkspaceSearch] = useState(false),
     [quickActionsOpen, setQuickActionsOpen] = useState(false),
+    [quickEntryText, setQuickEntryText] = useState(""),
+    [quickEntryBusy, setQuickEntryBusy] = useState(false),
+    [recentQuickEntries, setRecentQuickEntries] = useState<string[]>([]),
     [historyOpen, setHistoryOpen] = useState(false),
     [templateApply, setTemplateApply] = useState<TripTemplate | null>(null),
     [templateName, setTemplateName] = useState(""),
@@ -495,6 +500,11 @@ function App() {
         target?.tagName === "SELECT" ||
         target?.isContentEditable;
       if (typing || event.defaultPrevented) return;
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setQuickActionsOpen(true);
+        return;
+      }
       if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) {
         event.preventDefault();
         setWorkspaceSearch(true);
@@ -502,6 +512,20 @@ function App() {
     };
     window.addEventListener("keydown", openWorkspaceSearch);
     return () => window.removeEventListener("keydown", openWorkspaceSearch);
+  }, [user, selectedId]);
+
+  useEffect(() => {
+    if (!user || !selectedId) {
+      setRecentQuickEntries([]);
+      return;
+    }
+    try {
+      const key = `tripflow:quick-entry:${user.id}:${selectedId}`;
+      const rows = JSON.parse(localStorage.getItem(key) || "[]");
+      setRecentQuickEntries(Array.isArray(rows) ? rows.filter((x) => typeof x === "string").slice(0, 6) : []);
+    } catch {
+      setRecentQuickEntries([]);
+    }
   }, [user, selectedId]);
 
   useEffect(() => {
@@ -777,7 +801,7 @@ function App() {
     if (!user) throw new Error("Vui lòng đăng nhập lại.");
     if (!canQueueMutation(m))
       throw new Error(
-        "Thao tác này cần kết nối mạng. Chế độ offline hiện chỉ cho phép ghi chi tiêu mới, cập nhật/check-in lịch trình, người tham gia và media.",
+        "Thao tác này cần kết nối mạng. Chế độ offline hiện cho phép ghi chi tiêu mới, thêm/cập nhật/check-in lịch trình, người tham gia và media.",
       );
     await enqueueMutation(user.id, m);
     await refreshQueue();
@@ -1407,10 +1431,118 @@ function App() {
       defaults: workspaceFocusItem
         ? {
             item_id: workspaceFocusItem.id,
-            taken_on: dateLabel(localTime(workspaceFocusItem.start_at, trip.timezone).slice(0, 10)),
+            taken_on: dateLabel(localTime(workspaceFocusItem.start_at, trip?.timezone || "Asia/Ho_Chi_Minh").slice(0, 10)),
           }
         : undefined,
     });
+  const quickZone = trip?.timezone || "Asia/Ho_Chi_Minh";
+  const quickBaseDay = day !== "all" ? day : localTime(now || new Date().toISOString(), quickZone).slice(0, 10);
+  const quickNowLocal = localTime(now || new Date().toISOString(), quickZone);
+  const quickPreview = parseQuickEntry(quickEntryText, { baseDay: quickBaseDay, nowLocal: quickNowLocal });
+  const commandFocusBudget =
+    quickPreview?.kind === "expense" && workspaceFocusBudget?.category === quickPreview.category
+      ? workspaceFocusBudget
+      : null;
+  const rememberQuickEntry = (text: string) => {
+    if (!user || !selectedId || !text.trim()) return;
+    const next = [text.trim(), ...recentQuickEntries.filter((x) => x !== text.trim())].slice(0, 6);
+    setRecentQuickEntries(next);
+    try {
+      localStorage.setItem(`tripflow:quick-entry:${user.id}:${selectedId}`, JSON.stringify(next));
+    } catch {}
+  };
+  const openQuickEntryInEditor = () => {
+    if (!quickPreview || !quickPreview.valid) return;
+    if (quickPreview.kind === "expense") {
+      setSpec({
+        entity: "expense",
+        defaults: {
+          title: quickPreview.title,
+          amount: quickPreview.amount,
+          category: commandFocusBudget?.category || quickPreview.category,
+          budget_id: commandFocusBudget?.id || "",
+          spent_on: quickPreview.spent_on,
+        },
+      });
+    } else {
+      try {
+        setSpec({
+          entity: "item",
+          defaults: {
+            title: quickPreview.title,
+            start_at: utcTime(quickPreview.start_local, quickZone),
+          },
+        });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Ngày giờ nhập nhanh không hợp lệ.");
+        return;
+      }
+    }
+    setQuickActionsOpen(false);
+  };
+  const submitQuickEntry = async (keepOpen = false) => {
+    if (!data || !writable || !quickPreview?.valid) return;
+    setQuickEntryBusy(true);
+    setError("");
+    try {
+      const id = crypto.randomUUID();
+      const mutation: Mutation = quickPreview.kind === "expense"
+        ? {
+            operationId: crypto.randomUUID(),
+            tripId: selectedId,
+            entity: "expense",
+            action: "create",
+            id,
+            data: {
+              title: quickPreview.title,
+              category: commandFocusBudget?.category || quickPreview.category,
+              amount: quickPreview.amount,
+              kind: "payment",
+              budget_id: commandFocusBudget?.id || "",
+              refund_of: "",
+              spent_on: quickPreview.spent_on,
+              payer: "",
+              note: quickPreview.time_hint ? `Nhập nhanh lúc ${quickPreview.time_hint}` : "",
+              receipt_url: "",
+            },
+          }
+        : {
+            operationId: crypto.randomUUID(),
+            tripId: selectedId,
+            entity: "item",
+            action: "create",
+            id,
+            data: {
+              title: quickPreview.title,
+              location: "",
+              start_at: utcTime(quickPreview.start_local, quickZone),
+              end_at: null,
+              map_url: "",
+              note: "",
+            },
+          };
+      await save(mutation);
+      rememberQuickEntry(quickEntryText);
+      setQuickEntryText("");
+      if (!keepOpen) setQuickActionsOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không lưu được nhập nhanh.");
+    } finally {
+      setQuickEntryBusy(false);
+    }
+  };
+  const repeatLastExpense = () => {
+    const last = data.expenses.toSorted((a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at))[0];
+    if (!last) return quickExpense();
+    setSpec({
+      entity: "expense",
+      defaults: {
+        title: last.title, amount: last.amount, category: last.category, budget_id: last.budget_id || "",
+        payer: last.payer, spent_on: localTime(new Date().toISOString(), quickZone).slice(0, 10),
+      },
+    });
+    setQuickActionsOpen(false);
+  };
   const orderedSnapshots = data?.snapshots.toSorted((a, b) =>
     (a.snapshot_no ?? 999999) - (b.snapshot_no ?? 999999) ||
     a.created_at.localeCompare(b.created_at),
@@ -1891,8 +2023,8 @@ function App() {
                     >
                       <span><Zap size={20} /></span>
                       <div>
-                        <b>Thao tác nhanh</b>
-                        <small>{workspaceFocusItem ? workspaceFocusItem.title : "Ghi chi, thêm lịch trình, media…"}</small>
+                        <b>Command Center</b>
+                        <small>Nhập nhanh, tìm kiếm và thao tác theo ngữ cảnh</small>
                       </div>
                       <ChevronRight size={17} />
                     </button>
@@ -3746,7 +3878,7 @@ function App() {
                       </button>
                     </div>
                     <p className="hint">
-                      Chế độ offline hỗ trợ ghi chi tiêu mới, cập nhật/check-in lịch trình, người tham gia và media. Phân quyền, xóa chuyến, chốt dự toán và quản trị yêu cầu online.
+                      Chế độ offline hỗ trợ ghi chi tiêu mới, thêm/cập nhật/check-in lịch trình, người tham gia và media. Phân quyền, xóa chuyến, chốt dự toán và quản trị yêu cầu online.
                     </p>
                     <p className="hint">
                       {user.email} · TripFlow {VERSION}{account?.role === "master" ? " · MASTER" : ""}
@@ -3825,6 +3957,17 @@ function App() {
           </button>
         ))}
       </nav>
+      {data && (
+        <button
+          className="command-fab"
+          onClick={() => setQuickActionsOpen(true)}
+          aria-label="Mở TripFlow Command Center"
+          title="Command Center · Ctrl+K"
+        >
+          <Zap size={21} />
+          <span>Quick</span>
+        </button>
+      )}
       {spec && (
         <Editor
           key={spec.entity + String(spec.record?.id || "new")}
@@ -3835,8 +3978,84 @@ function App() {
         />
       )}
       {quickActionsOpen && data && (
-        <Dialog open onClose={() => setQuickActionsOpen(false)} title="Thao tác nhanh">
-          <div className="dialog-body quick-actions-dialog">
+        <Dialog open onClose={() => !quickEntryBusy && setQuickActionsOpen(false)} title="Command Center">
+          <div className="dialog-body command-center-dialog">
+            <div className="command-entry">
+              <div className="command-entry-title">
+                <span><Zap size={18} /> Quick Entry</span>
+                <kbd>Ctrl K</kbd>
+              </div>
+              <div className="command-input-wrap">
+                <Zap size={19} />
+                <input
+                  autoFocus
+                  value={quickEntryText}
+                  disabled={!writable || quickEntryBusy}
+                  onChange={(event) => setQuickEntryText(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && quickPreview?.valid && writable) {
+                      event.preventDefault();
+                      void submitQuickEntry(false);
+                    }
+                  }}
+                  placeholder={writable ? "Ví dụ: chi Taxi sân bay 350k · hoặc: lịch Ăn sáng 7:30" : "Bạn đang ở quyền chỉ xem"}
+                  aria-label="Nhập nhanh TripFlow"
+                />
+                {quickEntryText && (
+                  <button className="command-clear" aria-label="Xóa nội dung" onClick={() => setQuickEntryText("")}>×</button>
+                )}
+              </div>
+              <div className="command-help">
+                <span><b>Chi tiêu:</b> “Taxi sân bay 350k”, “chi cafe 120.000 hôm nay”</span>
+                <span><b>Lịch trình:</b> “lịch Ăn sáng 7:30”, “Check-in khách sạn 14h ngày mai”</span>
+              </div>
+              {quickPreview && (
+                <div className={`command-preview ${quickPreview.valid ? "valid" : "invalid"}`}>
+                  <div className="command-preview-icon">
+                    {quickPreview.kind === "expense" ? <Receipt size={20} /> : <Route size={20} />}
+                  </div>
+                  <div className="command-preview-main">
+                    <span className="eyebrow">TRIPFLOW HIỂU LÀ</span>
+                    <b>{quickPreview.kind === "expense" ? "Khoản chi" : "Hoạt động"} · {quickPreview.title}</b>
+                    {quickPreview.kind === "expense" ? (
+                      <small>
+                        {money(quickPreview.amount)} · {commandFocusBudget?.category || quickPreview.category} · {dateLabel(quickPreview.spent_on)}
+                        {commandFocusBudget ? ` · ${commandFocusBudget.title}` : ""}
+                        {quickPreview.time_hint ? ` · ${quickPreview.time_hint}` : ""}
+                      </small>
+                    ) : (
+                      <small>{dateLabel(quickPreview.start_local.slice(0, 10))} · {quickPreview.start_local.slice(11)} · chưa bắt buộc giờ kết thúc</small>
+                    )}
+                    {!quickPreview.valid && <em>{quickPreview.error}</em>}
+                  </div>
+                  {quickPreview.valid && writable && (
+                    <button className="btn secondary compact" onClick={openQuickEntryInEditor}>Mở form</button>
+                  )}
+                </div>
+              )}
+              {writable && quickPreview?.valid && (
+                <div className="command-save-actions">
+                  <button className="btn primary" disabled={quickEntryBusy} onClick={() => void submitQuickEntry(false)}>
+                    <Check size={17} /> {quickEntryBusy ? "Đang lưu…" : "Lưu nhanh"}
+                  </button>
+                  <button className="btn secondary" disabled={quickEntryBusy} onClick={() => void submitQuickEntry(true)}>
+                    <Plus size={17} /> Lưu & nhập tiếp
+                  </button>
+                </div>
+              )}
+              {!quickEntryText && recentQuickEntries.length > 0 && (
+                <div className="command-recent">
+                  <small>Gần đây</small>
+                  <div>
+                    {recentQuickEntries.map((row) => (
+                      <button key={row} onClick={() => setQuickEntryText(row)}>{row}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="command-divider"><span>Thao tác</span></div>
             <button
               className="workspace-search-launcher quick-dialog-search"
               onClick={() => { setQuickActionsOpen(false); openWorkspaceSearch(); }}
@@ -3845,18 +4064,25 @@ function App() {
               <span>Tìm trong chuyến đi</span>
               <kbd>/</kbd>
             </button>
-            <div className="workspace-actions">
+            <div className="workspace-actions command-actions">
               {writable && (
                 <button className="workspace-action" onClick={() => { setQuickActionsOpen(false); quickExpense(); }}>
                   <span className="workspace-action-icon"><Receipt size={20} /></span>
-                  <span><b>Ghi chi tiêu</b><small>{workspaceFocusBudget ? `Gắn ${workspaceFocusBudget.title}` : "Ghi nhanh khoản phát sinh"}</small></span>
+                  <span><b>Ghi chi tiêu</b><small>{workspaceFocusBudget ? `Gắn ${workspaceFocusBudget.title}` : "Mở form đầy đủ"}</small></span>
                   <ChevronRight size={17} />
                 </button>
               )}
               {writable && (
                 <button className="workspace-action" onClick={() => { setQuickActionsOpen(false); edit("item"); }}>
                   <span className="workspace-action-icon"><CirclePlus size={20} /></span>
-                  <span><b>Thêm hoạt động</b><small>Bổ sung ngay vào lịch trình</small></span>
+                  <span><b>Thêm hoạt động</b><small>Bổ sung vào lịch trình</small></span>
+                  <ChevronRight size={17} />
+                </button>
+              )}
+              {writable && data.expenses.length > 0 && (
+                <button className="workspace-action" onClick={repeatLastExpense}>
+                  <span className="workspace-action-icon"><Copy size={20} /></span>
+                  <span><b>Lặp khoản chi gần nhất</b><small>Mở bản sao để chỉnh trước khi lưu</small></span>
                   <ChevronRight size={17} />
                 </button>
               )}
@@ -3893,10 +4119,10 @@ function App() {
                 </button>
               )}
             </div>
-            <div className="workspace-context">
-              <span><Zap size={15} /> Gợi ý theo ngữ cảnh</span>
-              <b>{workspaceFocusItem ? `${workspaceFocusItem.title}${workspaceFocusItem.location ? ` · ${workspaceFocusItem.location}` : ""}` : "Thêm hoạt động đầu tiên để TripFlow đưa ra shortcut phù hợp."}</b>
-              <small>{queueIssues ? `${queueIssues} thao tác đồng bộ cần xử lý` : queuePending ? `${queuePending} thao tác đang chờ đồng bộ` : online ? "Dữ liệu đang đồng bộ với cloud" : "Đang offline · thao tác được hỗ trợ sẽ vào hàng đợi"}</small>
+            <div className="workspace-context command-context">
+              <span><Zap size={15} /> Ngữ cảnh hiện tại</span>
+              <b>{workspaceFocusItem ? `${workspaceFocusItem.title}${workspaceFocusItem.location ? ` · ${workspaceFocusItem.location}` : ""}` : "Chưa có activity hiện tại/tiếp theo."}</b>
+              <small>{queueIssues ? `${queueIssues} thao tác đồng bộ cần xử lý` : queuePending ? `${queuePending} thao tác đang chờ đồng bộ` : online ? "Dữ liệu đang đồng bộ với cloud" : "Đang offline · nhập nhanh được hỗ trợ sẽ vào hàng đợi"}</small>
             </div>
           </div>
         </Dialog>

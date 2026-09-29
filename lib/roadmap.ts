@@ -113,10 +113,45 @@ export const ROADMAP: RoadmapItem[] = [
   },
   {
     version: "V1.5.0",
-    title: "Growth, Sharing & Expansion",
+    title: "Quick Entry & Command Center",
+    done: true,
+    description:
+      "Command Center toàn app, Quick Entry một dòng nhận tiền/ngày/giờ, lưu nhanh hoặc mở form, lịch sử lệnh gần đây, lặp khoản chi và phím tắt Ctrl/Cmd+K.",
+  },
+  {
+    version: "V1.6.0",
+    title: "Smart Defaults & Context Automation",
     done: false,
     description:
-      "Mở rộng chia sẻ, public/private trip view, export nâng cao và chuẩn bị nền cho đa tiền tệ, tích hợp dịch vụ hoặc AI khi có nhu cầu rõ ràng.",
+      "Tự điền người trả/nhóm chi/activity/ngày giờ theo ngữ cảnh, nhớ lựa chọn gần nhất, gợi ý budget và cảnh báo dữ liệu bất thường trước khi lưu.",
+  },
+  {
+    version: "V1.7.0",
+    title: "Planning Board & Timeline Pro",
+    done: false,
+    description:
+      "Timeline trực quan, kéo thả hoạt động, vùng chưa xếp lịch, đổi ngày/giờ nhanh và lập kế hoạch ít modal hơn.",
+  },
+  {
+    version: "V1.8.0",
+    title: "Map, Places & Route Intelligence",
+    done: false,
+    description:
+      "Map view cho itinerary, khoảng cách/thời gian di chuyển, cảnh báo lịch trình phi thực tế và mở điều hướng nhanh.",
+  },
+  {
+    version: "V1.9.0",
+    title: "Expense Intelligence & Travel Wallet",
+    done: false,
+    description:
+      "Travel Wallet gọn, favorite/recent expense, gợi ý category và cảnh báo tốc độ chi tiêu theo tiến độ chuyến đi.",
+  },
+  {
+    version: "V2.0.0",
+    title: "TripFlow Pro Travel Operating System",
+    done: false,
+    description:
+      "Hợp nhất Planning, Live Trip, Map, Finance và Memories thành một workspace du lịch xuyên suốt trước, trong và sau chuyến đi.",
   },
 ];
 

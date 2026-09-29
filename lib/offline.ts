@@ -128,7 +128,7 @@ export async function removeCachedBundle(userId: string, tripId: string) {
 
 export function canQueueMutation(m: Mutation) {
   if (m.entity === "expense" && m.action === "create") return true;
-  if (m.entity === "item" && ["status", "update"].includes(m.action)) return true;
+  if (m.entity === "item" && ["create", "status", "update"].includes(m.action)) return true;
   if (m.entity === "participant" && ["create", "update"].includes(m.action)) return true;
   if (m.entity === "media" && ["create", "update"].includes(m.action)) return true;
   return false;

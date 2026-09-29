@@ -208,3 +208,13 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Lưu chuyến thành template và tạo chuyến mới với ngày bắt đầu khác; itinerary được dời đúng, budget link remap đúng, participant được copy.
 - [ ] Viewer không thể lưu template từ chuyến chỉ xem.
 - [ ] Production readiness hiển thị App 1.4.0 / DB 1.4.0 / stable.
+
+
+## Quick Entry & Command Center V1.5.0
+
+- [ ] `Ctrl/Cmd + K` mở Command Center; `/` mở Search.
+- [ ] Parse `350k`, `1tr2`, `1.250.000`, `hôm nay/ngày mai/DD/MM`, `7:30/14h`.
+- [ ] Preview category không tự gắn budget khác category.
+- [ ] Lưu nhanh/Lưu & nhập tiếp/offline queue hoạt động.
+- [ ] Floating button không che bottom navigation ở 320/390 px.
+- [ ] App 1.5.0 chạy với Database 1.4.0; không yêu cầu migration giả.

@@ -130,3 +130,11 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - `tf_save_trip_template()` snapshot phần kế hoạch: trip metadata, itinerary, budget và participant; không snapshot thực chi/media/lịch sử vận hành.
 - `tf_create_trip_from_template()` tạo chuyến mới trong transaction, remap item → budget và dời toàn bộ lịch theo offset phút so với ngày bắt đầu mẫu.
 - `VERSION = 1.4.0`; `DATABASE_VERSION = 1.4.0`.
+
+
+## V1.5.0 Quick Entry frontend architecture
+
+- Quick Entry là parser rule-based frontend tại `lib/quick-entry.ts`; không gọi AI/dịch vụ ngoài.
+- Parser chỉ tạo preview; mutation cuối vẫn đi qua `/api/tripflow`, Zod, quyền/RLS và idempotency hiện có.
+- Recent command chỉ là tiện ích localStorage theo user/trip, không phải nguồn dữ liệu nghiệp vụ.
+- App `VERSION = 1.5.0`; `DATABASE_VERSION = 1.4.0`.

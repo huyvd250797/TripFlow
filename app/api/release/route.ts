@@ -62,7 +62,7 @@ export async function GET() {
       ...state,
       app_version: VERSION,
       database_required_version: DATABASE_VERSION,
-      ui_release: "smart-planning-templates-reuse",
+      ui_release: "quick-entry-command-center",
     });
   } catch (error) {
     console.error("TripFlow production readiness failed", error instanceof Error ? error.message : "unknown");
