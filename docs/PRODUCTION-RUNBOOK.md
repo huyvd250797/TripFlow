@@ -94,3 +94,7 @@ V1.8.3 không có migration. Deploy App 1.8.3 trên Database 1.4.0 và xác nh�
 ## V1.8.4 Google Maps coordinate integrity patch
 
 V1.8.4 không có migration. Deploy App 1.8.4 trên Database 1.4.0 và xác nhận `tripflow-shell-v184`. `map_url` phải giữ nguyên input người dùng; resolver chỉ xử lý ngầm. Nếu cần chẩn đoán, dùng `/api/maps/resolve?url=<encoded>&debug=1` và kiểm tra trace phải dùng GET.
+
+## V1.9.0 Expense Intelligence & Travel Wallet
+
+V1.9.0 không có migration. Deploy App 1.9.0 trên Database 1.4.0 và xác nhận `tripflow-shell-v190`. Smoke test một chuyến có budget + payment + refund: Ví du lịch phải khớp thực chi ròng của Finance, người trả phải phản ánh refund, Favorite/Recent hoạt động sau reload và category suggestion chỉ thay đổi form khi người dùng chủ động áp dụng.

@@ -182,3 +182,13 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Map resolver uses GET and returns La Vague coordinate near `12.2200647,109.2036555`.
 - [ ] Resolver does not return `-77.844326,39.0267995` from unrelated HTML/viewport data.
 - [ ] Clicking Bản đồ opens the Nha Trang destination, not Antarctica.
+
+## V1.9.0 Expense Intelligence & Travel Wallet
+
+- [ ] App version `1.9.0`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v190` active.
+- [ ] Travel Wallet không lưu aggregate tài chính riêng; số liệu khớp Finance V0.3.0.
+- [ ] Spending Pace, per-person và safe daily remaining xử lý đúng trước/trong/sau chuyến và trường hợp không có budget.
+- [ ] Favorite/Recent Expense không sửa dữ liệu cloud khi chỉ đánh dấu sao.
+- [ ] Category suggestion là opt-in và Quick Entry dùng cùng inference rule.
+- [ ] Không có migration database mới.

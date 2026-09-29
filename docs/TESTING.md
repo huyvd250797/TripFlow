@@ -288,3 +288,14 @@ Dùng project staging và dữ liệu thử riêng:
 - `tests/google-maps-resolver.test.ts`: browser-style GET, exact La Vague short link, place-coordinate priority over conflicting viewport and HTML false-positive rejection.
 - `tests/route-intelligence.test.ts`: `!3d/!4d` must beat `@lat,lng`; arbitrary HTML coordinate pairs must return null.
 - Manual UI: save short link, reopen Edit and verify byte-for-byte link preservation.
+
+## V1.9.0 Expense Intelligence & Travel Wallet
+
+- [ ] `tests/expense-intelligence.test.ts`: category inference, wallet remaining/per-person/daily allowance, refund theo payer và spending pace.
+- [ ] Chi phí → Ví du lịch hiển thị đúng còn/vượt, bình quân/người và mức chi/ngày theo dữ liệu hiện tại.
+- [ ] Spending Pace cảnh báo khi % ngân sách dùng cao hơn tiến độ chuyến > 15 điểm phần trăm.
+- [ ] Favorite Expense được giữ theo user + trip sau reload; không thay đổi bản ghi expense trên server.
+- [ ] Dùng lại Favorite/Recent mở form mới, không sửa record gốc và ngày chi mặc định là ngày hiện tại theo timezone chuyến.
+- [ ] Nhập `Grab sân bay`, `Buffet hải sản`, `Khách sạn` hiển thị gợi ý category phù hợp; không tự áp dụng nếu user chưa bấm **Dùng gợi ý**.
+- [ ] Mobile 320/390 px: 5 tab Finance cuộn ngang, Travel Wallet và shortcut cards không tràn màn hình.
+- [ ] Regression: short link Google Maps V1.8.4 vẫn giữ nguyên khi save/edit và Map không đọc nhầm tọa độ.

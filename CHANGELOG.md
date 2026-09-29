@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.0 — Expense Intelligence & Travel Wallet
+
+- Thêm tab **Ví du lịch** trong Chi phí với số tiền còn lại/vượt dự toán, bình quân theo người, mức chi an toàn mỗi ngày và thanh tiến độ chuyến đi so với % ngân sách đã sử dụng.
+- Cảnh báo tốc độ chi tiêu theo tiến độ ngày của chuyến: trước chuyến, đang phù hợp, chi nhanh hơn tiến độ, vượt dự toán hoặc chưa có dự toán để đối chiếu.
+- Tổng hợp **Ai đã thanh toán** theo `payer`; refund làm giảm phần đã trả và tự kế thừa người trả của khoản gốc khi refund không ghi payer. V1.9.0 chưa tự suy diễn chia nợ/quyết toán.
+- Thêm **Favorite / Recent Expense** lưu cục bộ theo user + chuyến; có thể đánh dấu sao và dùng lại khoản chi để mở form đã điền sẵn.
+- Gợi ý nhóm chi khi nhập nội dung: ưu tiên category của khoản có cùng tên trong lịch sử, sau đó suy luận từ các từ khóa du lịch phổ biến; người dùng quyết định có áp dụng hay không.
+- Quick Entry dùng chung bộ suy luận category V1.9.0 để tránh hai nguồn rule khác nhau.
+- Không đổi schema; App `1.9.0` tiếp tục dùng Database `1.4.0`. Service worker `tripflow-shell-v190`.
+- Phiên bản tiếp theo theo roadmap: **V2.0.0 – TripFlow Pro Travel Operating System**.
+
 ## 1.8.4 — Google Maps Coordinate Integrity Fix
 
 - Giữ nguyên chính xác link Google Maps người dùng paste vào `map_url`; mở form chỉnh sửa vẫn thấy short link ban đầu, không tự thay thành URL `query=lat,lng`.

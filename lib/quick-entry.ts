@@ -1,4 +1,5 @@
 import { CATEGORIES } from "./types";
+import { inferExpenseCategory } from "./expense-intelligence";
 
 export type QuickEntryContext = {
   baseDay: string; // YYYY-MM-DD in trip timezone
@@ -105,13 +106,7 @@ export function parseCompactMoney(input: string): { amount: number; token: strin
 }
 
 function inferCategory(title: string): (typeof CATEGORIES)[number] {
-  const t = ` ${fold(title)} `;
-  if (/\b(an|com|pho|bun|banh|cafe|coffee|buffet)\b|tra sua|nha hang|hai san|do uong/.test(t)) return "Ăn uống";
-  if (/\b(taxi|grab|xe|xang|bus|tau|flight)\b|may bay|ve xe|di chuyen|san bay|thue xe/.test(t)) return "Di chuyển";
-  if (/\b(hotel|homestay|resort|phong)\b|khach san|luu tru/.test(t)) return "Lưu trú";
-  if (/tham quan|ve vao|bao tang|khu vui choi|\btour\b|vinwonder|\bzoo\b|cong vien/.test(t)) return "Tham quan";
-  if (/\b(mua|shopping|qua|souvenir)\b|dac san/.test(t)) return "Mua sắm";
-  return "Khác";
+  return inferExpenseCategory(title);
 }
 
 function cleanTitle(raw: string, tokens: Array<string | RegExp | null>) {

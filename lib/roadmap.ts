@@ -177,9 +177,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V1.9.0",
     title: "Expense Intelligence & Travel Wallet",
-    done: false,
+    done: true,
     description:
-      "Travel Wallet gọn, favorite/recent expense, gợi ý category và cảnh báo tốc độ chi tiêu theo tiến độ chuyến đi.",
+      "Travel Wallet tổng hợp ngân sách còn lại, mức chi/ngày và người thanh toán; favorite/recent expense để dùng lại nhanh, gợi ý category theo nội dung/lịch sử và cảnh báo tốc độ chi theo tiến độ chuyến đi.",
   },
   {
     version: "V2.0.0",

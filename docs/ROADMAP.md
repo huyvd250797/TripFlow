@@ -187,12 +187,17 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Regression test La Vague bảo đảm không tái phát trường hợp bay tới Nam Cực.
 - Không có migration database mới; DB compatibility vẫn V1.4.0.
 
-## ⬜ V1.9.0 — Expense Intelligence & Travel Wallet
+## ✅ V1.9.0 — Expense Intelligence & Travel Wallet
 
-- Travel Wallet, favorite/recent expense, gợi ý category và cảnh báo tốc độ chi tiêu.
+- Travel Wallet hiển thị ngân sách còn lại/vượt, bình quân theo người và mức chi an toàn mỗi ngày còn lại.
+- So sánh tiến độ chuyến đi với tỷ lệ ngân sách đã sử dụng để cảnh báo khi tốc độ chi cao hơn đáng kể.
+- Tổng hợp người thanh toán theo thực chi ròng; không tự chia nợ khi chưa có quy tắc phân bổ rõ ràng.
+- Favorite/recent expense theo user + chuyến, cho phép dùng lại khoản chi chỉ với một thao tác.
+- Gợi ý category theo lịch sử cùng nội dung và từ khóa du lịch; Quick Entry dùng chung rule.
+- Không có migration database mới; DB compatibility vẫn V1.4.0.
 
 ## ⬜ V2.0.0 — TripFlow Pro Travel Operating System
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.8.4 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.
+**Roadmap hiện tại:** V1.9.0 đã hoàn thành; phiên bản tiếp theo là **V2.0.0 – TripFlow Pro Travel Operating System**.

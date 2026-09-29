@@ -13,6 +13,7 @@ import {
 } from "@/lib/types";
 import { dateLabel, parseDate, localTime, utcTime } from "@/lib/domain";
 import { expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
+import { inferExpenseCategory } from "@/lib/expense-intelligence";
 import { schemas } from "@/lib/validation";
 export type EditSpec = {
   entity: Entity;
@@ -305,6 +306,10 @@ export function Editor({
         ? bundle?.expenses.find((x) => x.id === watch("refund_of"))?.category
         : bundle?.budgets.find((x) => x.id === watch("budget_id"))?.category
       : undefined;
+  const categorySuggestion =
+    !row && bundle && spec.entity === "expense" && watch("kind") !== "refund" && !linkedCategory
+      ? inferExpenseCategory(String(watch("title") || ""), bundle.expenses)
+      : null;
   const contextWarnings =
     !row && bundle && spec.entity === "expense" && watch("kind") !== "refund"
       ? expenseContextWarnings(bundle, {
@@ -328,6 +333,22 @@ export function Editor({
               <span><Check size={16} /> Smart Defaults</span>
               <p>{spec.smartHints.join(" · ")}</p>
               <small>Đây là gợi ý theo dữ liệu gần nhất; bạn vẫn có thể sửa trước khi lưu.</small>
+            </div>
+          )}
+          {categorySuggestion && categorySuggestion !== "Khác" && categorySuggestion !== String(watch("category") || "") && (
+            <div className="expense-category-suggestion full">
+              <div>
+                <span>Gợi ý nhóm chi</span>
+                <b>{categorySuggestion}</b>
+                <small>Dựa trên nội dung khoản chi và lịch sử gần nhất.</small>
+              </div>
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={() => setValue("category", categorySuggestion, { shouldDirty: true })}
+              >
+                Dùng gợi ý
+              </button>
             </div>
           )}
           {contextWarnings.length > 0 && (

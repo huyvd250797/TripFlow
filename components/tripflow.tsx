@@ -52,6 +52,7 @@ import {
   Camera,
   BookOpen,
   Crown,
+  Star,
 } from "lucide-react";
 import { browserClient, configured } from "@/lib/supabase/client";
 import { Auth } from "./auth";
@@ -67,6 +68,7 @@ import {
   type Mutation,
   type Entity,
   type Item,
+  type Expense,
   type TripListResponse,
   type QueuedMutation,
   type RecoveryOverview,
@@ -103,6 +105,7 @@ import { BrandMark, BrandName } from "./brand";
 import { searchTripWorkspace, type WorkspaceSearchResult } from "@/lib/workspace";
 import { parseQuickEntry } from "@/lib/quick-entry";
 import { buildSmartDefaults, expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
+import { buildTravelWallet } from "@/lib/expense-intelligence";
 import { moveItemToDay, planningDays, shiftItemMinutes } from "@/lib/planning";
 import { analyzeRouteDay, extractMapCoordinate, mapPointLayout } from "@/lib/route-intelligence";
 import {
@@ -261,7 +264,7 @@ function App() {
     [blockedMessage, setBlockedMessage] = useState("");
   const [selected, setSelected] = useState(""),
     [tab, setTab] = useState("home"),
-    [financeTab, setFinanceTab] = useState("summary"),
+    [financeTab, setFinanceTab] = useState("wallet"),
     [day, setDay] = useState("all"),
     [category, setCategory] = useState("all");
   const [spec, setSpec] = useState<EditSpec | null>(null),
@@ -271,6 +274,7 @@ function App() {
     [quickEntryText, setQuickEntryText] = useState(""),
     [quickEntryBusy, setQuickEntryBusy] = useState(false),
     [recentQuickEntries, setRecentQuickEntries] = useState<string[]>([]),
+    [favoriteExpenseIds, setFavoriteExpenseIds] = useState<string[]>([]),
     [commandFabCollapsed, setCommandFabCollapsed] = useState(false),
     [planningView, setPlanningView] = useState<"timeline" | "board" | "map">("timeline"),
     [planningBusyId, setPlanningBusyId] = useState(""),
@@ -561,6 +565,20 @@ function App() {
       setRecentQuickEntries(Array.isArray(rows) ? rows.filter((x) => typeof x === "string").slice(0, 6) : []);
     } catch {
       setRecentQuickEntries([]);
+    }
+  }, [user, selectedId]);
+
+  useEffect(() => {
+    if (!user || !selectedId) {
+      setFavoriteExpenseIds([]);
+      return;
+    }
+    try {
+      const key = `tripflow:favorite-expenses:${user.id}:${selectedId}`;
+      const rows = JSON.parse(localStorage.getItem(key) || "[]");
+      setFavoriteExpenseIds(Array.isArray(rows) ? rows.filter((x) => typeof x === "string").slice(0, 30) : []);
+    } catch {
+      setFavoriteExpenseIds([]);
     }
   }, [user, selectedId]);
 
@@ -1038,6 +1056,16 @@ function App() {
     return (
       writable && (
         <div className="row-tools">
+          {entity === "expense" && (
+            <button
+              className={`icon-btn ${favoriteExpenseIds.includes(row.id) ? "favorite" : ""}`}
+              title={favoriteExpenseIds.includes(row.id) ? "Bỏ khỏi yêu thích" : "Đánh dấu khoản chi yêu thích"}
+              aria-label={favoriteExpenseIds.includes(row.id) ? "Bỏ khỏi yêu thích" : "Đánh dấu khoản chi yêu thích"}
+              onClick={() => toggleFavoriteExpense(row.id)}
+            >
+              <Star size={17} fill={favoriteExpenseIds.includes(row.id) ? "currentColor" : "none"} />
+            </button>
+          )}
           <button
             className="icon-btn"
             title="Chỉnh sửa"
@@ -1521,6 +1549,16 @@ function App() {
   const financeReport = data
     ? data.finance_report || buildFinanceReport(data)
     : null;
+  const wallet = data ? buildTravelWallet(data, now || new Date().toISOString()) : null;
+  const favoriteExpenses = data
+    ? data.expenses.filter((row) => row.kind === "payment" && favoriteExpenseIds.includes(row.id))
+    : [];
+  const recentExpenses = data
+    ? data.expenses
+        .filter((row) => row.kind === "payment")
+        .toSorted((a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at))
+        .slice(0, 5)
+    : [];
   const analytics = data ? buildTripAnalytics(data) : null;
   const story = data ? buildTripStory(data) : null;
   const storyCoverPreview = story?.cover ? mediaPreviewUrl(story.cover) : null;
@@ -1774,17 +1812,35 @@ function App() {
       setQuickEntryBusy(false);
     }
   };
-  const repeatLastExpense = () => {
-    const last = data?.expenses.toSorted((a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at))[0];
-    if (!last) return quickExpense();
+  const toggleFavoriteExpense = (expenseId: string) => {
+    if (!user || !selectedId) return;
+    const next = favoriteExpenseIds.includes(expenseId)
+      ? favoriteExpenseIds.filter((id) => id !== expenseId)
+      : [expenseId, ...favoriteExpenseIds].slice(0, 30);
+    setFavoriteExpenseIds(next);
+    try {
+      localStorage.setItem(`tripflow:favorite-expenses:${user.id}:${selectedId}`, JSON.stringify(next));
+    } catch {}
+  };
+  const repeatExpense = (expense: Expense) => {
     setSpec({
       entity: "expense",
       defaults: {
-        title: last.title, amount: last.amount, category: last.category, budget_id: last.budget_id || "",
-        payer: last.payer, spent_on: localTime(new Date().toISOString(), quickZone).slice(0, 10),
+        title: expense.title,
+        amount: expense.amount,
+        category: expense.category,
+        budget_id: expense.budget_id || "",
+        payer: expense.payer,
+        spent_on: localTime(new Date().toISOString(), quickZone).slice(0, 10),
       },
+      smartHints: ["Tạo từ khoản chi đã dùng trước đó; hãy kiểm tra lại số tiền và ngày chi trước khi lưu."],
     });
     setQuickActionsOpen(false);
+  };
+  const repeatLastExpense = () => {
+    const last = data?.expenses.toSorted((a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at))[0];
+    if (!last) return quickExpense();
+    repeatExpense(last);
   };
   const orderedSnapshots = data?.snapshots.toSorted((a, b) =>
     (a.snapshot_no ?? 999999) - (b.snapshot_no ?? 999999) ||
@@ -2997,6 +3053,7 @@ function App() {
                   <div className="finance-toolbar">
                     <div className="segments">
                       {[
+                        ["wallet", "Ví du lịch"],
                         ["summary", "Đối chiếu"],
                         ["plan", "Dự toán"],
                         ["actual", "Thực chi"],
@@ -3022,7 +3079,130 @@ function App() {
                       ))}
                     </select>
                   </div>
-                  {financeTab === "summary" ? (
+                  {financeTab === "wallet" && wallet ? (
+                    <>
+                      <section className="panel travel-wallet-panel">
+                        <div className="section-heading wallet-heading">
+                          <div>
+                            <span className="eyebrow">TRAVEL WALLET · V1.9.0</span>
+                            <h2>Ví chuyến đi</h2>
+                            <p className="muted">Nhìn nhanh số tiền còn lại, mức chi an toàn và tốc độ sử dụng ngân sách.</p>
+                          </div>
+                          {writable && (
+                            <button className="btn primary" onClick={() => edit("expense")}>
+                              <Plus size={16} /> Ghi chi tiêu
+                            </button>
+                          )}
+                        </div>
+                        <div className="wallet-kpis">
+                          <article className={wallet.remaining < 0 ? "wallet-kpi over" : "wallet-kpi"}>
+                            <span>{wallet.remaining < 0 ? "Đã vượt" : "Còn trong ngân sách"}</span>
+                            <b>{money(Math.abs(wallet.remaining))}</b>
+                            <small>{wallet.spending_percent == null ? "Chưa có dự toán" : `Đã dùng ${wallet.spending_percent}%`}</small>
+                          </article>
+                          <article className="wallet-kpi">
+                            <span>Bình quân / người</span>
+                            <b>{money(wallet.per_person)}</b>
+                            <small>{data.trip.people} người trong chuyến</small>
+                          </article>
+                          <article className="wallet-kpi">
+                            <span>Mức chi an toàn / ngày</span>
+                            <b>{wallet.safe_daily_remaining == null ? "—" : money(wallet.safe_daily_remaining)}</b>
+                            <small>{wallet.days_remaining > 0 ? `${wallet.days_remaining} ngày còn tính ngân sách` : "Chuyến đi đã kết thúc"}</small>
+                          </article>
+                        </div>
+                        <div className={`spending-pace ${wallet.pace}`}>
+                          <div className="spending-pace-copy">
+                            {wallet.pace === "over" || wallet.pace === "watch" || wallet.pace === "no_budget" ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
+                            <div>
+                              <b>{wallet.pace === "watch" ? "Đang chi nhanh hơn tiến độ" : wallet.pace === "over" ? "Ngân sách đã bị vượt" : wallet.pace === "no_budget" ? "Thiếu dự toán để đối chiếu" : "Tốc độ chi tiêu"}</b>
+                              <p>{wallet.pace_message}</p>
+                            </div>
+                          </div>
+                          <div className="pace-bars">
+                            <div>
+                              <span>Tiến độ chuyến đi · {wallet.trip_progress_percent}%</span>
+                              <Bar value={wallet.trip_progress_percent} max={100} />
+                            </div>
+                            <div>
+                              <span>Đã dùng ngân sách · {wallet.spending_percent == null ? "—" : `${wallet.spending_percent}%`}</span>
+                              <Bar value={wallet.spending_percent || 0} max={100} over={(wallet.spending_percent || 0) > 100} />
+                            </div>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section className="panel wallet-payers-panel">
+                        <div className="section-heading">
+                          <div>
+                            <span className="eyebrow">WHO PAID</span>
+                            <h2>Ai đã thanh toán</h2>
+                          </div>
+                          <span className="pill">{wallet.payers.length} người/nhãn người trả</span>
+                        </div>
+                        {wallet.payers.length ? (
+                          <div className="wallet-payer-list">
+                            {wallet.payers.map((payer) => (
+                              <div className="wallet-payer-row" key={payer.payer}>
+                                <span className="wallet-avatar">{payer.payer.slice(0, 1).toUpperCase()}</span>
+                                <div>
+                                  <b>{payer.payer}</b>
+                                  <small>{payer.transaction_count} giao dịch · {payer.share_percent}% thực chi ròng</small>
+                                </div>
+                                <strong>{money(payer.net_paid)}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="muted">Chưa có giao dịch để tổng hợp người thanh toán.</p>
+                        )}
+                        <p className="wallet-note">Travel Wallet V1.9.0 chỉ tổng hợp ai đã trả và mức đóng góp. Chức năng chia nợ/quyết toán giữa thành viên sẽ được xử lý riêng ở phiên bản sau để tránh tự suy diễn cách chia tiền.</p>
+                      </section>
+
+                      <section className="panel wallet-shortcuts-panel">
+                        <div className="section-heading">
+                          <div>
+                            <span className="eyebrow">FAVORITE · RECENT</span>
+                            <h2>Khoản chi dùng nhanh</h2>
+                          </div>
+                        </div>
+                        {favoriteExpenses.length > 0 && (
+                          <div className="expense-shortcut-group">
+                            <b>Yêu thích</b>
+                            <div className="expense-shortcut-grid">
+                              {favoriteExpenses.map((expense) => (
+                                <article className="expense-shortcut" key={expense.id}>
+                                  <button className="expense-star active" onClick={() => toggleFavoriteExpense(expense.id)} title="Bỏ khỏi yêu thích"><Star size={16} fill="currentColor" /></button>
+                                  <span>{expense.category}</span>
+                                  <h3>{expense.title}</h3>
+                                  <strong>{money(expense.amount)}</strong>
+                                  {writable && <button className="text-btn" onClick={() => repeatExpense(expense)}><Copy size={15} /> Dùng lại</button>}
+                                </article>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div className="expense-shortcut-group">
+                          <b>Gần đây</b>
+                          {recentExpenses.length ? (
+                            <div className="expense-shortcut-grid">
+                              {recentExpenses.map((expense) => (
+                                <article className="expense-shortcut" key={expense.id}>
+                                  <button className={`expense-star ${favoriteExpenseIds.includes(expense.id) ? "active" : ""}`} onClick={() => toggleFavoriteExpense(expense.id)} title="Đánh dấu yêu thích"><Star size={16} fill={favoriteExpenseIds.includes(expense.id) ? "currentColor" : "none"} /></button>
+                                  <span>{dateLabel(expense.spent_on)} · {expense.category}</span>
+                                  <h3>{expense.title}</h3>
+                                  <strong>{money(expense.amount)}</strong>
+                                  {writable && <button className="text-btn" onClick={() => repeatExpense(expense)}><Copy size={15} /> Dùng lại</button>}
+                                </article>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="muted">Chưa có khoản chi gần đây.</p>
+                          )}
+                        </div>
+                      </section>
+                    </>
+                  ) : financeTab === "summary" ? (
                     <>
                       <section className="panel">
                         <div className="section-heading">

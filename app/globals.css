@@ -6431,3 +6431,305 @@ h3 {
     padding-bottom: max(9px, env(safe-area-inset-bottom));
   }
 }
+
+/* TripFlow V1.9.0 · Expense Intelligence & Travel Wallet */
+.travel-wallet-panel {
+  border-color: #cfe3e6;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(42,165,173,.10), transparent 15rem),
+    linear-gradient(180deg, #ffffff, #f7fbfb);
+}
+.wallet-heading {
+  align-items: flex-start;
+}
+.wallet-heading .muted {
+  margin: 5px 0 0;
+  max-width: 650px;
+}
+.wallet-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.wallet-kpi {
+  padding: 16px;
+  border: 1px solid #d8e7e9;
+  border-radius: 14px;
+  background: rgba(255,255,255,.86);
+}
+.wallet-kpi span,
+.wallet-kpi small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.wallet-kpi b {
+  display: block;
+  margin: 7px 0 5px;
+  font-size: 22px;
+  letter-spacing: -.55px;
+  color: #163943;
+}
+.wallet-kpi.over {
+  border-color: #f1c8b7;
+  background: #fff8f4;
+}
+.wallet-kpi.over b {
+  color: #b65334;
+}
+.spending-pace {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #dbe8e9;
+  background: #f7fbfa;
+}
+.spending-pace.watch,
+.spending-pace.no_budget {
+  border-color: #efd7aa;
+  background: #fffaf0;
+}
+.spending-pace.over {
+  border-color: #efc4b2;
+  background: #fff6f2;
+}
+.spending-pace-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #23727a;
+}
+.spending-pace.watch .spending-pace-copy,
+.spending-pace.no_budget .spending-pace-copy {
+  color: #a16b1f;
+}
+.spending-pace.over .spending-pace-copy {
+  color: #b65334;
+}
+.spending-pace-copy b {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+}
+.spending-pace-copy p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.pace-bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 14px;
+}
+.pace-bars > div > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #587179;
+  font-size: 11px;
+  font-weight: 650;
+}
+.pace-bars .bar {
+  height: 10px;
+}
+.wallet-payer-list {
+  display: grid;
+}
+.wallet-payer-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+.wallet-payer-row:last-child {
+  border-bottom: 0;
+}
+.wallet-avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #e6f2f3;
+  color: #16717a;
+  font-weight: 800;
+}
+.wallet-payer-row b,
+.wallet-payer-row small {
+  display: block;
+}
+.wallet-payer-row small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.wallet-payer-row strong {
+  white-space: nowrap;
+  font-size: 15px;
+}
+.wallet-note {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed #d7e5e7;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.expense-shortcut-group + .expense-shortcut-group {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.expense-shortcut-group > b {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.expense-shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.expense-shortcut {
+  position: relative;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #d9e7e8;
+  border-radius: 13px;
+  background: #fbfdfd;
+}
+.expense-shortcut > span {
+  display: block;
+  padding-right: 24px;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .45px;
+}
+.expense-shortcut h3 {
+  margin: 7px 0 4px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.expense-shortcut strong {
+  display: block;
+  font-size: 16px;
+}
+.expense-shortcut .text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+}
+.expense-star {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #9caeaf;
+}
+.expense-star.active,
+.row-tools .icon-btn.favorite {
+  color: #bd7a16;
+  background: #fff5dd;
+}
+.expense-category-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #cfe2e4;
+  border-radius: 12px;
+  background: #f3faf9;
+}
+.expense-category-suggestion > div {
+  min-width: 0;
+}
+.expense-category-suggestion span,
+.expense-category-suggestion small {
+  display: block;
+}
+.expense-category-suggestion span {
+  color: #4e7479;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .45px;
+}
+.expense-category-suggestion b {
+  display: block;
+  margin: 3px 0;
+  color: #164d54;
+  font-size: 14px;
+}
+.expense-category-suggestion small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .finance-toolbar .segments {
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none;
+  }
+  .finance-toolbar .segments::-webkit-scrollbar {
+    display: none;
+  }
+  .finance-toolbar .segments button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .wallet-kpis {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+  .wallet-kpi:first-child {
+    grid-column: 1 / -1;
+  }
+  .wallet-kpi {
+    padding: 13px;
+  }
+  .wallet-kpi b {
+    font-size: 18px;
+  }
+  .pace-bars {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .expense-shortcut-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .wallet-payer-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .wallet-payer-row strong {
+    grid-column: 2;
+  }
+  .expense-category-suggestion {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .expense-category-suggestion .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .wallet-kpis,
+  .expense-shortcut-grid {
+    grid-template-columns: 1fr;
+  }
+  .wallet-kpi:first-child {
+    grid-column: auto;
+  }
+}
