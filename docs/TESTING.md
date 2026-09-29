@@ -244,3 +244,16 @@ Dùng project staging và dữ liệu thử riêng:
 - Nút ±30 phút dịch cả start/end cùng nhau; item không có end giữ `end_at = null`.
 - Mobile 320/390 px: Actual Spending header không làm hẹp tiêu đề; nút Ghi chi tiêu nằm gọn bên phải.
 - Quick dock: visible không có arrow; drag >34 px sang phải thì ẩn; collapsed mới nhận pointer ở reveal arrow.
+
+## Map, Places & Route Intelligence V1.8.0
+
+- [ ] Timeline / Board / Bản đồ chuyển đổi đúng và nhớ lựa chọn theo user/chuyến.
+- [ ] URL Google Maps dạng `query=lat,lng`, `@lat,lng` được đọc tọa độ đúng.
+- [ ] Tuyến theo ngày hiển thị đúng thứ tự activity.
+- [ ] Route estimate chỉ xuất hiện khi hai điểm liên tiếp có tọa độ.
+- [ ] Cảnh báo xuất hiện khi khoảng thời gian giữa hai activity nhỏ hơn thời gian di chuyển ước tính + buffer.
+- [ ] Nút mở từng địa điểm và mở toàn tuyến Google Maps hoạt động.
+- [ ] PWA standalone trên iOS/Android: scroll dài không kéo bottom taskbar lên khỏi đáy.
+- [ ] Nút ⚡ có dấu × khi hiện; sau khi ẩn chỉ còn mũi tên; bấm mũi tên mở lại.
+- [ ] Tổng quan không còn card Command Center.
+- [ ] Reduce Motion của hệ điều hành làm animation gần như tắt.

@@ -72,3 +72,7 @@ V1.6.0 không có migration; deploy App 1.6.0 trên Database 1.4.0. Sau deploy x
 ## V1.7.0 Planning Board & Timeline Pro
 
 V1.7.0 không có migration. Deploy App 1.7.0 trên Database 1.4.0, xác nhận `tripflow-shell-v170`, kiểm thử Board trên desktop/mobile, Finance Actual header ở 320/390 px và hành vi kéo Quick sang phải trong PWA standalone.
+
+## V1.8.0 Map, Places & Route Intelligence
+
+V1.8.0 không có migration. Deploy App 1.8.0 trên Database 1.4.0, xác nhận `tripflow-shell-v180`, kiểm tra chế độ Bản đồ trên itinerary và bottom taskbar ở PWA standalone. Route Intelligence chỉ là ước tính nội bộ; khi cần tuyến thực tế người dùng mở Google Maps qua link do app tạo.

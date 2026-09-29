@@ -102,6 +102,7 @@ import { searchTripWorkspace, type WorkspaceSearchResult } from "@/lib/workspace
 import { parseQuickEntry } from "@/lib/quick-entry";
 import { buildSmartDefaults, expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
 import { moveItemToDay, planningDays, shiftItemMinutes } from "@/lib/planning";
+import { analyzeRouteDay, mapPointLayout } from "@/lib/route-intelligence";
 import {
   cacheBundle,
   cacheTrips,
@@ -201,6 +202,21 @@ function Empty({
     </div>
   );
 }
+function appScrollRoot() {
+  if (typeof document === "undefined") return null;
+  if (document.documentElement.dataset.pwa !== "standalone") return null;
+  return document.querySelector<HTMLElement>(".app-body");
+}
+function currentScrollTop() {
+  const root = appScrollRoot();
+  return root ? root.scrollTop : typeof window !== "undefined" ? window.scrollY : 0;
+}
+function scrollAppTo(top: number, behavior: ScrollBehavior = "auto") {
+  const root = appScrollRoot();
+  if (root) root.scrollTo({ top, behavior });
+  else window.scrollTo({ top, behavior });
+}
+
 function Bar({
   value,
   max,
@@ -254,7 +270,7 @@ function App() {
     [quickEntryBusy, setQuickEntryBusy] = useState(false),
     [recentQuickEntries, setRecentQuickEntries] = useState<string[]>([]),
     [commandFabCollapsed, setCommandFabCollapsed] = useState(false),
-    [planningView, setPlanningView] = useState<"timeline" | "board">("timeline"),
+    [planningView, setPlanningView] = useState<"timeline" | "board" | "map">("timeline"),
     [planningBusyId, setPlanningBusyId] = useState(""),
     [historyOpen, setHistoryOpen] = useState(false),
     [templateApply, setTemplateApply] = useState<TripTemplate | null>(null),
@@ -290,8 +306,6 @@ function App() {
       ios: false,
     });
   const syncLock = useRef(false);
-  const commandFabPointerX = useRef<number | null>(null);
-  const commandFabDidDrag = useRef(false);
   const planningDragId = useRef("");
   const installPromptRef = useRef<InstallPromptEvent | null>(null);
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -495,7 +509,7 @@ function App() {
         const y = Number(
           sessionStorage.getItem(`tripflow:scroll:${restoreKey}:${activeTab}`) || 0,
         );
-        window.scrollTo({ top: Number.isFinite(y) ? y : 0, behavior: "instant" });
+        scrollAppTo(Number.isFinite(y) ? y : 0);
       });
     } catch {
       // sessionStorage có thể bị chặn ở private mode; app vẫn hoạt động bình thường.
@@ -558,7 +572,7 @@ function App() {
     }
     try {
       const saved = localStorage.getItem(`tripflow:planning-view:${user.id}:${selectedId}`);
-      setPlanningView(saved === "board" ? "board" : "timeline");
+      setPlanningView(saved === "board" || saved === "map" ? saved : "timeline");
     } catch {
       setPlanningView("timeline");
     }
@@ -577,15 +591,17 @@ function App() {
       try {
         sessionStorage.setItem(
           `tripflow:scroll:${restoreKey}:${tab}`,
-          String(Math.max(0, Math.round(window.scrollY))),
+          String(Math.max(0, Math.round(currentScrollTop()))),
         );
       } catch {}
     };
-    window.addEventListener("scroll", rememberScroll, { passive: true });
+    const scrollRoot = appScrollRoot();
+    const scrollTarget: EventTarget = scrollRoot || window;
+    scrollTarget.addEventListener("scroll", rememberScroll, { passive: true });
     window.addEventListener("pagehide", rememberScroll);
     return () => {
       rememberScroll();
-      window.removeEventListener("scroll", rememberScroll);
+      scrollTarget.removeEventListener("scroll", rememberScroll);
       window.removeEventListener("pagehide", rememberScroll);
     };
   }, [user, selectedId, tab, day, category, financeTab]);
@@ -995,7 +1011,7 @@ function App() {
       try {
         sessionStorage.setItem(
           `tripflow:scroll:${restoreKey}:${tab}`,
-          String(Math.max(0, Math.round(window.scrollY))),
+          String(Math.max(0, Math.round(currentScrollTop()))),
         );
       } catch {}
       setTab(id);
@@ -1003,12 +1019,12 @@ function App() {
         const y = Number(
           sessionStorage.getItem(`tripflow:scroll:${restoreKey}:${id}`) || 0,
         );
-        window.scrollTo({ top: Number.isFinite(y) ? y : 0, behavior: "instant" });
+        scrollAppTo(Number.isFinite(y) ? y : 0);
       });
       return;
     }
     setTab(id);
-    window.scrollTo({ top: 0, behavior: "instant" });
+    scrollAppTo(0);
   }
   async function installPwa() {
     const prompt = installPromptRef.current;
@@ -1459,6 +1475,20 @@ function App() {
     ? live(data.items, now || new Date().toISOString())
     : null;
   const boardDays = data && trip ? planningDays(trip, data.items, trip.timezone) : [];
+  const routeDay =
+    trip && boardDays.length
+      ? day !== "all" && boardDays.includes(day)
+        ? day
+        : progress?.active
+          ? localTime(progress.active.start_at, trip.timezone).slice(0, 10)
+          : progress?.next
+            ? localTime(progress.next.start_at, trip.timezone).slice(0, 10)
+            : boardDays[0]
+      : "";
+  const routeAnalysis = data && trip && routeDay
+    ? analyzeRouteDay(data.items, trip.timezone, routeDay)
+    : null;
+  const routeMapPoints = routeAnalysis ? mapPointLayout(routeAnalysis.items) : [];
   const current = progress?.current;
   const workspaceResults = data ? searchTripWorkspace(data, searchTerm) : [];
   const workspaceFocusItem = progress?.active || current || progress?.next || null;
@@ -1557,7 +1587,7 @@ function App() {
       localStorage.setItem(`tripflow:command-fab:${user.id}`, next ? "collapsed" : "open");
     } catch {}
   };
-  const changePlanningView = (next: "timeline" | "board") => {
+  const changePlanningView = (next: "timeline" | "board" | "map") => {
     setPlanningView(next);
     if (!user || !selectedId) return;
     try {
@@ -2165,20 +2195,6 @@ function App() {
                     </span>
                     <span className="pill">{TRIP_STATUS[trip.status]}</span>
                   </div>
-                  <div className="dashboard-quick-actions">
-                    <button
-                      className="quick-actions-trigger"
-                      onClick={() => setQuickActionsOpen(true)}
-                      aria-label="Mở thao tác nhanh"
-                    >
-                      <span><Zap size={20} /></span>
-                      <div>
-                        <b>Command Center</b>
-                        <small>Nhập nhanh, tìm kiếm và thao tác theo ngữ cảnh</small>
-                      </div>
-                      <ChevronRight size={17} />
-                    </button>
-                  </div>
                   {liveCard()}
                   <div className="stats">
                     <div className="stat">
@@ -2405,6 +2421,13 @@ function App() {
                         >
                           <LayoutDashboard size={16} /> Board
                         </button>
+                        <button
+                          type="button"
+                          className={planningView === "map" ? "active" : ""}
+                          onClick={() => changePlanningView("map")}
+                        >
+                          <MapPin size={16} /> Bản đồ
+                        </button>
                       </div>
                       <button
                         className="btn secondary planning-gps-btn"
@@ -2433,7 +2456,7 @@ function App() {
                       </button>
                     </div>
                   </div>
-                  {planningView === "timeline" ? (
+                  {planningView !== "map" && (planningView === "timeline" ? (
                     <>
                   <div className="day-tabs">
                     <button
@@ -2730,6 +2753,108 @@ function App() {
                           );
                         })}
                       </div>
+                    </section>
+                  ))}
+                  {planningView === "map" && routeAnalysis && (
+                    <section className="route-map-shell" aria-label="Bản đồ và phân tích tuyến đường">
+                      <div className="route-map-head">
+                        <div>
+                          <span className="eyebrow">MAP · PLACES · ROUTE INTELLIGENCE</span>
+                          <h3>Bản đồ hành trình · {dateLabel(routeDay)}</h3>
+                          <p>Khoảng cách và thời gian di chuyển là ước tính để rà soát kế hoạch; mở Google Maps để xem tuyến thực tế.</p>
+                        </div>
+                        {routeAnalysis.directionsUrl && (
+                          <Link url={routeAnalysis.directionsUrl}>
+                            <Navigation size={16} /> Mở tuyến Google Maps
+                          </Link>
+                        )}
+                      </div>
+                      <div className="route-map-days" aria-label="Chọn ngày xem tuyến">
+                        {boardDays.map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            className={routeDay === value ? "active" : ""}
+                            onClick={() => setDay(value)}
+                          >
+                            {dateLabel(value)}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="route-intelligence-stats">
+                        <div><span>Điểm có tọa độ</span><b>{routeAnalysis.mappedItems}/{routeAnalysis.items.length}</b></div>
+                        <div><span>Quãng đường ước tính</span><b>{routeAnalysis.totalDistanceKm ? `${routeAnalysis.totalDistanceKm.toFixed(1)} km` : "—"}</b></div>
+                        <div><span>Thời gian di chuyển</span><b>{routeAnalysis.totalTravelMinutes ? `${routeAnalysis.totalTravelMinutes} phút` : "—"}</b></div>
+                        <div className={routeAnalysis.warnings.length ? "warn" : "ok"}><span>Cảnh báo lịch trình</span><b>{routeAnalysis.warnings.length}</b></div>
+                      </div>
+                      {routeMapPoints.length > 0 ? (
+                        <div className="route-spatial-map">
+                          <div className="route-map-grid" aria-hidden="true" />
+                          <svg className="route-map-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                            {routeMapPoints.slice(0, -1).map((point, index) => {
+                              const next = routeMapPoints[index + 1];
+                              return <line key={`${point.item.id}-${next.item.id}`} x1={point.x} y1={point.y} x2={next.x} y2={next.y} />;
+                            })}
+                          </svg>
+                          {routeMapPoints.map((point, index) => (
+                            <a
+                              className="route-map-point"
+                              key={point.item.id}
+                              style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                              href={point.item.map_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(point.item.location || point.item.title)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={`${index + 1}. ${point.item.title}`}
+                            >
+                              <span>{index + 1}</span>
+                              <small>{point.item.title}</small>
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="route-map-empty">
+                          <MapPin size={28} />
+                          <b>Chưa có tọa độ để dựng bản đồ</b>
+                          <p>Gắn link Google Maps có tọa độ cho hoạt động. TripFlow vẫn có thể mở tuyến theo tên địa điểm.</p>
+                        </div>
+                      )}
+                      <div className="route-legs">
+                        {routeAnalysis.items.map((item, index) => {
+                          const leg = routeAnalysis.legs[index];
+                          return (
+                            <article className="route-place-card" key={item.id}>
+                              <div className="route-place-index">{index + 1}</div>
+                              <div className="route-place-main">
+                                <div className="route-place-title">
+                                  <div>
+                                    <b>{item.title}</b>
+                                    <small>{localTime(item.start_at, trip.timezone).slice(11)}{item.location ? ` · ${item.location}` : ""}</small>
+                                  </div>
+                                  <Link url={item.map_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || item.title)}`}>Bản đồ</Link>
+                                </div>
+                                {leg && (
+                                  <div className={`route-leg ${leg.level}`}>
+                                    <ArrowRight size={15} />
+                                    <span>
+                                      {leg.distanceKm != null && leg.travelMinutes != null
+                                        ? `${leg.distanceKm.toFixed(1)} km · khoảng ${leg.travelMinutes} phút · trống ${leg.availableMinutes} phút`
+                                        : `Đến ${leg.to.title} · ${leg.label}`}
+                                    </span>
+                                    {leg.level === "tight" && <AlertTriangle size={15} />}
+                                  </div>
+                                )}
+                              </div>
+                            </article>
+                          );
+                        })}
+                        {!routeAnalysis.items.length && <div className="planning-column-empty">Ngày này chưa có hoạt động.</div>}
+                      </div>
+                      {routeAnalysis.warnings.length > 0 && (
+                        <div className="route-warning-box">
+                          <b><AlertTriangle size={16} /> Cần rà soát thời gian di chuyển</b>
+                          {routeAnalysis.warnings.map((warning) => <p key={warning}>{warning}</p>)}
+                        </div>
+                      )}
                     </section>
                   )}
                   {!data.items.length && (
@@ -3583,7 +3708,7 @@ function App() {
                 <>
                   <section className="more-hub-intro">
                     <div>
-                      <span className="eyebrow">TRIPFLOW MODULE HUB · V1.7.0</span>
+                      <span className="eyebrow">TRIPFLOW MODULE HUB · V1.8.0</span>
                       <h2>Thêm & quản lý</h2>
                       <p>Thông tin được gom theo module. Mở đúng nhóm bạn cần để màn hình gọn và dễ tập trung hơn.</p>
                     </div>
@@ -4290,35 +4415,21 @@ function App() {
           >
             <ChevronLeft size={20} />
           </button>
+          {!commandFabCollapsed && (
+            <button
+              className="command-fab-close"
+              onClick={() => updateCommandFabCollapsed(true)}
+              aria-label="Ẩn nút Quick"
+              title="Ẩn Quick"
+            >
+              ×
+            </button>
+          )}
           <button
             className="command-fab"
-            onPointerDown={(event) => {
-              commandFabPointerX.current = event.clientX;
-              commandFabDidDrag.current = false;
-              event.currentTarget.setPointerCapture?.(event.pointerId);
-            }}
-            onPointerMove={(event) => {
-              const start = commandFabPointerX.current;
-              if (start != null && event.clientX - start > 10) commandFabDidDrag.current = true;
-            }}
-            onPointerUp={(event) => {
-              const start = commandFabPointerX.current;
-              commandFabPointerX.current = null;
-              if (start != null && event.clientX - start > 34) {
-                commandFabDidDrag.current = true;
-                updateCommandFabCollapsed(true);
-              }
-            }}
-            onPointerCancel={() => { commandFabPointerX.current = null; }}
-            onClick={() => {
-              if (commandFabDidDrag.current) {
-                commandFabDidDrag.current = false;
-                return;
-              }
-              setQuickActionsOpen(true);
-            }}
-            aria-label="Mở TripFlow Command Center; kéo sang phải để ẩn"
-            title="Command Center · Kéo sang phải để ẩn · Ctrl+K"
+            onClick={() => setQuickActionsOpen(true)}
+            aria-label="Mở TripFlow Command Center"
+            title="Command Center · Ctrl+K"
             tabIndex={commandFabCollapsed ? -1 : 0}
             aria-hidden={commandFabCollapsed}
           >

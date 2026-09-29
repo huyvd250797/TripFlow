@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.0 — Map, Places & Route Intelligence
+
+- Thêm chế độ **Bản đồ** bên cạnh Timeline/Board; chọn ngày, xem điểm dừng, mở từng địa điểm hoặc toàn tuyến trên Google Maps.
+- Phân tích tọa độ từ các URL Google Maps phổ biến; ước tính quãng đường đường bộ, thời gian di chuyển và cảnh báo khi khoảng trống giữa hai hoạt động quá ngắn.
+- Map view vẫn hoạt động theo tên địa điểm khi chưa có tọa độ; phần ước tính được ghi rõ là tham khảo, không thay thế route thực tế từ Google Maps.
+- Fix PWA taskbar bằng cách cố định app viewport và chuyển scrolling vào `.app-body`, giữ thanh điều hướng ở một độ cao vật lý thay vì bị kéo lên khi scroll/iOS visual viewport thay đổi.
+- Nút ⚡ Quick bỏ gesture kéo; thêm dấu × nhỏ để ẩn. Sau khi ẩn mới hiện mũi tên mở lại.
+- Bỏ card Command Center khỏi Tổng quan vì đã có nút ⚡ toàn app.
+- Thêm motion cơ bản chuyên nghiệp cho page/card/button/dialog và tôn trọng `prefers-reduced-motion`.
+- App version `1.8.0`, service worker `tripflow-shell-v180`, Database yêu cầu vẫn `1.4.0`; không có migration mới.
+- Phiên bản tiếp theo: V1.9.0 – Expense Intelligence & Travel Wallet.
+
 ## 1.7.0 — Planning Board & Timeline Pro
 
 - Lịch trình có hai chế độ Timeline/Planning Board; Board nhóm activity theo ngày và hỗ trợ kéo thả đổi ngày trên desktop.

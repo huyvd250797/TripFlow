@@ -139,3 +139,12 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] ±30 phút giữ duration và không làm mất `end_at = null`.
 - [ ] Tab Thực chi mobile không vỡ heading/action.
 - [ ] Quick icon chỉ ẩn bằng kéo sang phải; arrow chỉ hiện khi collapsed.
+
+## V1.8.0 Map, Places & Route Intelligence
+
+- [ ] App version `1.8.0`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v180` active.
+- [ ] Map view, route links và route estimate smoke test đạt.
+- [ ] PWA taskbar được kiểm thử bằng scroll dài trên iPhone standalone và Chrome Android standalone.
+- [ ] Quick hide/reveal và dashboard declutter đạt.
+- [ ] Motion không gây layout shift và tôn trọng Reduce Motion.

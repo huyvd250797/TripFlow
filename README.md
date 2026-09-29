@@ -1,4 +1,4 @@
-# TripFlow 1.7.0 · Planning Board & Timeline Pro
+# TripFlow 1.8.0 · Map, Places & Route Intelligence
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -7,20 +7,23 @@ Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu ti
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
 
 
-## V1.7.0 nổi bật
+## V1.8.0 nổi bật
 
-- Lịch trình có 2 chế độ **Timeline / Planning Board** và nhớ chế độ đang dùng theo từng user/chuyến.
-- Planning Board nhóm activity theo ngày; desktop kéo thả sang ngày khác, mobile đổi ngày bằng select mà không cần mở form.
-- Timeline/Board có nút **−30′ / +30′** để chỉnh giờ nhanh; Board có nút thêm activity ngay trong từng ngày.
-- Fix giao diện tab **Thực chi** trên mobile: header/nút Ghi chi tiêu không còn ép tiêu đề rớt dòng lộn xộn, đồng bộ với tab Dự toán.
-- Nút ⚡ Quick không còn mũi tên khi đang mở; người dùng kéo icon sang phải để ẩn, sau đó mới hiện mũi tên nhỏ để gọi Quick trở lại.
-- Không có migration database mới; App V1.7.0 tiếp tục dùng Database V1.4.0.
+- Lịch trình có 3 chế độ **Timeline / Planning Board / Bản đồ** và nhớ chế độ theo từng user/chuyến.
+- Map view nhóm tuyến theo ngày, hiển thị điểm dừng có tọa độ, mở từng địa điểm hoặc toàn tuyến trên Google Maps.
+- Route Intelligence đọc tọa độ từ URL Google Maps để ước tính quãng đường/thời gian và cảnh báo khoảng nghỉ không đủ để di chuyển; các số liệu luôn được ghi là ước tính.
+- Fix taskbar PWA trên iPhone/mobile: app viewport được khóa, nội dung scroll bên trong `.app-body`, bottom navigation giữ cố định ở đáy và không bị kéo lên theo trang.
+- Nút ⚡ Quick có dấu × nhỏ để ẩn; chỉ khi đã ẩn mới xuất hiện mũi tên để trượt nút ra lại.
+- Bỏ card Command Center khỏi Tổng quan để dashboard thoáng hơn.
+- Thêm animation cơ bản chuyên nghiệp, nhẹ và tôn trọng Reduce Motion.
+- Không có migration database mới; App V1.8.0 tiếp tục dùng Database V1.4.0.
 
 ## Đã có trong phiên bản này
 
+- **Map & Route V1.8.0:** Timeline/Board/Bản đồ; tuyến theo ngày, điểm dừng, Google Maps directions, ước tính khoảng cách/thời gian và cảnh báo transfer quá gấp.
 - **Planning Board V1.7.0:** chuyển Timeline/Board, kéo thả activity sang ngày khác trên desktop, đổi ngày trực tiếp trên mobile và chỉnh giờ ±30 phút ngay trên kế hoạch.
 - **Quick Entry V1.5.0:** Command Center một dòng cho chi tiêu/lịch trình, hiểu `350k`, `1tr2`, `DD/MM`, `7:30`, `14h`, có preview, lưu nhanh/lưu & nhập tiếp và lịch sử câu nhập gần đây.
-- **Command Center V1.5.0:** nút ⚡ nổi toàn app + `Ctrl/Cmd + K`, tìm kiếm, action theo Current/Next, lặp khoản chi gần nhất; dashboard chỉ giữ một nút gọn thay vì bung nhiều shortcut.
+- **Command Center V1.5.0:** nút ⚡ nổi toàn app + `Ctrl/Cmd + K`, tìm kiếm, action theo Current/Next, lặp khoản chi gần nhất; dashboard không còn card Command Center; thao tác nhanh đi qua nút ⚡ toàn app.
 - **Smart Workspace V1.2.0:** tìm kiếm xuyên lịch trình/chi phí/dự toán/media/người tham gia, quick action theo Current/Next và shortcut thêm chi phí/hoạt động/media ngay trên Tổng quan.
 - **Smart Planning V1.4.0:** lưu chuyến hiện tại thành mẫu cá nhân và tạo chuyến mới từ mẫu; lịch trình tự dời theo ngày bắt đầu mới, tái sử dụng dự toán và người tham gia.
 - **UX V1.4.0:** ngày/giờ kết thúc không còn bắt buộc; tiền nhập theo dạng `xxx.xxx.xxx`; thao tác nhanh chuyển vào nút ⚡; lịch sử lịch trình mở theo nút riêng; tab Thực chi có nút thêm nhất quán.
@@ -50,7 +53,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V1.7.0 đều được đánh dấu ✅. Phiên bản tiếp theo là V1.8.0 – Map, Places & Route Intelligence.
+- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V1.8.0 đều được đánh dấu ✅. Phiên bản tiếp theo là V1.9.0 – Expense Intelligence & Travel Wallet.
 
 **Phạm vi offline:** cho phép thêm thực chi, thêm/cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -69,7 +72,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609280005_v100_stable_production_release.sql` — Stable Production marker + production-readiness V1.0.0.
    - `supabase/migrations/202609280006_v130_media_memories_storytelling.sql` — metadata Media/Storytelling + Realtime/restore compatibility + Database marker V1.3.0.
    - `supabase/migrations/202609290001_v140_smart_planning_templates_reuse.sql` — Planning Templates/Reuse + optional end date/time + Database marker V1.4.0.
-   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0 và V1.7.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0 và V1.8.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
@@ -297,7 +300,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap 1.x hiện đã hoàn thành đến V1.7.0; phiên bản tiếp theo là V1.8.0 – Map, Places & Route Intelligence.
+- Roadmap 1.x hiện đã hoàn thành đến V1.8.0; phiên bản tiếp theo là V1.9.0 – Expense Intelligence & Travel Wallet.
 
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
@@ -338,4 +341,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **1.7.0**; Database version yêu cầu: **1.4.0**; V1.7.0 không có migration database.
+- App version: **1.8.0**; Database version yêu cầu: **1.4.0**; V1.8.0 không có migration database.

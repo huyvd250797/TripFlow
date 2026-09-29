@@ -152,3 +152,9 @@ Smart Defaults được tính ở client từ Bundle đã xác thực (activity/
 ## V1.7.0 planning interaction
 
 Planning Board không tạo nguồn dữ liệu mới. Mọi thao tác đổi ngày/giờ vẫn đi qua mutation `item/update`, version guard, RLS và offline queue hiện có. Helper `lib/planning.ts` chỉ chuyển ngày/giờ ở client: đổi ngày bảo toàn giờ địa phương và duration; shift phút dịch start/end cùng nhau. Vì vậy Database marker vẫn là V1.4.0.
+
+## V1.8.0 route intelligence
+
+`lib/route-intelligence.ts` là logic thuần không gọi API ngoài. Module đọc tọa độ từ URL Google Maps phổ biến, tính Haversine + road factor, ước tính travel time theo cự ly, so sánh với khoảng trống giữa activity và tạo Google Maps Directions URL. Điều này giữ app không phụ thuộc API key, không lưu vị trí nền và không biến số liệu ước tính thành nguồn dữ liệu chính thức.
+
+Trong PWA standalone mobile, document không còn là scroll container chính: `.app-layout` khóa theo viewport và `.app-body` scroll nội bộ. Bottom navigation/Quick dock nằm ngoài scroll container nên không bị iOS kéo lên theo visual viewport khi cuộn.

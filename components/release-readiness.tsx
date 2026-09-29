@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V1.7.0 bổ sung Planning Board & Timeline Pro, kéo thả đổi ngày, chỉnh giờ nhanh, đồng thời tinh chỉnh Finance mobile và Quick dock dạng kéo để ẩn; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
+            V1.8.0 bổ sung Map, Places & Route Intelligence, route estimate theo tọa độ Google Maps, tuyến theo ngày, cảnh báo thời gian di chuyển, taskbar PWA cố định và Quick dock đóng/mở gọn; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

@@ -153,9 +153,10 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Chỉnh giờ ±30 phút ngay trên timeline/board, thêm activity theo ngày và giảm phụ thuộc modal.
 - Fix Finance mobile và Quick dock kéo-để-ẩn; không đổi schema, Database tiếp tục V1.4.0.
 
-## ⬜ V1.8.0 — Map, Places & Route Intelligence
+## ✅ V1.8.0 — Map, Places & Route Intelligence
 
-- Map itinerary, khoảng cách/thời gian di chuyển và cảnh báo lịch trình phi thực tế.
+- Map view theo ngày, mở từng địa điểm/toàn tuyến Google Maps, ước tính khoảng cách & thời gian từ tọa độ và cảnh báo transfer quá gấp.
+- Fix taskbar PWA cố định, Quick dock đóng bằng dấu ×, dashboard bỏ card Command Center và bổ sung motion chuyên nghiệp.
 
 ## ⬜ V1.9.0 — Expense Intelligence & Travel Wallet
 
@@ -165,4 +166,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.7.0 đã hoàn thành; phiên bản tiếp theo là **V1.8.0 – Map, Places & Route Intelligence**.
+**Roadmap hiện tại:** V1.8.0 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.

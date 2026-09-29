@@ -142,9 +142,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V1.8.0",
     title: "Map, Places & Route Intelligence",
-    done: false,
+    done: true,
     description:
-      "Map view cho itinerary, khoảng cách/thời gian di chuyển, cảnh báo lịch trình phi thực tế và mở điều hướng nhanh.",
+      "Map view theo ngày, điểm dừng từ Google Maps, ước tính quãng đường/thời gian di chuyển, cảnh báo khoảng nghỉ quá ngắn và mở tuyến Google Maps nhanh; đồng thời cố định taskbar PWA, tinh gọn Quick dock và thêm motion chuyên nghiệp.",
   },
   {
     version: "V1.9.0",
