@@ -172,3 +172,13 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] `/api/maps/resolve` chạy Node.js runtime và resolve link `maps.app.goo.gl` bằng raw HTTPS.
 - [ ] Link mẫu ySoEVvZNbrSWqu168 resolve thành `12.2200647,109.2036555` khi Google trả Location tương ứng.
 - [ ] Không có migration database mới.
+
+
+## V1.8.4 Google Maps Coordinate Integrity Fix
+
+- [ ] App version `1.8.4`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v184` active.
+- [ ] Paste `https://maps.app.goo.gl/YVvszUd4AFD1VXPt6?g_st=ic`, save, edit again: field still contains exactly the same short link.
+- [ ] Map resolver uses GET and returns La Vague coordinate near `12.2200647,109.2036555`.
+- [ ] Resolver does not return `-77.844326,39.0267995` from unrelated HTML/viewport data.
+- [ ] Clicking Bản đồ opens the Nha Trang destination, not Antarctica.

@@ -179,6 +179,14 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Bổ sung trace debug cho môi trường deploy và fallback HTML/canonical/meta refresh.
 - Không có migration database mới; DB compatibility vẫn V1.4.0.
 
+## ✅ V1.8.4 — Google Maps Coordinate Integrity Fix
+
+- Giữ nguyên short link `maps.app.goo.gl` đúng như người dùng paste; không sửa dữ liệu link khi lưu/chỉnh sửa.
+- Resolve ngầm bằng GET như trình duyệt; ưu tiên tọa độ địa điểm `!3d/!4d` trước viewport `@lat,lng`.
+- Không nhận cặp tọa độ ngẫu nhiên từ HTML Google làm địa điểm.
+- Regression test La Vague bảo đảm không tái phát trường hợp bay tới Nam Cực.
+- Không có migration database mới; DB compatibility vẫn V1.4.0.
+
 ## ⬜ V1.9.0 — Expense Intelligence & Travel Wallet
 
 - Travel Wallet, favorite/recent expense, gợi ý category và cảnh báo tốc độ chi tiêu.
@@ -187,4 +195,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.8.3 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.
+**Roadmap hiện tại:** V1.8.4 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.

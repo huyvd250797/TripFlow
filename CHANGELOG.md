@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.4 — Google Maps Coordinate Integrity Fix
+
+- Giữ nguyên chính xác link Google Maps người dùng paste vào `map_url`; mở form chỉnh sửa vẫn thấy short link ban đầu, không tự thay thành URL `query=lat,lng`.
+- Resolver short link chuyển sang `GET` như điều hướng trình duyệt, không dùng HEAD làm nguồn tọa độ.
+- Ưu tiên `!3dlat!4dlng` (tọa độ địa điểm) trước `@lat,lng` (viewport), tránh lấy nhầm tâm bản đồ.
+- Loại bỏ việc quét tọa độ tự do/JSON trong toàn bộ HTML Google; HTML fallback chỉ đọc tọa độ từ URL Google Maps đáng tin cậy như canonical, `og:url`, meta refresh hoặc JS redirect.
+- Thêm regression test cho trường hợp La Vague có tọa độ đúng `12.2200647,109.2036555` nhưng HTML/viewport chứa cặp sai `-77.844326,39.0267995`; kết quả sai phải bị bỏ qua.
+- App version `1.8.4`, service worker `tripflow-shell-v184`; Database vẫn yêu cầu `1.4.0`, không có migration mới.
+
 ## 1.8.3 — Google Maps Short Link Resolver Fix
 
 - Chuyển resolver `maps.app.goo.gl` sang Node.js runtime và raw `https.request` để đọc chính xác `Location` header trên môi trường deploy.

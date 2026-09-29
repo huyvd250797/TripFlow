@@ -41,22 +41,6 @@ const parseMoneyInput = (value: unknown) => {
   const digits = String(value ?? "").replace(/\D/g, "");
   return digits ? Number(digits) : 0;
 };
-async function normalizeGoogleMapUrl(value: unknown) {
-  const raw = String(value || "").trim();
-  if (!raw || typeof window === "undefined" || !navigator.onLine) return raw;
-  try {
-    const url = new URL(raw);
-    const host = url.hostname.toLowerCase();
-    if (!(host === "maps.app.goo.gl" || host === "goo.gl" || host === "maps.google.com" || host === "google.com" || host === "www.google.com" || host.endsWith(".google.com")))
-      return raw;
-    const response = await fetch(`/api/maps/resolve?url=${encodeURIComponent(raw)}`, { cache: "no-store" });
-    if (!response.ok) return raw;
-    const data = (await response.json()) as { normalizedUrl?: string | null; resolvedUrl?: string; coordinate?: { lat: number; lng: number } | null };
-    return data.coordinate ? data.normalizedUrl || data.resolvedUrl || raw : raw;
-  } catch {
-    return raw;
-  }
-}
 export function Editor({
   spec,
   bundle,
@@ -279,8 +263,6 @@ export function Editor({
       }
       for (const k of ["unit_price", "amount"])
         if (fields.some((f) => f.key === k)) data[k] = parseMoneyInput(data[k]);
-      if (spec.entity === "item" && data.map_url)
-        data.map_url = await normalizeGoogleMapUrl(data.map_url);
       const parsed = schemas[spec.entity].safeParse(data);
       if (!parsed.success) throw Error(parsed.error.issues[0].message);
       const hash = JSON.stringify(parsed.data);
@@ -486,7 +468,7 @@ export function Editor({
           ))}
           {spec.entity === "item" && (
             <p className="hint full">
-              Giờ tại {zone}. Google Maps: chọn địa điểm → Chia sẻ → Sao chép đường liên kết rồi dán trực tiếp link maps.app.goo.gl vào đây; TripFlow V1.8.3 sẽ tự đọc tọa độ. Ngày/giờ kết thúc có thể để trống.
+              Giờ tại {zone}. Google Maps: chọn địa điểm → Chia sẻ → Sao chép đường liên kết rồi dán trực tiếp link maps.app.goo.gl vào đây; TripFlow V1.8.4 giữ nguyên link bạn dán và chỉ đọc tọa độ ngầm khi cần. Ngày/giờ kết thúc có thể để trống.
             </p>
           )}
           {spec.entity === "expense" && linkedCategory && (

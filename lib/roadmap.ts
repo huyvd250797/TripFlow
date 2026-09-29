@@ -168,6 +168,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Ưu tiên đọc Location của maps.app.goo.gl bằng Node HTTPS raw request, HEAD → GET fallback, parse từng redirect trước khi mở trang Maps và trả trace khi chưa resolve được.",
   },
   {
+    version: "V1.8.4",
+    title: "Google Maps Coordinate Integrity Fix",
+    done: true,
+    description:
+      "Giữ nguyên link maps.app.goo.gl người dùng dán, resolve ngầm bằng GET như trình duyệt, ưu tiên tọa độ địa điểm !3d/!4d và loại bỏ việc lấy nhầm tọa độ ngẫu nhiên từ HTML Google.",
+  },
+  {
     version: "V1.9.0",
     title: "Expense Intelligence & Travel Wallet",
     done: false,

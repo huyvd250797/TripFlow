@@ -281,3 +281,10 @@ Dùng project staging và dữ liệu thử riêng:
 - `Location` vẫn phải được parse khi upstream/proxy trả status không phải 3xx.
 - Test link mẫu ySoEVvZNbrSWqu168 phải cho 12.2200647,109.2036555 trong test mô phỏng redirect.
 - Kiểm tra `debug=1` chỉ trả trace kỹ thuật, không trả body HTML.
+
+
+## V1.8.4 Google Maps coordinate integrity
+
+- `tests/google-maps-resolver.test.ts`: browser-style GET, exact La Vague short link, place-coordinate priority over conflicting viewport and HTML false-positive rejection.
+- `tests/route-intelligence.test.ts`: `!3d/!4d` must beat `@lat,lng`; arbitrary HTML coordinate pairs must return null.
+- Manual UI: save short link, reopen Edit and verify byte-for-byte link preservation.

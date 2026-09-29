@@ -651,7 +651,7 @@ function App() {
           const result = await api<{ normalizedUrl?: string | null; resolvedUrl?: string; coordinate?: { lat: number; lng: number } | null }>(
             `/api/maps/resolve?url=${encodeURIComponent(item.map_url)}`,
           );
-          return [item.id, result.coordinate ? result.normalizedUrl || result.resolvedUrl || null : null] as const;
+          return [item.id, result.coordinate ? result.resolvedUrl || result.normalizedUrl || null : null] as const;
         } catch {
           return [item.id, null] as const;
         }
@@ -2860,7 +2860,7 @@ function App() {
                             <p>
                               {mapResolveBusy
                                 ? "TripFlow đang tự mở rộng link maps.app.goo.gl để lấy tọa độ. Bạn không cần nhập lại link."
-                                : `${routeUnresolvedLinkCount} hoạt động chưa đọc được tọa độ. TripFlow V1.8.3 hỗ trợ trực tiếp link Google Maps → Chia sẻ → Sao chép đường liên kết (maps.app.goo.gl) và sẽ đọc redirect ở server; hãy mở lại Bản đồ để thử resolve lại khi mạng ổn định.`}
+                                : `${routeUnresolvedLinkCount} hoạt động chưa đọc được tọa độ. TripFlow V1.8.4 hỗ trợ trực tiếp link Google Maps → Chia sẻ → Sao chép đường liên kết (maps.app.goo.gl) và sẽ đọc redirect ở server; hãy mở lại Bản đồ để thử resolve lại khi mạng ổn định.`}
                             </p>
                           </div>
                         </div>
@@ -2897,7 +2897,7 @@ function App() {
                         <div className="route-map-empty">
                           <MapPin size={28} />
                           <b>{mapResolveBusy ? "Đang đọc link Google Maps…" : "Chưa lấy được tọa độ để dựng sơ đồ"}</b>
-                          <p>TripFlow hỗ trợ trực tiếp link rút gọn maps.app.goo.gl lấy từ Google Maps → Chia sẻ → Sao chép đường liên kết. Resolver V1.8.3 đọc redirect ở server để lấy tọa độ; tuyến vẫn có thể mở theo tên địa điểm khi đang mất mạng.</p>
+                          <p>TripFlow hỗ trợ trực tiếp link rút gọn maps.app.goo.gl lấy từ Google Maps → Chia sẻ → Sao chép đường liên kết. Resolver V1.8.4 dùng GET như trình duyệt, ưu tiên tọa độ địa điểm và không sửa link bạn đã lưu; tuyến vẫn có thể mở theo tên địa điểm khi đang mất mạng.</p>
                         </div>
                       )}
                       <div className="route-legs">

@@ -40,6 +40,14 @@ test("extractMapCoordinate accepts escaped/canonical Google Maps payloads", () =
     extractMapCoordinate('https://www.google.com/maps/place/Foo/data=!4m2!3d10.8231!4d106.6297'),
     { lat: 10.8231, lng: 106.6297 },
   );
+  assert.deepEqual(
+    extractMapCoordinate('https://www.google.com/maps/place/La+Vague/@-77.844326,39.0267995,3z/data=!4m2!3d12.2200647!4d109.2036555'),
+    { lat: 12.2200647, lng: 109.2036555 },
+  );
+  assert.equal(
+    extractMapCoordinate('<script>window.telemetry={lat:-77.844326,lng:39.0267995}</script>'),
+    null,
+  );
   assert.equal(
     coordinateMapUrl({ lat: 10.77690001, lng: 106.70090001 }),
     "https://www.google.com/maps/search/?api=1&query=10.7769,106.7009",

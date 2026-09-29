@@ -58,22 +58,48 @@ export function extractMapCoordinate(input?: string | null): RouteCoordinate | n
     );
   }
 
-  const patterns = [
-    /[?&](?:query|q|destination|origin|ll|center)=(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/i,
-    /@(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/,
-    /!3d(-?\d{1,2}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/,
-    /["'](?:lat|latitude)["']\s*:\s*(-?\d{1,2}(?:\.\d+)?)\s*,\s*["'](?:lng|lon|longitude)["']\s*:\s*(-?\d{1,3}(?:\.\d+)?)/i,
-    /(?:^|[^\d.-])(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})(?:$|[^\d.-])/,
-  ];
+  const read = (latText: string, lngText: string) => {
+    const lat = Number(latText);
+    const lng = Number(lngText);
+    return coordOk(lat, lng) ? { lat, lng } : null;
+  };
+
+  // Google place URLs can contain both a viewport center (@lat,lng) and the
+  // actual place coordinate (!3dlat!4dlng). Always prefer the place coordinate.
   for (const value of variants) {
-    for (const pattern of patterns) {
-      const match = value.match(pattern);
-      if (!match) continue;
-      const lat = Number(match[1]);
-      const lng = Number(match[2]);
-      if (coordOk(lat, lng)) return { lat, lng };
+    const place = value.match(/!3d(-?\d{1,2}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/i);
+    if (place) {
+      const coordinate = read(place[1], place[2]);
+      if (coordinate) return coordinate;
+    }
+
+    // Some Google payloads encode longitude before latitude as !2d{lng}!3d{lat}.
+    const reversed = value.match(/!2d(-?\d{1,3}(?:\.\d+)?)!3d(-?\d{1,2}(?:\.\d+)?)/i);
+    if (reversed) {
+      const coordinate = read(reversed[2], reversed[1]);
+      if (coordinate) return coordinate;
     }
   }
+
+  for (const value of variants) {
+    const query = value.match(/[?&](?:query|q|destination|origin|ll|center)=(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)(?:&|$)/i);
+    if (query) {
+      const coordinate = read(query[1], query[2]);
+      if (coordinate) return coordinate;
+    }
+  }
+
+  for (const value of variants) {
+    const viewport = value.match(/@(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)(?:,|\/|$)/);
+    if (viewport) {
+      const coordinate = read(viewport[1], viewport[2]);
+      if (coordinate) return coordinate;
+    }
+  }
+
+  // Deliberately do not parse arbitrary decimal pairs or lat/lng JSON from free
+  // text. Google HTML contains many unrelated coordinates and treating the first
+  // one as the destination can send the route to the wrong place.
   return null;
 }
 

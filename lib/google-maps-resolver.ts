@@ -127,16 +127,13 @@ function candidatesFromHtml(html: string, base: URL) {
   const jsRedirects = html.matchAll(/(?:window\.)?location(?:\.href)?\s*=\s*["']([^"']+)["']/gi);
   for (const match of jsRedirects) add(match[1]);
 
-  const rawUrls = html.match(/https?:\\?\/\\?\/[^\s"'<>]{12,4000}/gi) || [];
-  for (const raw of rawUrls.slice(0, 160)) add(raw);
-
   return result;
 }
 
 function coordinateFromHtml(html: string, base: URL) {
-  const direct = coordinateFromText(html);
-  if (direct) return { coordinate: direct, resolvedUrl: base.toString() };
-
+  // Never scan the raw HTML body for the first decimal pair. Google pages can
+  // contain unrelated map centers, telemetry values and other coordinates.
+  // Only coordinates contained in a trusted Google Maps URL candidate may win.
   for (const candidate of candidatesFromHtml(html, base)) {
     const coordinate = coordinateFromText(candidate.toString());
     if (coordinate) return { coordinate, resolvedUrl: candidate.toString() };
@@ -229,77 +226,20 @@ export async function resolveGoogleMapsUrl(
     if (visited.has(current.toString())) break;
     visited.add(current.toString());
 
-    for (const method of ["HEAD", "GET"] as const) {
-      let response: GoogleMapsHttpResult;
-      try {
-        response = await requestFn(current, method);
-      } catch (error) {
-        trace.push({
-          hop,
-          method,
-          status: null,
-          url: current.toString(),
-          note: error instanceof Error ? error.message : "request_failed",
-        });
-        if (method === "HEAD") continue;
-        return {
-          originalUrl: raw,
-          resolvedUrl: current.toString(),
-          normalizedUrl: null,
-          coordinate: null,
-          source: "unresolved",
-          trace,
-        };
-      }
-
-      const locationRaw = response.headers.location || "";
+    // Use GET for Google share links because it matches browser navigation. HEAD
+    // is not a navigation request and may return a different/synthetic target.
+    const method = "GET" as const;
+    let response: GoogleMapsHttpResult;
+    try {
+      response = await requestFn(current, method);
+    } catch (error) {
       trace.push({
         hop,
         method,
-        status: response.status,
+        status: null,
         url: current.toString(),
-        ...(locationRaw ? { location: locationRaw } : {}),
+        note: error instanceof Error ? error.message : "request_failed",
       });
-
-      // Google short links normally expose the final Maps URL here. Parse it before
-      // deciding whether the HTTP status is a redirect, because some proxies/CDNs
-      // preserve Location while rewriting the status code.
-      if (locationRaw) {
-        const location = allowedGoogleMapsUrl(locationRaw, current);
-        if (location) {
-          const coordinate = coordinateFromText(location.toString());
-          if (coordinate) return success(raw, location.toString(), coordinate, "location", trace);
-          current = location;
-          break;
-        }
-      }
-
-      const refreshRaw = response.headers.refresh || "";
-      if (refreshRaw) {
-        const refreshTarget = targetFromRefresh(refreshRaw, current);
-        if (refreshTarget) {
-          const coordinate = coordinateFromText(refreshTarget.toString());
-          if (coordinate) return success(raw, refreshTarget.toString(), coordinate, "refresh", trace);
-          current = refreshTarget;
-          break;
-        }
-      }
-
-      if (method === "GET" && response.body) {
-        const fromHtml = coordinateFromHtml(response.body, current);
-        if (fromHtml) return success(raw, fromHtml.resolvedUrl, fromHtml.coordinate, "html", trace);
-
-        const htmlTargets = candidatesFromHtml(response.body, current);
-        if (htmlTargets.length) {
-          current = htmlTargets[0];
-          break;
-        }
-      }
-
-      // HEAD returned a non-redirect response: retry the same URL with GET so we can
-      // inspect HTML/meta refresh/canonical content before giving up.
-      if (method === "HEAD") continue;
-
       return {
         originalUrl: raw,
         resolvedUrl: current.toString(),
@@ -309,6 +249,59 @@ export async function resolveGoogleMapsUrl(
         trace,
       };
     }
+
+    const locationRaw = response.headers.location || "";
+    trace.push({
+      hop,
+      method,
+      status: response.status,
+      url: current.toString(),
+      ...(locationRaw ? { location: locationRaw } : {}),
+    });
+
+    // Parse each browser-style redirect before requesting the next hop. If the URL
+    // contains both @viewport and !3d/!4d place coordinates, the place coordinate
+    // wins (handled by extractMapCoordinate).
+    if (locationRaw) {
+      const location = allowedGoogleMapsUrl(locationRaw, current);
+      if (location) {
+        const coordinate = coordinateFromText(location.toString());
+        if (coordinate) return success(raw, location.toString(), coordinate, "location", trace);
+        current = location;
+        continue;
+      }
+    }
+
+    const refreshRaw = response.headers.refresh || "";
+    if (refreshRaw) {
+      const refreshTarget = targetFromRefresh(refreshRaw, current);
+      if (refreshTarget) {
+        const coordinate = coordinateFromText(refreshTarget.toString());
+        if (coordinate) return success(raw, refreshTarget.toString(), coordinate, "refresh", trace);
+        current = refreshTarget;
+        continue;
+      }
+    }
+
+    if (response.body) {
+      const fromHtml = coordinateFromHtml(response.body, current);
+      if (fromHtml) return success(raw, fromHtml.resolvedUrl, fromHtml.coordinate, "html", trace);
+
+      const htmlTargets = candidatesFromHtml(response.body, current);
+      if (htmlTargets.length) {
+        current = htmlTargets[0];
+        continue;
+      }
+    }
+
+    return {
+      originalUrl: raw,
+      resolvedUrl: current.toString(),
+      normalizedUrl: null,
+      coordinate: null,
+      source: "unresolved",
+      trace,
+    };
   }
 
   return {

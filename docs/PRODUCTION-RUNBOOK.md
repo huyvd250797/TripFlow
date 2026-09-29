@@ -89,3 +89,8 @@ V1.8.2 không có migration. Deploy App 1.8.2 trên Database 1.4.0 và xác nh�
 ## V1.8.3 Google Maps short-link resolver patch
 
 V1.8.3 không có migration. Deploy App 1.8.3 trên Database 1.4.0 và xác nhận `tripflow-shell-v183`. Resolver sử dụng raw Node HTTPS để đọc Location của `maps.app.goo.gl`; nếu có tọa độ trong URL redirect thì trả ngay, không truy cập trang Maps đích. Khi cần chẩn đoán, dùng `/api/maps/resolve?url=<encoded>&debug=1` trong phiên đăng nhập để xem hop/status/Location.
+
+
+## V1.8.4 Google Maps coordinate integrity patch
+
+V1.8.4 không có migration. Deploy App 1.8.4 trên Database 1.4.0 và xác nhận `tripflow-shell-v184`. `map_url` phải giữ nguyên input người dùng; resolver chỉ xử lý ngầm. Nếu cần chẩn đoán, dùng `/api/maps/resolve?url=<encoded>&debug=1` và kiểm tra trace phải dùng GET.
