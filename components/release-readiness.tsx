@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V1.8.1 bổ sung xử lý link Google Maps rút gọn, media viewer trực tiếp và keyboard-safe editor trên PWA; các tính năng Map, Places & Route Intelligence của V1.8.0 được giữ nguyên; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
+            V1.8.2 tăng độ tin cậy khi đọc link Google Maps Share, chuẩn hóa tọa độ và khóa zoom giao diện; media ảnh dùng pinch/zoom riêng trong viewer; các tính năng Map, Places & Route Intelligence của V1.8.0 được giữ nguyên; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

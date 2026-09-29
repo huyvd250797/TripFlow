@@ -80,3 +80,8 @@ V1.8.0 không có migration. Deploy App 1.8.0 trên Database 1.4.0, xác nhận 
 ## V1.8.1 Map/Media/PWA patch
 
 V1.8.1 không có migration. Deploy App 1.8.1 trên Database 1.4.0, xác nhận `tripflow-shell-v181`. Route `/api/maps/resolve` chỉ outbound đến HTTPS Google domains đã allow-list để mở rộng link Maps rút gọn. Preview Google Drive phụ thuộc quyền và khả năng nhúng của nguồn; luôn giữ nút Mở nguồn làm fallback.
+
+
+## V1.8.2 Google Maps Share & Media Zoom patch
+
+V1.8.2 không có migration. Deploy App 1.8.2 trên Database 1.4.0 và xác nhận `tripflow-shell-v182`. Route `/api/maps/resolve` chỉ theo redirect trong allow-list Google; khi tìm được tọa độ sẽ trả URL chuẩn `query=lat,lng`. Toàn app khóa browser pinch zoom; viewer ảnh dùng zoom nội bộ nên cần test trên thiết bị thật.

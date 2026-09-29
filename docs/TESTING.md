@@ -265,3 +265,11 @@ Dùng project staging và dữ liệu thử riêng:
 - Google Drive photo preview dùng thumbnail; click ảnh mở viewer trong app.
 - Drive folder/album dùng embedded folder view khi được phép.
 - iOS keyboard: dialog bám visual viewport offset/height và footer vẫn thao tác được.
+
+
+## V1.8.2 Google Maps Share & isolated image zoom
+
+- [ ] Dán link lấy trực tiếp từ Google Maps → Chia sẻ → Sao chép đường liên kết (`maps.app.goo.gl`) và lưu activity.
+- [ ] Map view đọc được tọa độ, tăng “Điểm có tọa độ” và không còn cảnh báo link chưa đọc được tọa độ khi Google trả đủ dữ liệu.
+- [ ] Pinch ngoài viewer ảnh không phóng app/PWA.
+- [ ] Mở media loại Ảnh: pinch 1x–5x và kéo ảnh; dialog/header/footer giữ nguyên kích thước.

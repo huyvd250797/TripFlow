@@ -51,8 +51,8 @@ async function normalizeGoogleMapUrl(value: unknown) {
       return raw;
     const response = await fetch(`/api/maps/resolve?url=${encodeURIComponent(raw)}`, { cache: "no-store" });
     if (!response.ok) return raw;
-    const data = (await response.json()) as { resolvedUrl?: string; coordinate?: { lat: number; lng: number } | null };
-    return data.coordinate && data.resolvedUrl ? data.resolvedUrl : raw;
+    const data = (await response.json()) as { normalizedUrl?: string | null; resolvedUrl?: string; coordinate?: { lat: number; lng: number } | null };
+    return data.coordinate ? data.normalizedUrl || data.resolvedUrl || raw : raw;
   } catch {
     return raw;
   }
@@ -486,7 +486,7 @@ export function Editor({
           ))}
           {spec.entity === "item" && (
             <p className="hint full">
-              Giờ tại {zone}. Ngày/giờ kết thúc có thể để trống; nếu chuyến có ngày kết thúc, hoạt động phải nằm trong khoảng chuyến đi.
+              Giờ tại {zone}. Google Maps: chọn địa điểm → Chia sẻ → Sao chép đường liên kết rồi dán vào ô Link Google Maps; hỗ trợ cả maps.app.goo.gl. Ngày/giờ kết thúc có thể để trống.
             </p>
           )}
           {spec.entity === "expense" && linkedCategory && (

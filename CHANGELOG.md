@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.2 — Google Maps Share & Media Zoom Fix
+
+- Hỗ trợ đúng luồng người dùng Google Maps → Share/Chia sẻ → Copy link/Sao chép đường liên kết, kể cả `maps.app.goo.gl`.
+- API Maps resolve theo redirect Google-only, đọc thêm URL/canonical/HTML để lấy tọa độ khi tọa độ không nằm trực tiếp trong URL cuối.
+- Sau khi đọc được tọa độ, TripFlow chuẩn hóa thành URL Google Maps dạng `query=lat,lng` để các lần dựng route sau không phụ thuộc link rút gọn.
+- Khóa pinch zoom trên toàn bộ giao diện/PWA; chỉ trình xem **Ảnh** được zoom riêng 1x–5x, kéo ảnh, double-click trên desktop và có nút +/-/reset.
+- Tăng app version lên `1.8.2`, service worker cache `tripflow-shell-v182`; Database vẫn yêu cầu `1.4.0`, không có migration mới.
+
 ## 1.8.1 — Map Link, Media Viewer & PWA Keyboard Fix
 
 - Tự động resolve link Google Maps rút gọn `maps.app.goo.gl` ở server để lấy URL đầy đủ/tọa độ, đồng thời chuẩn hóa link khi lưu activity và tự xử lý các activity cũ khi mở tab Bản đồ.

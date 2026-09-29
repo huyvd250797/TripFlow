@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyzeRouteDay, buildDirectionsUrl, extractMapCoordinate } from "../lib/route-intelligence";
+import { analyzeRouteDay, buildDirectionsUrl, coordinateMapUrl, extractMapCoordinate } from "../lib/route-intelligence";
 import type { Item } from "../lib/types";
 
 const item = (id: string, title: string, start: string, end: string | null, map_url: string): Item => ({
@@ -30,6 +30,22 @@ test("extractMapCoordinate accepts common Google Maps coordinate URLs", () => {
     { lat: 10.77, lng: 106.69 },
   );
 });
+
+test("extractMapCoordinate accepts escaped/canonical Google Maps payloads", () => {
+  assert.deepEqual(
+    extractMapCoordinate('https:\\/\\/www.google.com\\/maps\\/place\\/Foo\\/@10.7769,106.7009,17z'),
+    { lat: 10.7769, lng: 106.7009 },
+  );
+  assert.deepEqual(
+    extractMapCoordinate('https://www.google.com/maps/place/Foo/data=!4m2!3d10.8231!4d106.6297'),
+    { lat: 10.8231, lng: 106.6297 },
+  );
+  assert.equal(
+    coordinateMapUrl({ lat: 10.77690001, lng: 106.70090001 }),
+    "https://www.google.com/maps/search/?api=1&query=10.7769,106.7009",
+  );
+});
+
 
 test("route analysis flags an unrealistically tight transfer", () => {
   const rows = [

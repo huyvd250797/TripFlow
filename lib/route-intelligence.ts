@@ -32,26 +32,55 @@ const coordOk = (lat: number, lng: number) =>
 
 export function extractMapCoordinate(input?: string | null): RouteCoordinate | null {
   if (!input) return null;
-  let value = input.trim();
-  if (!value) return null;
-  try {
-    value = decodeURIComponent(value);
-  } catch {}
+  const raw = input.trim();
+  if (!raw) return null;
+
+  const variants = new Set<string>([raw]);
+  let decoded = raw;
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const next = decodeURIComponent(decoded);
+      variants.add(next);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+  for (const value of [...variants]) {
+    variants.add(
+      value
+        .replace(/\\u003d/gi, "=")
+        .replace(/\\u0026/gi, "&")
+        .replace(/\\u002f/gi, "/")
+        .replace(/&amp;/gi, "&")
+        .replace(/\\\//g, "/"),
+    );
+  }
 
   const patterns = [
-    /[?&](?:query|q|destination|origin)=(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/i,
+    /[?&](?:query|q|destination|origin|ll|center)=(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/i,
     /@(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/,
     /!3d(-?\d{1,2}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/,
+    /["'](?:lat|latitude)["']\s*:\s*(-?\d{1,2}(?:\.\d+)?)\s*,\s*["'](?:lng|lon|longitude)["']\s*:\s*(-?\d{1,3}(?:\.\d+)?)/i,
     /(?:^|[^\d.-])(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})(?:$|[^\d.-])/,
   ];
-  for (const pattern of patterns) {
-    const match = value.match(pattern);
-    if (!match) continue;
-    const lat = Number(match[1]);
-    const lng = Number(match[2]);
-    if (coordOk(lat, lng)) return { lat, lng };
+  for (const value of variants) {
+    for (const pattern of patterns) {
+      const match = value.match(pattern);
+      if (!match) continue;
+      const lat = Number(match[1]);
+      const lng = Number(match[2]);
+      if (coordOk(lat, lng)) return { lat, lng };
+    }
   }
   return null;
+}
+
+export function coordinateMapUrl(coordinate: RouteCoordinate) {
+  const lat = Number(coordinate.lat.toFixed(7));
+  const lng = Number(coordinate.lng.toFixed(7));
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 }
 
 function haversineKm(a: RouteCoordinate, b: RouteCoordinate) {

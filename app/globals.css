@@ -11,6 +11,10 @@
 * {
   box-sizing: border-box;
 }
+html,
+body {
+  touch-action: pan-x pan-y;
+}
 body {
   margin: 0;
   background: var(--canvas);
@@ -6248,7 +6252,7 @@ h3 {
   .planning-gps-btn { margin-left: auto; }
 }
 
-/* TripFlow V1.8.1 · Map link resolution, keyboard-safe editor, in-app media viewer */
+/* TripFlow V1.8.2 · Share-link coordinate resolution & isolated image zoom */
 .route-coordinate-status {
   display: flex;
   align-items: flex-start;
@@ -6315,6 +6319,57 @@ h3 {
   background: #06171a;
 }
 .media-viewer-frame { min-height: 460px; }
+
+.media-zoom-stage {
+  position: relative;
+  width: 100%;
+  height: min(62vh, 620px);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #06171a;
+  touch-action: none;
+  overscroll-behavior: contain;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.media-zoom-image {
+  transition: transform 120ms ease-out;
+  will-change: transform;
+  transform-origin: center center;
+}
+.media-zoom-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(4, 22, 25, .82);
+  border: 1px solid rgba(255,255,255,.16);
+  backdrop-filter: blur(10px);
+}
+.media-zoom-controls button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  color: #eef9fa;
+}
+.media-zoom-controls button:disabled { opacity: .38; cursor: default; }
+.media-zoom-controls span {
+  min-width: 48px;
+  text-align: center;
+  color: #eef9fa;
+  font-size: 12px;
+  font-weight: 700;
+}
 .media-viewer-caption {
   width: 100%;
   margin: 0;
@@ -6342,6 +6397,8 @@ h3 {
   .media-viewer-media,
   .media-viewer-frame { height: min(58vh, 540px); border-radius: 10px; }
   .media-viewer-frame { min-height: 360px; }
+  .media-zoom-stage { height: min(58vh, 540px); border-radius: 10px; }
+  .media-zoom-controls { right: 8px; bottom: 8px; }
 
   /* Follow the iOS visual viewport when the keyboard pans/resizes the screen. */
   .dialog-overlay {

@@ -147,6 +147,20 @@ export const ROADMAP: RoadmapItem[] = [
       "Map view theo ngày, điểm dừng từ Google Maps, ước tính quãng đường/thời gian di chuyển, cảnh báo khoảng nghỉ quá ngắn và mở tuyến Google Maps nhanh; đồng thời cố định taskbar PWA, tinh gọn Quick dock và thêm motion chuyên nghiệp.",
   },
   {
+    version: "V1.8.1",
+    title: "Map Link, Media Viewer & PWA Keyboard Fix",
+    done: true,
+    description:
+      "Mở rộng link Google Maps rút gọn ở server, xem media trực tiếp trong app và ổn định editor PWA khi bàn phím điện thoại mở.",
+  },
+  {
+    version: "V1.8.2",
+    title: "Google Maps Share & Media Zoom Fix",
+    done: true,
+    description:
+      "Đọc tọa độ từ Google Maps Share qua redirect/HTML rồi chuẩn hóa link tọa độ; khóa pinch zoom toàn giao diện và chỉ cho phép zoom/kéo riêng ảnh đang mở.",
+  },
+  {
     version: "V1.9.0",
     title: "Expense Intelligence & Travel Wallet",
     done: false,

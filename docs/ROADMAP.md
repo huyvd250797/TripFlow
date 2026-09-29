@@ -158,6 +158,20 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Map view theo ngày, mở từng địa điểm/toàn tuyến Google Maps, ước tính khoảng cách & thời gian từ tọa độ và cảnh báo transfer quá gấp.
 - Fix taskbar PWA cố định, Quick dock đóng bằng dấu ×, dashboard bỏ card Command Center và bổ sung motion chuyên nghiệp.
 
+## ✅ V1.8.1 — Map Link, Media Viewer & PWA Keyboard Fix
+
+- Resolve link Google Maps rút gọn để lấy tọa độ cho Map view.
+- Làm rõ sơ đồ tuyến nội bộ và trạng thái đọc tọa độ.
+- Xem ảnh/album/video Drive trong TripFlow khi nguồn cho phép.
+- Fix editor khi bàn phím iOS/PWA mở.
+- Không có migration; Database giữ V1.4.0.
+
+## ✅ V1.8.2 — Google Maps Share & Media Zoom Fix
+
+- Resolve link Google Maps Share qua redirect + canonical/HTML và chuẩn hóa URL tọa độ.
+- Khóa zoom toàn giao diện; chỉ viewer ảnh được pinch/zoom/kéo riêng.
+- Không có migration database mới; DB compatibility vẫn V1.4.0.
+
 ## ⬜ V1.9.0 — Expense Intelligence & Travel Wallet
 
 - Travel Wallet, favorite/recent expense, gợi ý category và cảnh báo tốc độ chi tiêu.
@@ -166,12 +180,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.8.0 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.
-
-## ✅ V1.8.1 — Map Link, Media Viewer & PWA Keyboard Fix
-
-- Resolve link Google Maps rút gọn để lấy tọa độ cho Map view.
-- Làm rõ sơ đồ tuyến nội bộ và trạng thái đọc tọa độ.
-- Xem ảnh/album/video Drive trong TripFlow khi nguồn cho phép.
-- Fix editor khi bàn phím iOS/PWA mở.
-- Không có migration; Database giữ V1.4.0.
+**Roadmap hiện tại:** V1.8.2 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.

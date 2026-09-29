@@ -57,6 +57,7 @@ import { browserClient, configured } from "@/lib/supabase/client";
 import { Auth } from "./auth";
 import { Editor, type EditSpec } from "./editor";
 import { Dialog } from "./ui/dialog";
+import { ZoomableImage } from "./zoomable-image";
 import {
   VERSION,
   TRIP_STATUS,
@@ -647,10 +648,10 @@ function App() {
     void Promise.all(
       pending.map(async (item) => {
         try {
-          const result = await api<{ resolvedUrl?: string; coordinate?: { lat: number; lng: number } | null }>(
+          const result = await api<{ normalizedUrl?: string | null; resolvedUrl?: string; coordinate?: { lat: number; lng: number } | null }>(
             `/api/maps/resolve?url=${encodeURIComponent(item.map_url)}`,
           );
-          return [item.id, result.coordinate && result.resolvedUrl ? result.resolvedUrl : null] as const;
+          return [item.id, result.coordinate ? result.normalizedUrl || result.resolvedUrl || null : null] as const;
         } catch {
           return [item.id, null] as const;
         }
@@ -2859,7 +2860,7 @@ function App() {
                             <p>
                               {mapResolveBusy
                                 ? "TripFlow đang tự mở rộng link maps.app.goo.gl để lấy tọa độ. Bạn không cần nhập lại link."
-                                : `${routeUnresolvedLinkCount} hoạt động vẫn dùng link rút gọn/không chứa tọa độ. Hãy mở link rồi sao chép URL đầy đủ nếu Google không cho phép TripFlow mở rộng link.`}
+                                : `${routeUnresolvedLinkCount} hoạt động chưa đọc được tọa độ. Link lấy bằng Google Maps → Chia sẻ → Sao chép đường liên kết đã được hỗ trợ; nếu Google chặn mở rộng link, bạn vẫn có thể dùng URL đầy đủ trên thanh địa chỉ trình duyệt.`}
                             </p>
                           </div>
                         </div>
@@ -3825,7 +3826,7 @@ function App() {
                 <>
                   <section className="more-hub-intro">
                     <div>
-                      <span className="eyebrow">TRIPFLOW MODULE HUB · V1.8.1</span>
+                      <span className="eyebrow">TRIPFLOW MODULE HUB · V{VERSION}</span>
                       <h2>Thêm & quản lý</h2>
                       <p>Thông tin được gom theo module. Mở đúng nhóm bạn cần để màn hình gọn và dễ tập trung hơn.</p>
                     </div>
@@ -4917,7 +4918,7 @@ function App() {
               ) : mediaViewer.kind === "video" ? (
                 <video className="media-viewer-media" src={mediaViewerPreview} controls playsInline />
               ) : (
-                <img className="media-viewer-media" src={mediaViewerPreview} alt={mediaViewer.title} />
+                <ZoomableImage src={mediaViewerPreview} alt={mediaViewer.title} />
               )
             ) : (
               <div className="media-viewer-fallback">
