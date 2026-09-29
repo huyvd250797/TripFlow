@@ -147,3 +147,8 @@ Không thay đổi kiến trúc hay schema. Patch chỉ làm an toàn đường 
 ## V1.6.0 context automation
 
 Smart Defaults được tính ở client từ Bundle đã xác thực (activity/budget/expense gần nhất), không tạo nguồn dữ liệu thứ hai và không cần schema mới. Đây chỉ là giá trị gợi ý; mutation vẫn đi qua validation/API/RLS hiện hữu. Cảnh báo context không tự chặn hoặc tự ghi dữ liệu.
+
+
+## V1.7.0 planning interaction
+
+Planning Board không tạo nguồn dữ liệu mới. Mọi thao tác đổi ngày/giờ vẫn đi qua mutation `item/update`, version guard, RLS và offline queue hiện có. Helper `lib/planning.ts` chỉ chuyển ngày/giờ ở client: đổi ngày bảo toàn giờ địa phương và duration; shift phút dịch start/end cùng nhau. Vì vậy Database marker vẫn là V1.4.0.

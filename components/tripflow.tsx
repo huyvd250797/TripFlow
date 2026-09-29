@@ -101,6 +101,7 @@ import { BrandMark, BrandName } from "./brand";
 import { searchTripWorkspace, type WorkspaceSearchResult } from "@/lib/workspace";
 import { parseQuickEntry } from "@/lib/quick-entry";
 import { buildSmartDefaults, expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
+import { moveItemToDay, planningDays, shiftItemMinutes } from "@/lib/planning";
 import {
   cacheBundle,
   cacheTrips,
@@ -253,6 +254,8 @@ function App() {
     [quickEntryBusy, setQuickEntryBusy] = useState(false),
     [recentQuickEntries, setRecentQuickEntries] = useState<string[]>([]),
     [commandFabCollapsed, setCommandFabCollapsed] = useState(false),
+    [planningView, setPlanningView] = useState<"timeline" | "board">("timeline"),
+    [planningBusyId, setPlanningBusyId] = useState(""),
     [historyOpen, setHistoryOpen] = useState(false),
     [templateApply, setTemplateApply] = useState<TripTemplate | null>(null),
     [templateName, setTemplateName] = useState(""),
@@ -287,7 +290,9 @@ function App() {
       ios: false,
     });
   const syncLock = useRef(false);
-  const commandFabTouchX = useRef<number | null>(null);
+  const commandFabPointerX = useRef<number | null>(null);
+  const commandFabDidDrag = useRef(false);
+  const planningDragId = useRef("");
   const installPromptRef = useRef<InstallPromptEvent | null>(null);
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const swReloadingRef = useRef(false);
@@ -545,6 +550,19 @@ function App() {
       setCommandFabCollapsed(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user || !selectedId) {
+      setPlanningView("timeline");
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(`tripflow:planning-view:${user.id}:${selectedId}`);
+      setPlanningView(saved === "board" ? "board" : "timeline");
+    } catch {
+      setPlanningView("timeline");
+    }
+  }, [user, selectedId]);
 
   useEffect(() => {
     if (!user || !selectedId) return;
@@ -1440,6 +1458,7 @@ function App() {
   const progress = data
     ? live(data.items, now || new Date().toISOString())
     : null;
+  const boardDays = data && trip ? planningDays(trip, data.items, trip.timezone) : [];
   const current = progress?.current;
   const workspaceResults = data ? searchTripWorkspace(data, searchTerm) : [];
   const workspaceFocusItem = progress?.active || current || progress?.next || null;
@@ -1537,6 +1556,43 @@ function App() {
     try {
       localStorage.setItem(`tripflow:command-fab:${user.id}`, next ? "collapsed" : "open");
     } catch {}
+  };
+  const changePlanningView = (next: "timeline" | "board") => {
+    setPlanningView(next);
+    if (!user || !selectedId) return;
+    try {
+      localStorage.setItem(`tripflow:planning-view:${user.id}:${selectedId}`, next);
+    } catch {}
+  };
+  const reschedulePlanningItem = async (item: Item, change: { day?: string; minutes?: number }) => {
+    if (!trip || !writable || planningBusyId) return;
+    try {
+      setPlanningBusyId(item.id);
+      const next = change.day
+        ? moveItemToDay(item, change.day, trip.timezone)
+        : shiftItemMinutes(item, change.minutes || 0);
+      await save({
+        operationId: crypto.randomUUID(),
+        tripId: trip.id,
+        entity: "item",
+        action: "update",
+        id: item.id,
+        version: item.version,
+        data: {
+          title: item.title,
+          location: item.location,
+          start_at: next.start_at,
+          end_at: next.end_at,
+          map_url: item.map_url,
+          note: item.note,
+        },
+      });
+      if (change.day) setDay(change.day);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không đổi được lịch hoạt động.");
+    } finally {
+      setPlanningBusyId("");
+    }
   };
   const openQuickEntryInEditor = () => {
     if (!quickPreview || !quickPreview.valid) return;
@@ -2333,32 +2389,52 @@ function App() {
                         {progress.processed} đã xử lý · {trip.timezone}
                       </p>
                     </div>
-                    <button
-                      className="btn secondary"
-                      onClick={() => {
-                        if (!navigator.geolocation) {
-                          notify("Thiết bị không hỗ trợ định vị.");
-                          return;
-                        }
-                        notify("Đang lấy vị trí…");
-                        navigator.geolocation.getCurrentPosition(
-                          (pos) => {
-                            setShareLink(
-                              `https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`,
-                            );
-                          },
-                          () =>
-                            notify(
-                              "Không lấy được GPS. Hãy kiểm tra quyền vị trí.",
-                            ),
-                          { timeout: 15000, enableHighAccuracy: true },
-                        );
-                      }}
-                    >
-                      <MapPin size={16} />
-                      GPS của tôi
-                    </button>
+                    <div className="planning-heading-actions">
+                      <div className="planning-view-switch" aria-label="Kiểu hiển thị kế hoạch">
+                        <button
+                          type="button"
+                          className={planningView === "timeline" ? "active" : ""}
+                          onClick={() => changePlanningView("timeline")}
+                        >
+                          <Route size={16} /> Timeline
+                        </button>
+                        <button
+                          type="button"
+                          className={planningView === "board" ? "active" : ""}
+                          onClick={() => changePlanningView("board")}
+                        >
+                          <LayoutDashboard size={16} /> Board
+                        </button>
+                      </div>
+                      <button
+                        className="btn secondary planning-gps-btn"
+                        onClick={() => {
+                          if (!navigator.geolocation) {
+                            notify("Thiết bị không hỗ trợ định vị.");
+                            return;
+                          }
+                          notify("Đang lấy vị trí…");
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              setShareLink(
+                                `https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`,
+                              );
+                            },
+                            () =>
+                              notify(
+                                "Không lấy được GPS. Hãy kiểm tra quyền vị trí.",
+                              ),
+                            { timeout: 15000, enableHighAccuracy: true },
+                          );
+                        }}
+                      >
+                        <MapPin size={16} />
+                        GPS của tôi
+                      </button>
+                    </div>
                   </div>
+                  {planningView === "timeline" ? (
+                    <>
                   <div className="day-tabs">
                     <button
                       className={day === "all" ? "active" : ""}
@@ -2466,6 +2542,13 @@ function App() {
                               }{" "}
                               media
                             </div>
+                            {writable && (
+                              <div className="planning-inline-tools" aria-label="Chỉnh giờ nhanh">
+                                <span>Chỉnh giờ</span>
+                                <button type="button" disabled={!!planningBusyId} onClick={() => void reschedulePlanningItem(x, { minutes: -30 })}>−30′</button>
+                                <button type="button" disabled={!!planningBusyId} onClick={() => void reschedulePlanningItem(x, { minutes: 30 })}>+30′</button>
+                              </div>
+                            )}
                             <div className="actions">
                               {writable && (
                                 <>
@@ -2541,6 +2624,114 @@ function App() {
                         </article>
                       ))}
                   </div>
+                    </>
+                  ) : (
+                    <section className="planning-board-shell" aria-label="Planning Board">
+                      <div className="planning-board-intro">
+                        <div>
+                          <span className="eyebrow">PLANNING BOARD</span>
+                          <h3>Kéo hoạt động sang ngày khác</h3>
+                          <p>Desktop có thể kéo thả. Trên mobile chọn ngày trực tiếp; dùng ±30 phút để chỉnh giờ mà không cần mở form.</p>
+                        </div>
+                        {writable && (
+                          <button className="btn secondary" onClick={() => edit("item")}>
+                            <Plus size={16} /> Thêm hoạt động
+                          </button>
+                        )}
+                      </div>
+                      <div className="planning-board">
+                        {boardDays.map((boardDay) => {
+                          const boardItems = progress.sorted.filter(
+                            (item) => localTime(item.start_at, trip.timezone).slice(0, 10) === boardDay,
+                          );
+                          return (
+                            <section
+                              className="planning-column"
+                              key={boardDay}
+                              onDragOver={(event) => {
+                                if (writable) event.preventDefault();
+                              }}
+                              onDrop={(event) => {
+                                if (!writable) return;
+                                event.preventDefault();
+                                const id = event.dataTransfer.getData("text/tripflow-item") || planningDragId.current;
+                                planningDragId.current = "";
+                                const item = data.items.find((row) => row.id === id);
+                                if (!item) return;
+                                const currentDay = localTime(item.start_at, trip.timezone).slice(0, 10);
+                                if (currentDay !== boardDay) void reschedulePlanningItem(item, { day: boardDay });
+                              }}
+                            >
+                              <header className="planning-column-head">
+                                <div>
+                                  <b>{dateLabel(boardDay)}</b>
+                                  <small>{boardItems.length} hoạt động</small>
+                                </div>
+                                {writable && (
+                                  <button
+                                    type="button"
+                                    className="icon-btn"
+                                    aria-label={`Thêm hoạt động ngày ${dateLabel(boardDay)}`}
+                                    onClick={() =>
+                                      setSpec({
+                                        entity: "item",
+                                        defaults: {
+                                          start_at: utcTime(`${boardDay}T09:00`, trip.timezone),
+                                          end_at: null,
+                                        },
+                                      })
+                                    }
+                                  >
+                                    <Plus size={16} />
+                                  </button>
+                                )}
+                              </header>
+                              <div className="planning-column-list">
+                                {boardItems.map((item) => (
+                                  <article
+                                    className={`planning-card ${item.status} ${planningBusyId === item.id ? "busy" : ""}`}
+                                    key={item.id}
+                                    draggable={writable && planningBusyId !== item.id}
+                                    onDragStart={(event) => {
+                                      planningDragId.current = item.id;
+                                      event.dataTransfer.effectAllowed = "move";
+                                      event.dataTransfer.setData("text/tripflow-item", item.id);
+                                    }}
+                                    onDragEnd={() => { planningDragId.current = ""; }}
+                                  >
+                                    <div className="planning-card-head">
+                                      <span className={`pill ${item.status === "active" ? "green" : ""}`}>{ITEM_STATUS[item.status]}</span>
+                                      <b>{planningBusyId === item.id ? "Đang lưu…" : localTime(item.start_at, trip.timezone).slice(11)}</b>
+                                    </div>
+                                    <h4>{item.title}</h4>
+                                    <p><MapPin size={13} /> {item.location || "Chưa có địa điểm"}</p>
+                                    {writable && (
+                                      <div className="planning-card-tools">
+                                        <button type="button" disabled={!!planningBusyId} onClick={() => void reschedulePlanningItem(item, { minutes: -30 })}>−30′</button>
+                                        <button type="button" disabled={!!planningBusyId} onClick={() => void reschedulePlanningItem(item, { minutes: 30 })}>+30′</button>
+                                        <select
+                                          aria-label={`Đổi ngày của ${item.title}`}
+                                          value={boardDay}
+                                          disabled={!!planningBusyId}
+                                          onChange={(event) => void reschedulePlanningItem(item, { day: event.target.value })}
+                                        >
+                                          {boardDays.map((value) => <option value={value} key={value}>{dateLabel(value)}</option>)}
+                                        </select>
+                                        <button type="button" className="icon-btn" aria-label={`Sửa ${item.title}`} onClick={() => edit("item", item)}>
+                                          <Pencil size={15} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </article>
+                                ))}
+                                {!boardItems.length && <div className="planning-column-empty">Thả hoạt động vào ngày này</div>}
+                              </div>
+                            </section>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
                   {!data.items.length && (
                     <section className="panel">
                       <Empty
@@ -2956,8 +3147,8 @@ function App() {
                       </section>
                     </>
                   ) : financeTab === "plan" ? (
-                    <section className="panel">
-                      <div className="section-heading">
+                    <section className="panel finance-ledger-panel">
+                      <div className="section-heading finance-ledger-heading">
                         <div>
                           <span className="eyebrow">CURRENT BUDGET</span>
                           <h2>Dự toán hiện tại</h2>
@@ -3011,8 +3202,8 @@ function App() {
                       )}
                     </section>
                   ) : financeTab === "actual" ? (
-                    <section className="panel">
-                      <div className="section-heading">
+                    <section className="panel finance-ledger-panel">
+                      <div className="section-heading finance-ledger-heading actual-ledger-heading">
                         <div>
                           <span className="eyebrow">ACTUAL SPENDING</span>
                           <h2>Nhật ký chi tiêu</h2>
@@ -3392,7 +3583,7 @@ function App() {
                 <>
                   <section className="more-hub-intro">
                     <div>
-                      <span className="eyebrow">TRIPFLOW MODULE HUB · V1.6.0</span>
+                      <span className="eyebrow">TRIPFLOW MODULE HUB · V1.7.0</span>
                       <h2>Thêm & quản lý</h2>
                       <p>Thông tin được gom theo module. Mở đúng nhóm bạn cần để màn hình gọn và dễ tập trung hơn.</p>
                     </div>
@@ -4088,31 +4279,48 @@ function App() {
         ))}
       </nav>
       {data && (
-        <div
-          className={`command-fab-dock ${commandFabCollapsed ? "collapsed" : ""}`}
-          onTouchStart={(event) => { commandFabTouchX.current = event.touches[0]?.clientX ?? null; }}
-          onTouchEnd={(event) => {
-            const start = commandFabTouchX.current;
-            const end = event.changedTouches[0]?.clientX;
-            commandFabTouchX.current = null;
-            if (start == null || end == null) return;
-            if (end - start > 36) updateCommandFabCollapsed(true);
-            if (start - end > 36) updateCommandFabCollapsed(false);
-          }}
-        >
+        <div className={`command-fab-dock ${commandFabCollapsed ? "collapsed" : ""}`}>
           <button
-            className="command-fab-toggle"
-            onClick={() => updateCommandFabCollapsed(!commandFabCollapsed)}
-            aria-label={commandFabCollapsed ? "Hiện nút Quick" : "Ẩn nút Quick sang phải"}
-            title={commandFabCollapsed ? "Hiện Quick" : "Thu gọn Quick"}
+            className="command-fab-reveal"
+            onClick={() => updateCommandFabCollapsed(false)}
+            aria-label="Hiện nút Quick"
+            title="Hiện Quick"
+            tabIndex={commandFabCollapsed ? 0 : -1}
+            aria-hidden={!commandFabCollapsed}
           >
-            {commandFabCollapsed ? <ChevronLeft size={19} /> : <ChevronRight size={19} />}
+            <ChevronLeft size={20} />
           </button>
           <button
             className="command-fab"
-            onClick={() => setQuickActionsOpen(true)}
-            aria-label="Mở TripFlow Command Center"
-            title="Command Center · Ctrl+K"
+            onPointerDown={(event) => {
+              commandFabPointerX.current = event.clientX;
+              commandFabDidDrag.current = false;
+              event.currentTarget.setPointerCapture?.(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              const start = commandFabPointerX.current;
+              if (start != null && event.clientX - start > 10) commandFabDidDrag.current = true;
+            }}
+            onPointerUp={(event) => {
+              const start = commandFabPointerX.current;
+              commandFabPointerX.current = null;
+              if (start != null && event.clientX - start > 34) {
+                commandFabDidDrag.current = true;
+                updateCommandFabCollapsed(true);
+              }
+            }}
+            onPointerCancel={() => { commandFabPointerX.current = null; }}
+            onClick={() => {
+              if (commandFabDidDrag.current) {
+                commandFabDidDrag.current = false;
+                return;
+              }
+              setQuickActionsOpen(true);
+            }}
+            aria-label="Mở TripFlow Command Center; kéo sang phải để ẩn"
+            title="Command Center · Kéo sang phải để ẩn · Ctrl+K"
+            tabIndex={commandFabCollapsed ? -1 : 0}
+            aria-hidden={commandFabCollapsed}
           >
             <Zap size={21} />
             <span>Quick</span>

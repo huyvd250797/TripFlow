@@ -67,3 +67,8 @@ V1.5.1 là patch frontend, không có migration. Deploy source bằng Node 24.x 
 ## V1.6.0 Smart Defaults & PWA taskbar
 
 V1.6.0 không có migration; deploy App 1.6.0 trên Database 1.4.0. Sau deploy xác nhận `tripflow-shell-v160`, mở PWA standalone và scroll dài để bottom taskbar luôn sát đáy. Kiểm tra Quick dock thu/mở và Module Hub trong tab Thêm.
+
+
+## V1.7.0 Planning Board & Timeline Pro
+
+V1.7.0 không có migration. Deploy App 1.7.0 trên Database 1.4.0, xác nhận `tripflow-shell-v170`, kiểm thử Board trên desktop/mobile, Finance Actual header ở 320/390 px và hành vi kéo Quick sang phải trong PWA standalone.

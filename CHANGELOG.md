@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.0 — Planning Board & Timeline Pro
+
+- Lịch trình có hai chế độ Timeline/Planning Board; Board nhóm activity theo ngày và hỗ trợ kéo thả đổi ngày trên desktop.
+- Mobile/desktop đều có đổi ngày trực tiếp và chỉnh giờ nhanh ±30 phút mà không cần mở modal.
+- Fix header tab Thực chi trên mobile để nút Ghi chi tiêu thẳng hàng, không ép tiêu đề rớt dòng; giữ trải nghiệm nhất quán với tab Dự toán.
+- Nút ⚡ Quick chuyển sang thao tác kéo sang phải để ẩn; mũi tên chỉ xuất hiện khi icon đã ẩn và bấm mũi tên sẽ trượt icon ra lại.
+- App version `1.7.0`, service worker `tripflow-shell-v170`, Database yêu cầu vẫn `1.4.0`; không có migration mới.
+- Phiên bản tiếp theo: V1.8.0 – Map, Places & Route Intelligence.
+
 ## 1.6.0 — Smart Defaults & Context Automation
 
 - Smart Defaults tự gợi ý người trả, nhóm chi, budget, ngày chi, giờ hoạt động và địa điểm từ dữ liệu/context hiện tại.

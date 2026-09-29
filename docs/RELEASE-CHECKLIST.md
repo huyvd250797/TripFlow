@@ -129,3 +129,13 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Thêm hiển thị 3 Module Hub đóng/mở, không bung toàn bộ nội dung.
 - [ ] Expense mới gợi ý payer/category/budget hợp lý và vẫn sửa được.
 - [ ] Quick Entry cảnh báo vượt budget / trùng lịch trước khi lưu.
+
+
+## V1.7.0 Planning Board & Timeline Pro
+
+- [ ] App version `1.7.0`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v170` active.
+- [ ] Timeline/Board switch hoạt động; desktop drag đổi ngày, mobile select đổi ngày.
+- [ ] ±30 phút giữ duration và không làm mất `end_at = null`.
+- [ ] Tab Thực chi mobile không vỡ heading/action.
+- [ ] Quick icon chỉ ẩn bằng kéo sang phải; arrow chỉ hiện khi collapsed.

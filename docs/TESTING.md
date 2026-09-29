@@ -234,3 +234,13 @@ Dùng project staging và dữ liệu thử riêng:
 - Unit: activity mới trùng lịch phát cảnh báo.
 - UI/PWA: bottom nav fixed ở standalone và Quick dock collapsed vẫn để lộ mũi tên.
 - UI: Module Hub trong Thêm đóng/mở được và Analytics tự mở block khi điều hướng từ dashboard.
+
+
+## Planning Board & Timeline Pro V1.7.0
+
+- Timeline/Board switch giữ đúng mode sau reload theo user/trip.
+- `planningDays` enumerate đầy đủ trip ngắn và vẫn chứa ngày có activity với trip dài/open-ended.
+- Kéo activity sang cột ngày khác bảo toàn giờ địa phương và duration; update dùng version hiện tại và offline queue hiện có.
+- Nút ±30 phút dịch cả start/end cùng nhau; item không có end giữ `end_at = null`.
+- Mobile 320/390 px: Actual Spending header không làm hẹp tiêu đề; nút Ghi chi tiêu nằm gọn bên phải.
+- Quick dock: visible không có arrow; drag >34 px sang phải thì ẩn; collapsed mới nhận pointer ở reveal arrow.

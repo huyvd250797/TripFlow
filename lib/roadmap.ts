@@ -135,9 +135,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V1.7.0",
     title: "Planning Board & Timeline Pro",
-    done: false,
+    done: true,
     description:
-      "Timeline trực quan, kéo thả hoạt động, vùng chưa xếp lịch, đổi ngày/giờ nhanh và lập kế hoạch ít modal hơn.",
+      "Timeline/Planning Board chuyển đổi tức thời, kéo thả hoạt động sang ngày khác trên desktop, đổi ngày trên mobile và chỉnh giờ ±30 phút mà không cần mở form.",
   },
   {
     version: "V1.8.0",

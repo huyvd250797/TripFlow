@@ -146,9 +146,12 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Mục **Thêm** được gom theo Module Hub dạng block đóng/mở để giảm nhiễu thông tin.
 - Không đổi schema; App V1.6.0 tiếp tục dùng Database V1.4.0.
 
-## ⬜ V1.7.0 — Planning Board & Timeline Pro
+## ✅ V1.7.0 — Planning Board & Timeline Pro
 
-- Timeline kéo thả, vùng chưa xếp lịch, dời activity giữa ngày và giảm phụ thuộc modal.
+- Chuyển nhanh giữa Timeline và Planning Board.
+- Desktop kéo thả activity sang ngày khác; mobile chọn ngày trực tiếp.
+- Chỉnh giờ ±30 phút ngay trên timeline/board, thêm activity theo ngày và giảm phụ thuộc modal.
+- Fix Finance mobile và Quick dock kéo-để-ẩn; không đổi schema, Database tiếp tục V1.4.0.
 
 ## ⬜ V1.8.0 — Map, Places & Route Intelligence
 
@@ -162,4 +165,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.6.0 đã hoàn thành; phiên bản tiếp theo là **V1.7.0 – Planning Board & Timeline Pro**.
+**Roadmap hiện tại:** V1.7.0 đã hoàn thành; phiên bản tiếp theo là **V1.8.0 – Map, Places & Route Intelligence**.
