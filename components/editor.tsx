@@ -486,7 +486,7 @@ export function Editor({
           ))}
           {spec.entity === "item" && (
             <p className="hint full">
-              Giờ tại {zone}. Google Maps: chọn địa điểm → Chia sẻ → Sao chép đường liên kết rồi dán vào ô Link Google Maps; hỗ trợ cả maps.app.goo.gl. Ngày/giờ kết thúc có thể để trống.
+              Giờ tại {zone}. Google Maps: chọn địa điểm → Chia sẻ → Sao chép đường liên kết rồi dán trực tiếp link maps.app.goo.gl vào đây; TripFlow V1.8.3 sẽ tự đọc tọa độ. Ngày/giờ kết thúc có thể để trống.
             </p>
           )}
           {spec.entity === "expense" && linkedCategory && (

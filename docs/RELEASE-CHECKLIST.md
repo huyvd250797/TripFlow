@@ -164,3 +164,11 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Service worker `tripflow-shell-v182` active.
 - [ ] Test Google Maps Share short-link resolve on deployed Vercel runtime.
 - [ ] Test global zoom lock and photo-only pinch zoom on iOS/Android.
+
+## V1.8.3 Google Maps Short Link Resolver Fix
+
+- [ ] App version `1.8.3`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v183` active.
+- [ ] `/api/maps/resolve` chạy Node.js runtime và resolve link `maps.app.goo.gl` bằng raw HTTPS.
+- [ ] Link mẫu ySoEVvZNbrSWqu168 resolve thành `12.2200647,109.2036555` khi Google trả Location tương ứng.
+- [ ] Không có migration database mới.

@@ -172,6 +172,13 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Khóa zoom toàn giao diện; chỉ viewer ảnh được pinch/zoom/kéo riêng.
 - Không có migration database mới; DB compatibility vẫn V1.4.0.
 
+## ✅ V1.8.3 — Google Maps Short Link Resolver Fix
+
+- Chuẩn hóa luồng `maps.app.goo.gl` là luồng sử dụng chính thức của TripFlow.
+- Resolver Node HTTPS đọc `Location` ở từng redirect bằng HEAD → GET fallback và lấy tọa độ ngay khi xuất hiện.
+- Bổ sung trace debug cho môi trường deploy và fallback HTML/canonical/meta refresh.
+- Không có migration database mới; DB compatibility vẫn V1.4.0.
+
 ## ⬜ V1.9.0 — Expense Intelligence & Travel Wallet
 
 - Travel Wallet, favorite/recent expense, gợi ý category và cảnh báo tốc độ chi tiêu.
@@ -180,4 +187,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.8.2 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.
+**Roadmap hiện tại:** V1.8.3 đã hoàn thành; phiên bản tiếp theo là **V1.9.0 – Expense Intelligence & Travel Wallet**.

@@ -161,6 +161,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Đọc tọa độ từ Google Maps Share qua redirect/HTML rồi chuẩn hóa link tọa độ; khóa pinch zoom toàn giao diện và chỉ cho phép zoom/kéo riêng ảnh đang mở.",
   },
   {
+    version: "V1.8.3",
+    title: "Google Maps Short Link Resolver Fix",
+    done: true,
+    description:
+      "Ưu tiên đọc Location của maps.app.goo.gl bằng Node HTTPS raw request, HEAD → GET fallback, parse từng redirect trước khi mở trang Maps và trả trace khi chưa resolve được.",
+  },
+  {
     version: "V1.9.0",
     title: "Expense Intelligence & Travel Wallet",
     done: false,

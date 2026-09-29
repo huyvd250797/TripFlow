@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V1.8.2 tăng độ tin cậy khi đọc link Google Maps Share, chuẩn hóa tọa độ và khóa zoom giao diện; media ảnh dùng pinch/zoom riêng trong viewer; các tính năng Map, Places & Route Intelligence của V1.8.0 được giữ nguyên; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
+            V1.8.3 tăng độ tin cậy cho link rút gọn maps.app.goo.gl bằng raw Node HTTPS, đọc Location ngay tại từng redirect và có trace chẩn đoán; media zoom cô lập của V1.8.2 và Map/Route Intelligence vẫn được giữ nguyên; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

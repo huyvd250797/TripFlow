@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.3 — Google Maps Short Link Resolver Fix
+
+- Chuyển resolver `maps.app.goo.gl` sang Node.js runtime và raw `https.request` để đọc chính xác `Location` header trên môi trường deploy.
+- Resolver thử `HEAD` trước, fallback `GET`, parse tọa độ ngay tại từng `Location`/`Refresh` trước khi request redirect tiếp theo; không cần mở trang Google Maps cuối nếu URL redirect đã có `@lat,lng` hoặc `!3d...!4d...`.
+- Bổ sung fallback canonical/`og:url`/meta refresh/JavaScript redirect/HTML, decode URL nhiều lớp và hỗ trợ `google.com.vn`.
+- API `/api/maps/resolve?url=...&debug=1` trả trace theo từng hop để chẩn đoán chính xác status/Location khi môi trường deploy không resolve được.
+- Thêm test bắt buộc với link mẫu `https://maps.app.goo.gl/ySoEVvZNbrSWqu168` → `12.2200647,109.2036555` bằng response redirect mô phỏng.
+- App version `1.8.3`, service worker `tripflow-shell-v183`; Database vẫn yêu cầu `1.4.0`, không có migration mới.
+
 ## 1.8.2 — Google Maps Share & Media Zoom Fix
 
 - Hỗ trợ đúng luồng người dùng Google Maps → Share/Chia sẻ → Copy link/Sao chép đường liên kết, kể cả `maps.app.goo.gl`.

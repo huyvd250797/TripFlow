@@ -273,3 +273,11 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Map view đọc được tọa độ, tăng “Điểm có tọa độ” và không còn cảnh báo link chưa đọc được tọa độ khi Google trả đủ dữ liệu.
 - [ ] Pinch ngoài viewer ảnh không phóng app/PWA.
 - [ ] Mở media loại Ảnh: pinch 1x–5x và kéo ảnh; dialog/header/footer giữ nguyên kích thước.
+
+## V1.8.3 Google Maps short-link resolver
+
+- Link Share `maps.app.goo.gl` trả `Location` có `@lat,lng`: API phải resolve ngay ở HEAD và không request URL đích.
+- Nếu HEAD không có Location, GET phải đọc được canonical/meta refresh/HTML khi có tọa độ.
+- `Location` vẫn phải được parse khi upstream/proxy trả status không phải 3xx.
+- Test link mẫu ySoEVvZNbrSWqu168 phải cho 12.2200647,109.2036555 trong test mô phỏng redirect.
+- Kiểm tra `debug=1` chỉ trả trace kỹ thuật, không trả body HTML.

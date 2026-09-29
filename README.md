@@ -1,4 +1,4 @@
-# TripFlow 1.8.2 · Google Maps Share & Media Zoom Fix
+# TripFlow 1.8.3 · Google Maps Short Link Resolver Fix
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -7,13 +7,14 @@ Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu ti
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
 
 
-## V1.8.2 nổi bật
+## V1.8.3 nổi bật
 
-- Hỗ trợ đúng thao tác **Google Maps → Chia sẻ → Sao chép đường liên kết**, bao gồm link rút gọn `maps.app.goo.gl`; server theo redirect Google-only và đọc thêm canonical/HTML khi tọa độ không nằm trực tiếp trong URL cuối.
-- Khi lấy được tọa độ, TripFlow tự chuẩn hóa thành URL `query=lat,lng` để Map/Route Intelligence đọc ổn định hơn và không phụ thuộc link rút gọn ở lần sử dụng sau.
-- Khóa pinch zoom trên toàn bộ app/PWA để giao diện không bị phóng ngoài ý muốn.
-- Riêng media loại **Ảnh** có viewer zoom độc lập 1x–5x, kéo ảnh và nút +/-/reset; chỉ ảnh thay đổi kích thước, header/footer/dialog giữ nguyên.
-- Không có migration database mới; App V1.8.2 tiếp tục dùng Database V1.4.0. Service worker cache: `tripflow-shell-v182`.
+- Luồng chính thức: **Google Maps → Chia sẻ → Sao chép đường liên kết → dán link `maps.app.goo.gl` vào TripFlow**; không yêu cầu người dùng tự lấy URL dài hoặc nhập tọa độ.
+- Resolver chạy Node.js và dùng raw HTTPS: đọc `Location` ngay ở từng redirect, parse tọa độ trước khi mở redirect tiếp theo, ưu tiên `HEAD` và fallback `GET`.
+- Nếu Google trả HTML thay vì redirect chuẩn, TripFlow tiếp tục kiểm tra canonical, `og:url`, meta refresh, JavaScript redirect và các URL Maps nhúng trong HTML.
+- Có chế độ debug `/api/maps/resolve?...&debug=1` để xem trace từng hop trên môi trường deploy.
+- Giữ nguyên bản fix media V1.8.2: toàn app không pinch zoom; riêng viewer ảnh zoom 1x–5x và kéo ảnh độc lập.
+- Không có migration database mới; App V1.8.3 tiếp tục dùng Database V1.4.0. Service worker cache: `tripflow-shell-v183`.
 
 ## Đã có trong phiên bản này
 
@@ -50,7 +51,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V1.8.2 đều được đánh dấu ✅. Phiên bản tiếp theo là V1.9.0 – Expense Intelligence & Travel Wallet.
+- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V1.8.3 đều được đánh dấu ✅. Phiên bản tiếp theo là V1.9.0 – Expense Intelligence & Travel Wallet.
 
 **Phạm vi offline:** cho phép thêm thực chi, thêm/cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -69,7 +70,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609280005_v100_stable_production_release.sql` — Stable Production marker + production-readiness V1.0.0.
    - `supabase/migrations/202609280006_v130_media_memories_storytelling.sql` — metadata Media/Storytelling + Realtime/restore compatibility + Database marker V1.3.0.
    - `supabase/migrations/202609290001_v140_smart_planning_templates_reuse.sql` — Planning Templates/Reuse + optional end date/time + Database marker V1.4.0.
-   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1 và V1.8.2 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2 và V1.8.3 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
@@ -297,7 +298,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap 1.x hiện đã hoàn thành đến V1.8.2; phiên bản tiếp theo là V1.9.0 – Expense Intelligence & Travel Wallet.
+- Roadmap 1.x hiện đã hoàn thành đến V1.8.3; phiên bản tiếp theo là V1.9.0 – Expense Intelligence & Travel Wallet.
 
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
@@ -338,4 +339,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **1.8.2**; Database version yêu cầu: **1.4.0**; V1.8.2 không có migration database.
+- App version: **1.8.3**; Database version yêu cầu: **1.4.0**; V1.8.3 không có migration database.

@@ -85,3 +85,7 @@ V1.8.1 không có migration. Deploy App 1.8.1 trên Database 1.4.0, xác nhận 
 ## V1.8.2 Google Maps Share & Media Zoom patch
 
 V1.8.2 không có migration. Deploy App 1.8.2 trên Database 1.4.0 và xác nhận `tripflow-shell-v182`. Route `/api/maps/resolve` chỉ theo redirect trong allow-list Google; khi tìm được tọa độ sẽ trả URL chuẩn `query=lat,lng`. Toàn app khóa browser pinch zoom; viewer ảnh dùng zoom nội bộ nên cần test trên thiết bị thật.
+
+## V1.8.3 Google Maps short-link resolver patch
+
+V1.8.3 không có migration. Deploy App 1.8.3 trên Database 1.4.0 và xác nhận `tripflow-shell-v183`. Resolver sử dụng raw Node HTTPS để đọc Location của `maps.app.goo.gl`; nếu có tọa độ trong URL redirect thì trả ngay, không truy cập trang Maps đích. Khi cần chẩn đoán, dùng `/api/maps/resolve?url=<encoded>&debug=1` trong phiên đăng nhập để xem hop/status/Location.
