@@ -118,12 +118,15 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Album theo ngày/hoạt động, cover chuyến đi, highlight và báo cáo chia sẻ đẹp hơn.
 
-## ⬜ V1.4.0 — Smart Planning Templates & Reuse
+## ✅ V1.4.0 — Smart Planning Templates & Reuse
 
-- Template, duplicate trip thông minh, checklist và tái sử dụng kế hoạch/ngân sách.
+- Mẫu kế hoạch cá nhân từ chuyến hiện tại.
+- Tạo chuyến mới từ mẫu, tự dời lịch theo ngày bắt đầu mới.
+- Tái sử dụng dự toán và người tham gia; không sao chép dữ liệu thực tế của chuyến cũ.
+- Ngày/giờ kết thúc tùy chọn, input tiền có phân cách hàng nghìn và UX dashboard/lịch trình gọn hơn.
 
 ## ⬜ V1.5.0 — Growth, Sharing & Expansion
 
 - Sharing/public-private view, export nâng cao và nền mở rộng cho đa tiền tệ/tích hợp dịch vụ/AI khi có nhu cầu rõ ràng.
 
-**Roadmap hiện tại:** V1.3.0 đã hoàn thành; phiên bản tiếp theo là **V1.4.0 – Smart Planning Templates & Reuse**.
+**Roadmap hiện tại:** V1.4.0 đã hoàn thành; phiên bản tiếp theo là **V1.5.0 – Growth, Sharing & Expansion**.

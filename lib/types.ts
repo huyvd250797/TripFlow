@@ -1,5 +1,5 @@
-export const VERSION = "1.3.0";
-export const DATABASE_VERSION = "1.3.0";
+export const VERSION = "1.4.0";
+export const DATABASE_VERSION = "1.4.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -56,7 +56,7 @@ export type Trip = Row & {
   name: string;
   destination: string;
   start_date: string;
-  end_date: string;
+  end_date: string | null;
   timezone: string;
   people: number;
   status: keyof typeof TRIP_STATUS;
@@ -67,7 +67,7 @@ export type Item = Row & {
   title: string;
   location: string;
   start_at: string;
-  end_at: string;
+  end_at: string | null;
   status: keyof typeof ITEM_STATUS;
   map_url: string;
   note: string;
@@ -302,6 +302,27 @@ export type Mutation = {
   version?: number;
   data?: Record<string, unknown>;
 };
+
+
+export type TripTemplate = {
+  id: string;
+  owner_id: string;
+  name: string;
+  description: string;
+  destination: string;
+  timezone: string;
+  people: number;
+  duration_days: number | null;
+  item_count: number;
+  budget_count: number;
+  participant_count: number;
+  usage_count: number;
+  last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TemplateListResponse = { templates: TripTemplate[] };
 
 export type AccountState = {
   user_id: string;

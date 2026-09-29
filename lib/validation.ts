@@ -17,6 +17,14 @@ const link = z
 const ref = z.union([z.uuid(), z.literal(""), z.null()]).optional();
 const day = z.iso.date();
 const optionalDay = z.union([z.literal(""), day, z.null()]).optional();
+const nullableDay = z.preprocess(
+  (value) => value === "" || value == null ? null : value,
+  z.union([day, z.null()]),
+);
+const nullableDateTime = z.preprocess(
+  (value) => value === "" || value == null ? null : value,
+  z.union([z.iso.datetime(), z.null()]),
+);
 const amount = z.coerce.number().int().min(1).max(1e12);
 export const schemas = {
   trip: z
@@ -24,7 +32,7 @@ export const schemas = {
       name: text.max(160),
       destination: z.string().max(300),
       start_date: day,
-      end_date: day,
+      end_date: nullableDay,
       timezone: z.string().min(1).max(100),
       people: z.coerce.number().int().min(1).max(999),
       status: z.enum([
@@ -37,7 +45,7 @@ export const schemas = {
       note,
     })
     .refine(
-      (x) => x.end_date >= x.start_date,
+      (x) => !x.end_date || x.end_date >= x.start_date,
       "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.",
     ),
   item: z
@@ -45,11 +53,11 @@ export const schemas = {
       title: text,
       location: z.string().max(300),
       start_at: z.iso.datetime(),
-      end_at: z.iso.datetime(),
+      end_at: nullableDateTime,
       map_url: link,
       note,
     })
-    .refine((x) => x.end_at > x.start_at, "Giờ kết thúc phải sau giờ bắt đầu."),
+    .refine((x) => !x.end_at || x.end_at > x.start_at, "Giờ kết thúc phải sau giờ bắt đầu."),
   budget: z
     .object({
       title: text,

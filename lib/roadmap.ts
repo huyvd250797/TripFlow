@@ -107,9 +107,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V1.4.0",
     title: "Smart Planning Templates & Reuse",
-    done: false,
+    done: true,
     description:
-      "Template chuyến đi, duplicate thông minh, checklist theo loại hành trình và tái sử dụng lịch trình/ngân sách cho chuyến mới.",
+      "Mẫu kế hoạch cá nhân, tạo chuyến mới bằng cách tự dời lịch theo ngày bắt đầu, tái sử dụng dự toán/người tham gia, ngày giờ kết thúc tùy chọn và tinh gọn thao tác trên dashboard/lịch trình.",
   },
   {
     version: "V1.5.0",

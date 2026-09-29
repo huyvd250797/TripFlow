@@ -51,7 +51,7 @@ type UserDetail = {
     name: string;
     destination: string;
     start_date: string;
-    end_date: string;
+    end_date: string | null;
     status: string;
     owner_id: string;
     access_role: string;
@@ -201,7 +201,7 @@ export function MasterAdmin({
             <span className="eyebrow">MASTER · READ ONLY VIEW</span>
             <h1>{tripName}</h1>
             <p className="muted">
-              {String(trip.trip.destination || "")} · {dateLabel(String(trip.trip.start_date || ""))} – {dateLabel(String(trip.trip.end_date || ""))}
+              {String(trip.trip.destination || "")} · {dateLabel(String(trip.trip.start_date || ""))} – {dateLabel(trip.trip.end_date == null ? null : String(trip.trip.end_date))}
             </p>
           </div>
           <ShieldCheck size={34} />

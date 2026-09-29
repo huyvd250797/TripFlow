@@ -122,3 +122,11 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - `tf_mutate` V1.3 bọc mutation chain hiện hữu để giữ nguyên account gate, role check và mutation receipt/idempotency.
 - Backup JSON tự mang các cột mới; `tf_restore_trip_backup` V1.3 restore metadata storytelling và remap `item_id`.
 - Không lưu bảng story riêng: Travel Journal được suy ra từ `media_links` + `itinerary_items`, tránh tạo nguồn sự thật thứ hai.
+
+## V1.4.0 Smart Planning Templates & optional end time
+
+- `trips.end_date` và `itinerary_items.end_at` chuyển sang nullable; ràng buộc chỉ kiểm tra thứ tự khi giá trị kết thúc tồn tại.
+- `trip_templates` là dữ liệu cá nhân của user, bảo vệ bằng RLS `owner_id = auth.uid()`.
+- `tf_save_trip_template()` snapshot phần kế hoạch: trip metadata, itinerary, budget và participant; không snapshot thực chi/media/lịch sử vận hành.
+- `tf_create_trip_from_template()` tạo chuyến mới trong transaction, remap item → budget và dời toàn bộ lịch theo offset phút so với ngày bắt đầu mẫu.
+- `VERSION = 1.4.0`; `DATABASE_VERSION = 1.4.0`.

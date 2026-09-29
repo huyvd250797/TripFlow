@@ -70,6 +70,8 @@ import {
   type RecoveryOverview,
   type RecoveryBackupPackage,
   type RecoveryTombstone,
+  type TripTemplate,
+  type TemplateListResponse,
   CATEGORIES,
 } from "@/lib/types";
 import {
@@ -242,6 +244,14 @@ function App() {
   const [spec, setSpec] = useState<EditSpec | null>(null),
     [tripPicker, setTripPicker] = useState(false),
     [workspaceSearch, setWorkspaceSearch] = useState(false),
+    [quickActionsOpen, setQuickActionsOpen] = useState(false),
+    [historyOpen, setHistoryOpen] = useState(false),
+    [templateApply, setTemplateApply] = useState<TripTemplate | null>(null),
+    [templateName, setTemplateName] = useState(""),
+    [templateDescription, setTemplateDescription] = useState(""),
+    [templateTripName, setTemplateTripName] = useState(""),
+    [templateStartDate, setTemplateStartDate] = useState(""),
+    [templateDestination, setTemplateDestination] = useState(""),
     [searchTerm, setSearchTerm] = useState(""),
     [toast, setToast] = useState(""),
     [error, setError] = useState(""),
@@ -539,6 +549,12 @@ function App() {
   });
   const data = bq.data,
     trip = data?.trip;
+  const templatesQ = useQuery<TemplateListResponse>({
+    queryKey: ["trip-templates", user?.id],
+    queryFn: () => api<TemplateListResponse>("/api/templates"),
+    enabled: !!user && tab === "more" && online,
+    staleTime: 10000,
+  });
   const recoveryQ = useQuery<RecoveryOverview>({
     queryKey: ["recovery", user?.id, selectedId || "all"],
     queryFn: () =>
@@ -944,6 +960,183 @@ function App() {
         : "Trình duyệt chưa cấp lưu trữ bền vững; dữ liệu server vẫn an toàn và cache có thể được dọn khi thiếu bộ nhớ.",
     );
   }
+  async function saveCurrentAsTemplate() {
+    if (!trip || !writable || !templateName.trim()) return;
+    setWorking(true);
+    setError("");
+    try {
+      await api("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save",
+          tripId: trip.id,
+          name: templateName.trim(),
+          description: templateDescription.trim(),
+        }),
+      });
+      setTemplateName("");
+      setTemplateDescription("");
+      await qc.invalidateQueries({ queryKey: ["trip-templates", user?.id] });
+      notify("Đã lưu chuyến hiện tại thành mẫu kế hoạch.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  function openTemplateApply(template: TripTemplate) {
+    const zone = template.timezone || trip?.timezone || "Asia/Ho_Chi_Minh";
+    const localToday = localTime(new Date().toISOString(), zone).slice(0, 10);
+    setTemplateApply(template);
+    setTemplateTripName(template.name);
+    setTemplateStartDate(localToday);
+    setTemplateDestination(template.destination || "");
+  }
+
+  async function applyPlanningTemplate() {
+    if (!templateApply || !templateTripName.trim() || !templateStartDate) return;
+    setWorking(true);
+    setError("");
+    try {
+      const response = await api<{ result: { trip_id: string; name: string } }>("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "apply",
+          templateId: templateApply.id,
+          name: templateTripName.trim(),
+          startDate: templateStartDate,
+          destination: templateDestination.trim() || null,
+        }),
+      });
+      setTemplateApply(null);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["trips"] }),
+        qc.invalidateQueries({ queryKey: ["trip-templates", user?.id] }),
+      ]);
+      setSelected(response.result.trip_id);
+      setTab("home");
+      notify("Đã tạo chuyến mới từ mẫu kế hoạch.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function deletePlanningTemplate(template: TripTemplate) {
+    if (!window.confirm(`Xóa mẫu “${template.name}”? Chuyến đi đã tạo từ mẫu sẽ không bị ảnh hưởng.`)) return;
+    setWorking(true);
+    setError("");
+    try {
+      await api("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", templateId: template.id }),
+      });
+      await qc.invalidateQueries({ queryKey: ["trip-templates", user?.id] });
+      notify("Đã xóa mẫu kế hoạch.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  function planningTemplatesPanel(hasTrip: boolean) {
+    const templates = templatesQ.data?.templates || [];
+    return (
+      <section className="panel planning-templates-panel">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">SMART PLANNING · V1.4.0</span>
+            <h2>Mẫu kế hoạch & tái sử dụng</h2>
+            <p className="muted">
+              Lưu lịch trình, dự toán và người tham gia thành mẫu cá nhân; khi dùng lại TripFlow tự dời toàn bộ lịch theo ngày bắt đầu mới.
+            </p>
+          </div>
+          <span className="pill">{templates.length} mẫu</span>
+        </div>
+        {hasTrip && writable && (
+          <div className="template-save-box">
+            <div className="field">
+              <label htmlFor="template-name">Tên mẫu *</label>
+              <input
+                id="template-name"
+                value={templateName}
+                maxLength={160}
+                placeholder="Ví dụ: Du lịch gia đình 3N2Đ"
+                onChange={(e) => setTemplateName(e.target.value)}
+              />
+            </div>
+            <div className="field template-description-field">
+              <label htmlFor="template-description">Mô tả</label>
+              <input
+                id="template-description"
+                value={templateDescription}
+                maxLength={1200}
+                placeholder="Mục đích hoặc lưu ý khi tái sử dụng mẫu"
+                onChange={(e) => setTemplateDescription(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn primary template-save-button"
+              disabled={working || !online || !templateName.trim()}
+              onClick={() => void saveCurrentAsTemplate()}
+            >
+              <Copy size={17} /> Lưu chuyến này làm mẫu
+            </button>
+          </div>
+        )}
+        {!online ? (
+          <p className="hint">Mẫu kế hoạch cần kết nối mạng để tạo hoặc áp dụng nhằm đảm bảo dữ liệu mới nhất.</p>
+        ) : templatesQ.isPending ? (
+          <p className="muted">Đang tải mẫu kế hoạch…</p>
+        ) : templatesQ.error ? (
+          <div className="notice warning"><AlertTriangle size={18} /><span>{templatesQ.error.message}</span></div>
+        ) : templates.length ? (
+          <div className="template-grid">
+            {templates.map((template) => (
+              <article className="template-card" key={template.id}>
+                <div className="template-card-head">
+                  <span className="template-card-icon"><Sparkles size={19} /></span>
+                  <div>
+                    <b>{template.name}</b>
+                    <small>{template.destination || "Chưa cố định điểm đến"}</small>
+                  </div>
+                </div>
+                {template.description && <p>{template.description}</p>}
+                <div className="template-metrics">
+                  <span><Route size={14} /> {template.item_count} hoạt động</span>
+                  <span><Wallet size={14} /> {template.budget_count} dự toán</span>
+                  <span><Users size={14} /> {template.participant_count} người</span>
+                </div>
+                <small className="muted">
+                  {template.duration_days == null ? "Không bắt buộc ngày kết thúc" : `${template.duration_days + 1} ngày`} · Đã dùng {template.usage_count} lần
+                </small>
+                <div className="template-actions">
+                  <button className="btn primary compact" disabled={working} onClick={() => openTemplateApply(template)}>
+                    <CirclePlus size={15} /> Tạo chuyến từ mẫu
+                  </button>
+                  <button className="icon-btn danger" title="Xóa mẫu" onClick={() => void deletePlanningTemplate(template)}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="template-empty">
+            <Sparkles size={28} />
+            <div><b>Chưa có mẫu kế hoạch</b><p>Lưu một chuyến đang chuẩn bị để lần sau tái sử dụng lịch trình và ngân sách chỉ trong vài thao tác.</p></div>
+          </div>
+        )}
+      </section>
+    );
+  }
+
   async function recoveryPost(body: Record<string, unknown>) {
     if (!navigator.onLine) throw new Error("Backup & Recovery cần kết nối mạng.");
     return api<{ result: Record<string, unknown> }>("/api/recovery", {
@@ -1309,7 +1502,7 @@ function App() {
         </h2>
         <p>
           {current
-            ? `${current.location || trip.destination} · ${localTime(current.start_at, trip.timezone).slice(11)} – ${localTime(current.end_at, trip.timezone).slice(11)}`
+            ? `${current.location || trip.destination} · ${localTime(current.start_at, trip.timezone).slice(11)}${current.end_at ? ` – ${localTime(current.end_at, trip.timezone).slice(11)}` : ""}`
             : progress.next
               ? `${dateLabel(localTime(progress.next.start_at, trip.timezone))} · ${localTime(progress.next.start_at, trip.timezone).slice(11)}`
               : "Thêm hoạt động và thời gian để bắt đầu."}
@@ -1570,6 +1763,7 @@ function App() {
             tab === "more" ? (
               <>
                 {recoveryPanel(false)}
+                {planningTemplatesPanel(false)}
                 <ReleaseReadiness online={online} />
                 <ProductRoadmap />
                 <section className="panel">
@@ -1689,107 +1883,20 @@ function App() {
                     </span>
                     <span className="pill">{TRIP_STATUS[trip.status]}</span>
                   </div>
-                  <section className="smart-workspace" aria-label="Smart Trip Workspace">
-                    <div className="smart-workspace-head">
+                  <div className="dashboard-quick-actions">
+                    <button
+                      className="quick-actions-trigger"
+                      onClick={() => setQuickActionsOpen(true)}
+                      aria-label="Mở thao tác nhanh"
+                    >
+                      <span><Zap size={20} /></span>
                       <div>
-                        <span className="eyebrow">SMART WORKSPACE · V1.2.0</span>
-                        <h2>Thao tác nhanh cho chuyến đi</h2>
-                        <p className="muted">
-                          Tìm mọi thứ trong chuyến hoặc thực hiện thao tác theo đúng ngữ cảnh hiện tại.
-                        </p>
+                        <b>Thao tác nhanh</b>
+                        <small>{workspaceFocusItem ? workspaceFocusItem.title : "Ghi chi, thêm lịch trình, media…"}</small>
                       </div>
-                      <button className="workspace-search-launcher" onClick={openWorkspaceSearch}>
-                        <Search size={18} />
-                        <span>Tìm trong chuyến đi</span>
-                        <kbd>/</kbd>
-                      </button>
-                    </div>
-                    <div className="workspace-actions">
-                      {writable && (
-                        <button className="workspace-action" onClick={quickExpense}>
-                          <span className="workspace-action-icon"><Receipt size={20} /></span>
-                          <span>
-                            <b>Ghi chi tiêu</b>
-                            <small>{workspaceFocusBudget ? `Gắn ${workspaceFocusBudget.title}` : "Ghi nhanh khoản phát sinh"}</small>
-                          </span>
-                          <ChevronRight size={17} />
-                        </button>
-                      )}
-                      {writable && (
-                        <button className="workspace-action" onClick={() => edit("item")}>
-                          <span className="workspace-action-icon"><CirclePlus size={20} /></span>
-                          <span>
-                            <b>Thêm hoạt động</b>
-                            <small>Bổ sung ngay vào lịch trình</small>
-                          </span>
-                          <ChevronRight size={17} />
-                        </button>
-                      )}
-                      {writable && workspaceStatusItem ? (
-                        <button
-                          className="workspace-action contextual"
-                          onClick={() =>
-                            status(
-                              workspaceStatusItem,
-                              workspaceStatusItem.status === "active" ? "done" : "active",
-                            )
-                          }
-                        >
-                          <span className="workspace-action-icon"><Navigation size={20} /></span>
-                          <span>
-                            <b>{workspaceStatusItem.status === "active" ? "Hoàn thành chặng" : "Tôi đã đến"}</b>
-                            <small>{workspaceStatusItem.title}</small>
-                          </span>
-                          <ChevronRight size={17} />
-                        </button>
-                      ) : (
-                        <button className="workspace-action" onClick={() => navigate("route")}>
-                          <span className="workspace-action-icon"><Route size={20} /></span>
-                          <span>
-                            <b>Xem lịch trình</b>
-                            <small>{data.items.length ? `${data.items.length} hoạt động` : "Chưa có hoạt động"}</small>
-                          </span>
-                          <ChevronRight size={17} />
-                        </button>
-                      )}
-                      {writable ? (
-                        <button className="workspace-action" onClick={quickMedia}>
-                          <span className="workspace-action-icon"><Images size={20} /></span>
-                          <span>
-                            <b>Gắn media</b>
-                            <small>{workspaceFocusItem ? workspaceFocusItem.title : "Ảnh, video hoặc tài liệu"}</small>
-                          </span>
-                          <ChevronRight size={17} />
-                        </button>
-                      ) : (
-                        <button className="workspace-action" onClick={openWorkspaceSearch}>
-                          <span className="workspace-action-icon"><Search size={20} /></span>
-                          <span>
-                            <b>Tìm nhanh</b>
-                            <small>Lịch trình, chi phí và media</small>
-                          </span>
-                          <ChevronRight size={17} />
-                        </button>
-                      )}
-                    </div>
-                    <div className="workspace-context">
-                      <span><Zap size={15} /> Gợi ý theo ngữ cảnh</span>
-                      <b>
-                        {workspaceFocusItem
-                          ? `${workspaceFocusItem.title}${workspaceFocusItem.location ? ` · ${workspaceFocusItem.location}` : ""}`
-                          : "Thêm hoạt động đầu tiên để TripFlow đưa ra shortcut phù hợp."}
-                      </b>
-                      <small>
-                        {queueIssues
-                          ? `${queueIssues} thao tác đồng bộ cần xử lý`
-                          : queuePending
-                            ? `${queuePending} thao tác đang chờ đồng bộ`
-                            : online
-                              ? "Dữ liệu đang đồng bộ với cloud"
-                              : "Đang offline · thao tác được hỗ trợ sẽ vào hàng đợi"}
-                      </small>
-                    </div>
-                  </section>
+                      <ChevronRight size={17} />
+                    </button>
+                  </div>
                   {liveCard()}
                   <div className="stats">
                     <div className="stat">
@@ -2097,15 +2204,10 @@ function App() {
                               {x.location || "Chưa có địa điểm"}
                             </p>
                             <p className="muted">
-                              {localTime(x.start_at, trip.timezone).slice(11)} –{" "}
-                              {localTime(x.end_at, trip.timezone).slice(11)}
-                              {localTime(x.start_at, trip.timezone).slice(
-                                0,
-                                10,
-                              ) !==
-                              localTime(x.end_at, trip.timezone).slice(0, 10)
-                                ? " · " +
-                                  dateLabel(localTime(x.end_at, trip.timezone))
+                              {localTime(x.start_at, trip.timezone).slice(11)}
+                              {x.end_at ? ` – ${localTime(x.end_at, trip.timezone).slice(11)}` : ""}
+                              {x.end_at && localTime(x.start_at, trip.timezone).slice(0, 10) !== localTime(x.end_at, trip.timezone).slice(0, 10)
+                                ? " · " + dateLabel(localTime(x.end_at, trip.timezone))
                                 : ""}
                             </p>
                             {x.note && <p className="prewrap">{x.note}</p>}
@@ -2223,41 +2325,13 @@ function App() {
                       />
                     </section>
                   )}
-                  <section className="panel live-history-panel">
-                    <div className="section-heading">
-                      <div>
-                        <span className="eyebrow">LIVE HISTORY</span>
-                        <h2>Lịch sử trạng thái</h2>
-                      </div>
-                      <History size={20} />
-                    </div>
-                    {(data.live_events || []).length ? (
-                      <div className="live-history">
-                        {(data.live_events || []).slice(0, 12).map((event) => {
-                          const item = data.items.find((x) => x.id === event.item_id);
-                          return (
-                            <div className="live-history-row" key={event.id}>
-                              <span className={`history-dot ${event.to_status}`} />
-                              <div>
-                                <b>{eventLabels[event.event_type] || "Cập nhật trạng thái"}</b>
-                                <p>{item?.title || "Hoạt động đã xóa"}</p>
-                                <small>
-                                  {event.actor_id === user.id ? "Bạn" : "Thành viên"} · {dateLabel(localTime(event.occurred_at, trip.timezone))} {localTime(event.occurred_at, trip.timezone).slice(11)}
-                                  {event.from_status
-                                    ? ` · ${ITEM_STATUS[event.from_status]} → ${ITEM_STATUS[event.to_status]}`
-                                    : ` · ${ITEM_STATUS[event.to_status]}`}
-                                </small>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="muted">
-                        Lịch sử Live Trip sẽ xuất hiện khi bạn check-in, hoàn thành, bỏ qua hoặc đặt lại hoạt động sau khi nâng database V0.4.0.
-                      </p>
-                    )}
-                  </section>
+                  <div className="route-history-launcher">
+                    <button className="btn secondary" onClick={() => setHistoryOpen(true)}>
+                      <History size={17} />
+                      Xem lịch sử
+                      <span className="pill">{(data.live_events || []).length}</span>
+                    </button>
+                  </div>
                 </>
               )}
               {tab === "money" && data && totals && financeReport && (
@@ -2717,9 +2791,14 @@ function App() {
                           <span className="eyebrow">ACTUAL SPENDING</span>
                           <h2>Nhật ký chi tiêu</h2>
                         </div>
-                        <span className="pill">
-                          {data.expenses.length} giao dịch
-                        </span>
+                        <div className="section-heading-actions">
+                          <span className="pill">{data.expenses.length} giao dịch</span>
+                          {writable && (
+                            <button className="btn secondary" onClick={() => edit("expense")}>
+                              <Plus size={16} /> Ghi chi tiêu
+                            </button>
+                          )}
+                        </div>
                       </div>
                       {data.expenses
                         .filter(
@@ -3506,6 +3585,7 @@ function App() {
                       </p>
                     </section>
                   )}
+                  {planningTemplatesPanel(true)}
                   <ReleaseReadiness online={online} />
                   <section className="panel pwa-panel">
                     <div className="section-heading">
@@ -3753,6 +3833,138 @@ function App() {
           onClose={() => setSpec(null)}
           onSave={save}
         />
+      )}
+      {quickActionsOpen && data && (
+        <Dialog open onClose={() => setQuickActionsOpen(false)} title="Thao tác nhanh">
+          <div className="dialog-body quick-actions-dialog">
+            <button
+              className="workspace-search-launcher quick-dialog-search"
+              onClick={() => { setQuickActionsOpen(false); openWorkspaceSearch(); }}
+            >
+              <Search size={18} />
+              <span>Tìm trong chuyến đi</span>
+              <kbd>/</kbd>
+            </button>
+            <div className="workspace-actions">
+              {writable && (
+                <button className="workspace-action" onClick={() => { setQuickActionsOpen(false); quickExpense(); }}>
+                  <span className="workspace-action-icon"><Receipt size={20} /></span>
+                  <span><b>Ghi chi tiêu</b><small>{workspaceFocusBudget ? `Gắn ${workspaceFocusBudget.title}` : "Ghi nhanh khoản phát sinh"}</small></span>
+                  <ChevronRight size={17} />
+                </button>
+              )}
+              {writable && (
+                <button className="workspace-action" onClick={() => { setQuickActionsOpen(false); edit("item"); }}>
+                  <span className="workspace-action-icon"><CirclePlus size={20} /></span>
+                  <span><b>Thêm hoạt động</b><small>Bổ sung ngay vào lịch trình</small></span>
+                  <ChevronRight size={17} />
+                </button>
+              )}
+              {writable && workspaceStatusItem ? (
+                <button
+                  className="workspace-action contextual"
+                  onClick={() => {
+                    setQuickActionsOpen(false);
+                    void status(workspaceStatusItem, workspaceStatusItem.status === "active" ? "done" : "active");
+                  }}
+                >
+                  <span className="workspace-action-icon"><Navigation size={20} /></span>
+                  <span><b>{workspaceStatusItem.status === "active" ? "Hoàn thành chặng" : "Tôi đã đến"}</b><small>{workspaceStatusItem.title}</small></span>
+                  <ChevronRight size={17} />
+                </button>
+              ) : (
+                <button className="workspace-action" onClick={() => { setQuickActionsOpen(false); navigate("route"); }}>
+                  <span className="workspace-action-icon"><Route size={20} /></span>
+                  <span><b>Xem lịch trình</b><small>{data.items.length ? `${data.items.length} hoạt động` : "Chưa có hoạt động"}</small></span>
+                  <ChevronRight size={17} />
+                </button>
+              )}
+              {writable ? (
+                <button className="workspace-action" onClick={() => { setQuickActionsOpen(false); quickMedia(); }}>
+                  <span className="workspace-action-icon"><Images size={20} /></span>
+                  <span><b>Gắn media</b><small>{workspaceFocusItem ? workspaceFocusItem.title : "Ảnh, video hoặc tài liệu"}</small></span>
+                  <ChevronRight size={17} />
+                </button>
+              ) : (
+                <button className="workspace-action" onClick={() => { setQuickActionsOpen(false); openWorkspaceSearch(); }}>
+                  <span className="workspace-action-icon"><Search size={20} /></span>
+                  <span><b>Tìm nhanh</b><small>Lịch trình, chi phí và media</small></span>
+                  <ChevronRight size={17} />
+                </button>
+              )}
+            </div>
+            <div className="workspace-context">
+              <span><Zap size={15} /> Gợi ý theo ngữ cảnh</span>
+              <b>{workspaceFocusItem ? `${workspaceFocusItem.title}${workspaceFocusItem.location ? ` · ${workspaceFocusItem.location}` : ""}` : "Thêm hoạt động đầu tiên để TripFlow đưa ra shortcut phù hợp."}</b>
+              <small>{queueIssues ? `${queueIssues} thao tác đồng bộ cần xử lý` : queuePending ? `${queuePending} thao tác đang chờ đồng bộ` : online ? "Dữ liệu đang đồng bộ với cloud" : "Đang offline · thao tác được hỗ trợ sẽ vào hàng đợi"}</small>
+            </div>
+          </div>
+        </Dialog>
+      )}
+      {historyOpen && data && trip && (
+        <Dialog open onClose={() => setHistoryOpen(false)} title="Lịch sử trạng thái lịch trình">
+          <div className="dialog-body history-dialog">
+            {(data.live_events || []).length ? (
+              <div className="live-history">
+                {(data.live_events || []).slice(0, 80).map((event) => {
+                  const item = data.items.find((x) => x.id === event.item_id);
+                  return (
+                    <div className="live-history-row" key={event.id}>
+                      <span className={`history-dot ${event.to_status}`} />
+                      <div>
+                        <b>{eventLabels[event.event_type] || "Cập nhật trạng thái"}</b>
+                        <p>{item?.title || "Hoạt động đã xóa"}</p>
+                        <small>
+                          {event.actor_id === user.id ? "Bạn" : "Thành viên"} · {dateLabel(localTime(event.occurred_at, trip.timezone))} {localTime(event.occurred_at, trip.timezone).slice(11)}
+                          {event.from_status ? ` · ${ITEM_STATUS[event.from_status]} → ${ITEM_STATUS[event.to_status]}` : ` · ${ITEM_STATUS[event.to_status]}`}
+                        </small>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="template-empty"><History size={28} /><div><b>Chưa có lịch sử trạng thái</b><p>Lịch sử sẽ xuất hiện khi check-in, hoàn thành, bỏ qua hoặc đặt lại hoạt động.</p></div></div>
+            )}
+          </div>
+        </Dialog>
+      )}
+      {templateApply && (
+        <Dialog open onClose={() => !working && setTemplateApply(null)} title="Tạo chuyến từ mẫu">
+          <div className="dialog-body form-grid template-apply-dialog">
+            <div className="field full">
+              <label htmlFor="template-trip-name">Tên chuyến đi mới *</label>
+              <input id="template-trip-name" value={templateTripName} maxLength={160} onChange={(e) => setTemplateTripName(e.target.value)} />
+            </div>
+            <div className="field">
+              <label htmlFor="template-start-date">Ngày bắt đầu *</label>
+              <div className="date-field">
+                <input id="template-start-date" type="date" value={templateStartDate} onChange={(e) => setTemplateStartDate(e.target.value)} />
+                <button
+                  type="button"
+                  className="current-time-btn"
+                  title="Lấy ngày hiện tại"
+                  onClick={() => setTemplateStartDate(localTime(new Date().toISOString(), templateApply.timezone).slice(0, 10))}
+                >
+                  <Check size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="template-destination">Điểm đến</label>
+              <input id="template-destination" value={templateDestination} maxLength={300} onChange={(e) => setTemplateDestination(e.target.value)} />
+            </div>
+            <p className="hint full">
+              TripFlow sẽ dời các hoạt động theo ngày bắt đầu mới, giữ nguyên khoảng cách thời gian, dự toán và người tham gia. Thực chi, media và lịch sử cũ không được sao chép.
+            </p>
+          </div>
+          <footer className="dialog-footer">
+            <button className="btn secondary" disabled={working} onClick={() => setTemplateApply(null)}>Hủy</button>
+            <button className="btn primary" disabled={working || !templateTripName.trim() || !templateStartDate} onClick={() => void applyPlanningTemplate()}>
+              <CirclePlus size={17} /> {working ? "Đang tạo…" : "Tạo chuyến"}
+            </button>
+          </footer>
+        </Dialog>
       )}
       {workspaceSearch && data && (
         <Dialog

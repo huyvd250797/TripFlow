@@ -234,3 +234,57 @@ test("V1.3 trip story groups memories, cover and highlights", () => {
   assert.match(postTripJson(bundle), /"story"/);
   assert.match(postTripHtml(bundle), /Câu chuyện chuyến đi/);
 });
+
+test("V1.4 optional end date/time remains valid and open-ended itinerary is not late", () => {
+  assert.equal(dateLabel(null), "Chưa đặt");
+  assert.equal(localTime(null, "Asia/Ho_Chi_Minh"), "");
+
+  const tripMutation = {
+    operationId: crypto.randomUUID(),
+    tripId: crypto.randomUUID(),
+    entity: "trip",
+    action: "create",
+    data: {
+      name: "Chuyến chưa chốt ngày về",
+      destination: "Đà Lạt",
+      start_date: "2026-10-01",
+      end_date: null,
+      timezone: "Asia/Ho_Chi_Minh",
+      people: 2,
+      status: "planning",
+      note: "",
+    },
+  };
+  assert.equal(mutationSchema.safeParse(tripMutation).success, true);
+
+  const itemMutation = {
+    operationId: crypto.randomUUID(),
+    tripId: crypto.randomUUID(),
+    id: crypto.randomUUID(),
+    entity: "item",
+    action: "create",
+    data: {
+      title: "Tự do khám phá",
+      location: "",
+      start_at: "2026-10-01T02:00:00.000Z",
+      end_at: null,
+      map_url: "",
+      note: "",
+    },
+  };
+  assert.equal(mutationSchema.safeParse(itemMutation).success, true);
+
+  const state = live(
+    [
+      {
+        id: "open-ended",
+        status: "planned",
+        start_at: "2026-10-01T02:00:00.000Z",
+        end_at: null,
+      },
+    ] as Item[],
+    "2026-10-01T03:00:00.000Z",
+  );
+  assert.equal(state.current?.id, "open-ended");
+  assert.equal(state.late.length, 0);
+});

@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V1.3.0 bổ sung metadata storytelling cho Media (ngày kỷ niệm, highlight, cover, thứ tự kể chuyện). Ứng dụng xác minh Database V{DATABASE_VERSION}, RLS và khả năng backup/restore tương thích.
+            V1.4.0 bổ sung Smart Planning Templates & Reuse, cho phép ngày/giờ kết thúc tùy chọn và kiểm tra schema tái sử dụng kế hoạch. Ứng dụng xác minh Database V{DATABASE_VERSION}, RLS và khả năng backup/restore tương thích.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

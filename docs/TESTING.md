@@ -194,3 +194,17 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Report HTML/CSV/JSON có Memories & Storytelling và không crash khi chưa có media.
 - [ ] Mobile 320/390px không overflow ở cover hero, highlight grid, timeline.
 - [ ] Production readiness hiển thị App 1.3.0 / DB 1.3.0 / stable.
+
+## Smart Planning Templates & Reuse V1.4.0
+
+- [ ] Migration V1.4.0 chạy thành công trên database V1.3.0.
+- [ ] Tạo/sửa chuyến với `end_date = null` thành công.
+- [ ] Tạo/sửa hoạt động với `end_at = null` thành công; Live Trip không tự đánh dấu trễ khi không có giờ kết thúc.
+- [ ] Nhập `1000000` ở Số tiền/Đơn giá hiển thị `1.000.000` và lưu server là `1000000`.
+- [ ] Nút ✓ ở ngày/giờ điền đúng ngày/giờ hiện tại theo timezone chuyến.
+- [ ] Dashboard không render danh sách Quick Actions; chỉ render nút ⚡ và dialog sau khi bấm.
+- [ ] Lịch trình không render danh sách lịch sử trực tiếp; nút **Xem lịch sử** mở dialog.
+- [ ] Tab Thực chi có nút **Ghi chi tiêu** khi user có quyền chỉnh sửa.
+- [ ] Lưu chuyến thành template và tạo chuyến mới với ngày bắt đầu khác; itinerary được dời đúng, budget link remap đúng, participant được copy.
+- [ ] Viewer không thể lưu template từ chuyến chỉ xem.
+- [ ] Production readiness hiển thị App 1.4.0 / DB 1.4.0 / stable.

@@ -30,6 +30,15 @@ type Field = {
 };
 const pair = (xs: readonly string[]): [string, string][] =>
   xs.map((x) => [x, x]);
+const formatMoneyInput = (value: unknown) => {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits) return "";
+  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Number(digits));
+};
+const parseMoneyInput = (value: unknown) => {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  return digits ? Number(digits) : 0;
+};
 export function Editor({
   spec,
   bundle,
@@ -72,10 +81,10 @@ export function Editor({
     is_cover: false,
     story_order: 0,
     start_date: dateLabel(today),
-    end_date: dateLabel(today),
+    end_date: "",
     spent_on: dateLabel(today),
     start_at: (bundle?.trip.start_date || today) + "T09:00",
-    end_at: (bundle?.trip.start_date || today) + "T10:00",
+    end_at: "",
     ...spec.defaults,
     ...row,
   };
@@ -86,6 +95,8 @@ export function Editor({
     for (const k of ["start_at", "end_at"])
       if (source[k]) initial[k] = localTime(String(source[k]), zone);
   }
+  for (const k of ["unit_price", "amount"])
+    if (initial[k] !== "" && initial[k] != null) initial[k] = formatMoneyInput(initial[k]);
   const {
     register,
     handleSubmit,
@@ -112,7 +123,7 @@ export function Editor({
     f("name", "Tên chuyến đi *", "text", true);
     f("destination", "Điểm đến *", "text", true);
     f("start_date", "Ngày bắt đầu *", "day", true);
-    f("end_date", "Ngày kết thúc *", "day", true);
+    f("end_date", "Ngày kết thúc (không bắt buộc)", "day");
     fields.push({
       key: "people",
       label: "Số người *",
@@ -129,7 +140,7 @@ export function Editor({
     title("Hoạt động *");
     f("location", "Địa điểm");
     f("start_at", "Bắt đầu *", "datetime-local", true);
-    f("end_at", "Kết thúc *", "datetime-local", true);
+    f("end_at", "Kết thúc (không bắt buộc)", "datetime-local");
     f("map_url", "Link Google Maps", "url");
   }
   if (spec.entity === "budget") {
@@ -149,7 +160,7 @@ export function Editor({
       {
         key: "unit_price",
         label: "Đơn giá VNĐ *",
-        kind: "number",
+        kind: "money",
         min: "0",
         max: "1000000000000",
         step: "1",
@@ -158,7 +169,7 @@ export function Editor({
     );
   }
   if (spec.entity === "expense") {
-    f("amount", "Số tiền VNĐ *", "number", true);
+    f("amount", "Số tiền VNĐ *", "money", true);
     title("Nội dung chi *");
     sel("kind", "Loại giao dịch", [
       ["payment", "Chi tiền"],
@@ -238,12 +249,18 @@ export function Editor({
     setError("");
     try {
       const data = { ...values };
-      for (const k of ["start_date", "end_date", "spent_on", "taken_on"])
-        if (fields.some((f) => f.key === k) && data[k])
-          data[k] = parseDate(String(data[k]));
-      for (const k of ["start_at", "end_at"])
-        if (fields.some((f) => f.key === k))
-          data[k] = utcTime(String(data[k]), zone);
+      for (const k of ["start_date", "end_date", "spent_on", "taken_on"]) {
+        if (!fields.some((f) => f.key === k)) continue;
+        if (data[k]) data[k] = parseDate(String(data[k]));
+        else if (k === "end_date") data[k] = null;
+      }
+      for (const k of ["start_at", "end_at"]) {
+        if (!fields.some((f) => f.key === k)) continue;
+        if (data[k]) data[k] = utcTime(String(data[k]), zone);
+        else if (k === "end_at") data[k] = null;
+      }
+      for (const k of ["unit_price", "amount"])
+        if (fields.some((f) => f.key === k)) data[k] = parseMoneyInput(data[k]);
       const parsed = schemas[spec.entity].safeParse(data);
       if (!parsed.success) throw Error(parsed.error.issues[0].message);
       const hash = JSON.stringify(parsed.data);
@@ -272,6 +289,14 @@ export function Editor({
       setBusy(false);
     }
   });
+  const setCurrentValue = (field: Field) => {
+    const current = localTime(new Date().toISOString(), zone);
+    setValue(
+      field.key,
+      field.kind === "day" ? dateLabel(current.slice(0, 10)) : current,
+      { shouldDirty: true },
+    );
+  };
   const linkedCategory =
     spec.entity === "expense"
       ? watch("kind") === "refund"
@@ -333,7 +358,7 @@ export function Editor({
                     inputMode="numeric"
                     maxLength={10}
                   />
-                  <label className="calendar-label">
+                  <label className="calendar-label" title="Chọn từ lịch">
                     <CalendarDays size={20} />
                     <input
                       type="date"
@@ -346,7 +371,49 @@ export function Editor({
                       }
                     />
                   </label>
+                  <button
+                    type="button"
+                    className="current-time-btn"
+                    title="Lấy ngày hiện tại"
+                    aria-label={`Lấy ngày hiện tại cho ${field.label}`}
+                    onClick={() => setCurrentValue(field)}
+                  >
+                    <Check size={18} />
+                  </button>
                 </div>
+              ) : field.kind === "datetime-local" ? (
+                <div className="date-field datetime-field">
+                  <input
+                    id={"tf-field-" + field.key}
+                    {...register(field.key)}
+                    type="datetime-local"
+                    required={field.required}
+                  />
+                  <button
+                    type="button"
+                    className="current-time-btn"
+                    title="Lấy ngày giờ hiện tại"
+                    aria-label={`Lấy ngày giờ hiện tại cho ${field.label}`}
+                    onClick={() => setCurrentValue(field)}
+                  >
+                    <Check size={18} />
+                  </button>
+                </div>
+              ) : field.kind === "money" ? (
+                <input
+                  id={"tf-field-" + field.key}
+                  {...register(field.key)}
+                  type="text"
+                  required={field.required}
+                  inputMode="numeric"
+                  placeholder="0"
+                  onInput={(event) => {
+                    const input = event.currentTarget;
+                    const formatted = formatMoneyInput(input.value);
+                    input.value = formatted;
+                    setValue(field.key, formatted, { shouldDirty: true });
+                  }}
+                />
               ) : (
                 <input
                   id={"tf-field-" + field.key}
@@ -375,7 +442,7 @@ export function Editor({
           ))}
           {spec.entity === "item" && (
             <p className="hint full">
-              Giờ tại {zone}. Hoạt động phải nằm trong ngày chuyến đi.
+              Giờ tại {zone}. Ngày/giờ kết thúc có thể để trống; nếu chuyến có ngày kết thúc, hoạt động phải nằm trong khoảng chuyến đi.
             </p>
           )}
           {spec.entity === "expense" && linkedCategory && (

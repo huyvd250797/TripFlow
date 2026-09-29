@@ -1,4 +1,4 @@
-# TripFlow 1.3.0 · Media, Memories & Storytelling
+# TripFlow 1.4.0 · Smart Planning Templates & Reuse
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -9,10 +9,12 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 ## Đã có trong phiên bản này
 
 - **Smart Workspace V1.2.0:** tìm kiếm xuyên lịch trình/chi phí/dự toán/media/người tham gia, quick action theo Current/Next và shortcut thêm chi phí/hoạt động/media ngay trên Tổng quan.
+- **Smart Planning V1.4.0:** lưu chuyến hiện tại thành mẫu cá nhân và tạo chuyến mới từ mẫu; lịch trình tự dời theo ngày bắt đầu mới, tái sử dụng dự toán và người tham gia.
+- **UX V1.4.0:** ngày/giờ kết thúc không còn bắt buộc; tiền nhập theo dạng `xxx.xxx.xxx`; thao tác nhanh chuyển vào nút ⚡; lịch sử lịch trình mở theo nút riêng; tab Thực chi có nút thêm nhất quán.
 - **Memories V1.3.0:** Travel Journal theo ngày, Trip Highlights, cover chuyến đi, caption/story order và báo cáo storytelling sau chuyến.
 - **Mobile Layout Fix V1.1.1:** khóa lại responsive shell sau Brand Refresh để không còn lỗi nội dung bị ép sang phải trên điện thoại.
 - **Brand Refresh V1.1.0:** logo/app icon chủ đề du lịch mới, splash loading có thương hiệu, hệ màu Ocean Teal + Sunset, shell/app navigation chuyên nghiệp hơn, auth/travel landing và card/form/modal được chuẩn hóa lại.
-- **V1.3.0 có migration database:** chạy `202609280006_v130_media_memories_storytelling.sql` để bổ sung metadata storytelling và nâng Database Version lên 1.3.0.
+- **V1.4.0 có migration database:** chạy `202609290001_v140_smart_planning_templates_reuse.sql` để thêm Planning Templates, cho phép ngày/giờ kết thúc để trống và nâng Database Version lên 1.4.0. V1.3.0 vẫn phải được chạy trước đó nếu database chưa có.
 
 - Đăng ký, xác nhận email, đăng nhập, quên/đổi mật khẩu, đăng xuất.
 - Nhiều chuyến đi: ngày, múi giờ, số người, trạng thái, ghi chú.
@@ -35,7 +37,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V1.3.0 (bao gồm V1.1.1 Mobile Layout Fix) đều được đánh dấu ✅. Phiên bản tiếp theo là V1.4.0 – Smart Planning Templates & Reuse.
+- Roadmap phiên bản hiển thị ngay trong **Thêm → TripFlow roadmap**; V0.1.0 đến V1.4.0 (bao gồm V1.1.1 Mobile Layout Fix) đều được đánh dấu ✅. Phiên bản tiếp theo là V1.5.0 – Growth, Sharing & Expansion.
 
 **Phạm vi offline:** cho phép thêm thực chi, cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -53,7 +55,8 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609280004_v090_release_candidate_hardening.sql` — Release Candidate marker + release-readiness V0.9.0.
    - `supabase/migrations/202609280005_v100_stable_production_release.sql` — Stable Production marker + production-readiness V1.0.0.
    - `supabase/migrations/202609280006_v130_media_memories_storytelling.sql` — metadata Media/Storytelling + Realtime/restore compatibility + Database marker V1.3.0.
-   **V0.6.0, V0.8.0, V1.1.x và V1.2.0 không có migration database. V1.3.0 có migration mới.** Nếu database đang ở V1.0.0/V1.2.0, chỉ chạy migration V1.3.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   - `supabase/migrations/202609290001_v140_smart_planning_templates_reuse.sql` — Planning Templates/Reuse + optional end date/time + Database marker V1.4.0.
+   **V0.6.0, V0.8.0, V1.1.x và V1.2.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
@@ -281,7 +284,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap 1.x mở đến V1.5.0; V1.2.0 là bản tiếp theo.
+- Roadmap 1.x hiện đã hoàn thành đến V1.4.0; phiên bản tiếp theo là V1.5.0 – Growth, Sharing & Expansion.
 
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
@@ -301,3 +304,15 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Caption dùng trường ghi chú hiện có; `story_order` điều khiển thứ tự kể chuyện.
 - Post-Trip Report/CSV/JSON chứa phần Memories để lưu trữ hoặc chia sẻ sau chuyến.
 - Database version yêu cầu: **1.3.0**.
+
+
+## 1.13. Smart Planning Templates & Reuse V1.4.0
+
+- Lưu lịch trình, dự toán và người tham gia của chuyến hiện tại thành mẫu cá nhân.
+- Tạo chuyến mới từ mẫu với ngày bắt đầu mới; TripFlow tự dời thời gian các hoạt động nhưng không sao chép thực chi/media/lịch sử cũ.
+- `end_date` của chuyến và `end_at` của hoạt động là tùy chọn.
+- Input tiền hiển thị dấu chấm phân cách hàng nghìn khi nhập.
+- Dashboard chỉ hiển thị nút ⚡ Thao tác nhanh; danh sách thao tác mở trong dialog.
+- Lịch sử Live Trip mở qua nút **Xem lịch sử** thay vì chiếm diện tích lịch trình.
+- Tab **Thực chi** có nút **Ghi chi tiêu** riêng để nhất quán với tab **Dự toán**.
+- Database version yêu cầu: **1.4.0**.

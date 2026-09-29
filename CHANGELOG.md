@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0 — Smart Planning Templates & Reuse
+
+- Thêm Planning Templates cá nhân: lưu chuyến hiện tại làm mẫu, tạo chuyến mới và tự dời lịch theo ngày bắt đầu mới.
+- Tái sử dụng lịch trình, dự toán và người tham gia; không sao chép thực chi, media hay lịch sử vận hành.
+- Ngày kết thúc chuyến và giờ kết thúc hoạt động không còn bắt buộc.
+- Input tiền định dạng `xxx.xxx.xxx` ngay khi nhập.
+- Dashboard chuyển Smart Workspace vào nút ⚡ để giảm mật độ thông tin; lịch sử lịch trình chuyển vào dialog riêng.
+- Bổ sung nút **Ghi chi tiêu** trong tab Thực chi và nút ✓ lấy ngày/giờ hiện tại ở trường ngày giờ.
+- Database nâng lên **V1.4.0** qua migration `202609290001_v140_smart_planning_templates_reuse.sql`.
+- Roadmap đánh dấu V1.4.0 ✅; tiếp theo **V1.5.0 – Growth, Sharing & Expansion**.
+
 ## 1.3.0 — Media, Memories & Storytelling
 
 - Nâng Media thành **Travel Journal** theo ngày, liên kết hoạt động và địa điểm.

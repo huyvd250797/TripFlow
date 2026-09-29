@@ -92,3 +92,13 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Backup/restore metadata storytelling đã test.
 - [ ] Media Realtime đã test hai session.
 - [ ] Service worker là `tripflow-shell-v130`.
+
+## V1.4.0 Smart Planning Templates & Reuse
+
+- [ ] Chạy `202609290001_v140_smart_planning_templates_reuse.sql`.
+- [ ] App version `1.4.0`; Database version `1.4.0`; channel `stable`.
+- [ ] Kiểm thử optional end date/time trên mobile và desktop.
+- [ ] Kiểm thử định dạng input tiền `xxx.xxx.xxx`.
+- [ ] Kiểm thử save/apply/delete template với Owner và Editor; Viewer bị chặn save.
+- [ ] Kiểm thử tạo chuyến từ template không sao chép thực chi/media/history.
+- [ ] Service worker là `tripflow-shell-v140`.

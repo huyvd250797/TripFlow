@@ -50,3 +50,7 @@ V1.2.0 không thay đổi database. Production readiness hợp lệ khi **App 1.
 ## V1.3.0 Media storytelling release
 
 Chạy `202609280006_v130_media_memories_storytelling.sql` trước khi deploy frontend V1.3.0. Sau deploy xác nhận `tripflow-shell-v130`, Production Readiness App/DB 1.3.0, Realtime `media_links`, một-cover-per-trip và restore backup. Không rollback schema bằng cách drop cột.
+
+## V1.4.0 Smart Planning release
+
+Chạy `202609290001_v140_smart_planning_templates_reuse.sql` sau V1.3.0 rồi deploy frontend V1.4.0. Xác nhận Production Readiness App/DB 1.4.0, bảng `trip_templates` bật RLS, RPC save/apply template tồn tại, `trips.end_date` và `itinerary_items.end_at` nullable, và service worker `tripflow-shell-v140` đã active.

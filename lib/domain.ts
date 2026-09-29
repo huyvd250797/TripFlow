@@ -17,7 +17,8 @@ export const money = (n: number) =>
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(n);
-export const dateLabel = (d: string) => {
+export const dateLabel = (d: string | null | undefined) => {
+  if (!d) return "Chưa đặt";
   const s = d.slice(0, 10).split("-");
   return s.length === 3 ? `${s[2]}/${s[1]}/${s[0]}` : d;
 };
@@ -32,7 +33,8 @@ export function parseDate(s: string) {
     throw Error("Ngày không hợp lệ.");
   return v;
 }
-export function localTime(iso: string, zone: string) {
+export function localTime(iso: string | null | undefined, zone: string) {
+  if (!iso) return "";
   const p = Object.fromEntries(
     new Intl.DateTimeFormat("en-CA", {
       timeZone: zone,
@@ -361,12 +363,21 @@ export function buildTripAnalytics(bundle: Bundle): TripAnalyticsReport {
     );
   const plannedDuration = bundle.items.reduce(
     (sum, x) =>
-      sum + Math.max(0, Math.round((Date.parse(x.end_at) - Date.parse(x.start_at)) / 60000)),
+      sum + (x.end_at
+        ? Math.max(0, Math.round((Date.parse(x.end_at) - Date.parse(x.start_at)) / 60000))
+        : 0),
     0,
   );
   const actualDuration = actualDurations.reduce((sum, value) => sum + value, 0);
   const start = Date.parse(bundle.trip.start_date + "T00:00:00Z");
-  const end = Date.parse(bundle.trip.end_date + "T00:00:00Z");
+  const inferredEndDate = [
+    bundle.trip.start_date,
+    ...bundle.items.map((x) => localTime(x.start_at, bundle.trip.timezone).slice(0, 10)),
+    ...bundle.expenses.map((x) => x.spent_on),
+    ...bundle.media.map((x) => x.taken_on || "").filter(Boolean),
+  ].sort().at(-1) || bundle.trip.start_date;
+  const reportEndDate = bundle.trip.end_date || inferredEndDate;
+  const end = Date.parse(reportEndDate + "T00:00:00Z");
   const tripDays = Number.isFinite(start) && Number.isFinite(end)
     ? Math.max(1, Math.floor((end - start) / 86400000) + 1)
     : 1;
@@ -542,7 +553,7 @@ export function postTripCsv(bundle: Bundle) {
         x.title,
         ITEM_STATUS[x.status],
         localTime(x.start_at, bundle.trip.timezone),
-        localTime(x.end_at, bundle.trip.timezone),
+        x.end_at ? localTime(x.end_at, bundle.trip.timezone) : "",
         x.checked_in_at ? localTime(x.checked_in_at, bundle.trip.timezone) : "",
         x.completed_at ? localTime(x.completed_at, bundle.trip.timezone) : "",
       ]),
@@ -652,21 +663,21 @@ export function live(items: Item[], now = new Date().toISOString()) {
     (x) =>
       x.status === "planned" &&
       Date.parse(x.start_at) <= nowMs &&
-      Date.parse(x.end_at) > nowMs,
+      (!x.end_at || Date.parse(x.end_at) > nowMs),
   );
   const late = sorted.filter(
-    (x) => x.status === "planned" && Date.parse(x.end_at) <= nowMs,
+    (x) => x.status === "planned" && !!x.end_at && Date.parse(x.end_at) <= nowMs,
   );
   const next = sorted.find(
     (x) => x.status === "planned" && Date.parse(x.start_at) > nowMs,
   );
   const current = active || scheduled[0];
-  const activeLateMinutes = active
+  const activeLateMinutes = active?.end_at
     ? Math.max(0, Math.floor((nowMs - Date.parse(active.end_at)) / 60000))
     : 0;
   const lateMinutes = late.map((x) => ({
     item: x,
-    minutes: Math.max(0, Math.floor((nowMs - Date.parse(x.end_at)) / 60000)),
+    minutes: x.end_at ? Math.max(0, Math.floor((nowMs - Date.parse(x.end_at)) / 60000)) : 0,
   }));
   const nextInMinutes = next
     ? Math.max(0, Math.ceil((Date.parse(next.start_at) - nowMs) / 60000))
