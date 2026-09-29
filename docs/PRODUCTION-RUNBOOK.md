@@ -62,3 +62,8 @@ V1.5.0 không có migration database. Deploy frontend V1.5.0 sau khi database đ
 ## V1.5.1 Deploy Typecheck Fix
 
 V1.5.1 là patch frontend, không có migration. Deploy source bằng Node 24.x trên Database V1.4.0, xác nhận App `1.5.1` / DB `1.4.0` / stable và service worker `tripflow-shell-v151`. Chạy `npm run build` trước production để xác nhận hai lỗi type-check của V1.5.0 không tái phát.
+
+
+## V1.6.0 Smart Defaults & PWA taskbar
+
+V1.6.0 không có migration; deploy App 1.6.0 trên Database 1.4.0. Sau deploy xác nhận `tripflow-shell-v160`, mở PWA standalone và scroll dài để bottom taskbar luôn sát đáy. Kiểm tra Quick dock thu/mở và Module Hub trong tab Thêm.

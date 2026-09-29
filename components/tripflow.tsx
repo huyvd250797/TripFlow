@@ -37,6 +37,7 @@ import {
   Receipt,
   FileText,
   ChevronRight,
+  ChevronLeft,
   ShieldCheck,
   CloudUpload,
   AlertTriangle,
@@ -99,6 +100,7 @@ import { ReleaseReadiness } from "./release-readiness";
 import { BrandMark, BrandName } from "./brand";
 import { searchTripWorkspace, type WorkspaceSearchResult } from "@/lib/workspace";
 import { parseQuickEntry } from "@/lib/quick-entry";
+import { buildSmartDefaults, expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
 import {
   cacheBundle,
   cacheTrips,
@@ -250,6 +252,7 @@ function App() {
     [quickEntryText, setQuickEntryText] = useState(""),
     [quickEntryBusy, setQuickEntryBusy] = useState(false),
     [recentQuickEntries, setRecentQuickEntries] = useState<string[]>([]),
+    [commandFabCollapsed, setCommandFabCollapsed] = useState(false),
     [historyOpen, setHistoryOpen] = useState(false),
     [templateApply, setTemplateApply] = useState<TripTemplate | null>(null),
     [templateName, setTemplateName] = useState(""),
@@ -284,6 +287,7 @@ function App() {
       ios: false,
     });
   const syncLock = useRef(false);
+  const commandFabTouchX = useRef<number | null>(null);
   const installPromptRef = useRef<InstallPromptEvent | null>(null);
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const swReloadingRef = useRef(false);
@@ -343,6 +347,7 @@ function App() {
       window.matchMedia("(display-mode: standalone)").matches || nav.standalone === true;
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
     setPwaState((x) => ({ ...x, standalone, ios }));
+    document.documentElement.dataset.pwa = standalone ? "standalone" : "browser";
 
     const syncViewport = () => {
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
@@ -366,6 +371,7 @@ function App() {
     const installed = () => {
       installPromptRef.current = null;
       setPwaState((x) => ({ ...x, standalone: true, installable: false }));
+      document.documentElement.dataset.pwa = "standalone";
       notify("TripFlow đã được cài trên thiết bị.");
     };
     window.addEventListener("beforeinstallprompt", beforeInstall);
@@ -527,6 +533,18 @@ function App() {
       setRecentQuickEntries([]);
     }
   }, [user, selectedId]);
+
+  useEffect(() => {
+    if (!user) {
+      setCommandFabCollapsed(false);
+      return;
+    }
+    try {
+      setCommandFabCollapsed(localStorage.getItem(`tripflow:command-fab:${user.id}`) === "collapsed");
+    } catch {
+      setCommandFabCollapsed(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user || !selectedId) return;
@@ -842,8 +860,37 @@ function App() {
     ]);
     notify("Đã lưu trên hệ thống.");
   }
-  const edit = (entity: Entity, record?: object) =>
-    setSpec({ entity, record: record as Record<string, unknown> | undefined });
+  const edit = (entity: Entity, record?: object) => {
+    const existing = record as Record<string, unknown> | undefined;
+    if (existing || !data) {
+      setSpec({ entity, record: existing });
+      return;
+    }
+    const smart = buildSmartDefaults(data, now || new Date().toISOString());
+    const defaults =
+      entity === "expense"
+        ? {
+            category: smart.expense.category,
+            payer: smart.expense.payer,
+            budget_id: smart.expense.budget_id,
+            spent_on: smart.expense.spent_on,
+          }
+        : entity === "item"
+          ? { start_at: smart.item.start_at, location: smart.item.location }
+          : entity === "media"
+            ? { item_id: smart.media.item_id, taken_on: smart.media.taken_on }
+            : undefined;
+    setSpec({
+      entity,
+      defaults,
+      smartHints:
+        entity === "expense"
+          ? smart.expense.source
+          : entity === "item"
+            ? smart.item.source
+            : undefined,
+    });
+  };
   const writable = data?.role === "owner" || data?.role === "editor",
     owner = data?.role === "owner";
   function remove(entity: Entity, row: { id: string; version: number }) {
@@ -1396,6 +1443,7 @@ function App() {
   const current = progress?.current;
   const workspaceResults = data ? searchTripWorkspace(data, searchTerm) : [];
   const workspaceFocusItem = progress?.active || current || progress?.next || null;
+  const smartDefaults = data ? buildSmartDefaults(data, now || new Date().toISOString()) : null;
   const workspaceFocusBudget =
     workspaceFocusItem && data
       ? data.budgets.find((budget) => budget.item_id === workspaceFocusItem.id) || null
@@ -1412,43 +1460,82 @@ function App() {
   const openWorkspaceResult = (result: WorkspaceSearchResult) => {
     if (result.day) setDay(result.day);
     navigate(result.tab);
+    if (result.kind === "participant") {
+      setTimeout(() => {
+        const group = document.getElementById("module-trip") as HTMLDetailsElement | null;
+        if (group) group.open = true;
+      }, 80);
+    }
     setWorkspaceSearch(false);
     setSearchTerm("");
   };
   const quickExpense = () =>
     setSpec({
       entity: "expense",
-      defaults: workspaceFocusBudget
-        ? {
-            budget_id: workspaceFocusBudget.id,
-            category: workspaceFocusBudget.category,
-          }
-        : undefined,
+      defaults: {
+        category: workspaceFocusBudget?.category || smartDefaults?.expense.category || CATEGORIES[0],
+        budget_id: workspaceFocusBudget?.id || smartDefaults?.expense.budget_id || "",
+        payer: smartDefaults?.expense.payer || "",
+        spent_on: smartDefaults?.expense.spent_on || quickBaseDay,
+      },
+      smartHints: smartDefaults?.expense.source,
     });
   const quickMedia = () =>
     setSpec({
       entity: "media",
-      defaults: workspaceFocusItem
-        ? {
-            item_id: workspaceFocusItem.id,
-            taken_on: dateLabel(localTime(workspaceFocusItem.start_at, trip?.timezone || "Asia/Ho_Chi_Minh").slice(0, 10)),
-          }
-        : undefined,
+      defaults: {
+        item_id: workspaceFocusItem?.id || smartDefaults?.media.item_id || "",
+        taken_on: dateLabel(
+          workspaceFocusItem
+            ? localTime(workspaceFocusItem.start_at, trip?.timezone || "Asia/Ho_Chi_Minh").slice(0, 10)
+            : smartDefaults?.media.taken_on || localTime(new Date().toISOString(), trip?.timezone || "Asia/Ho_Chi_Minh").slice(0, 10),
+        ),
+      },
     });
   const quickZone = trip?.timezone || "Asia/Ho_Chi_Minh";
   const quickBaseDay = day !== "all" ? day : localTime(now || new Date().toISOString(), quickZone).slice(0, 10);
   const quickNowLocal = localTime(now || new Date().toISOString(), quickZone);
   const quickPreview = parseQuickEntry(quickEntryText, { baseDay: quickBaseDay, nowLocal: quickNowLocal });
+  const quickSmartCategory =
+    quickPreview?.kind === "expense" && quickPreview.category === "Khác" && smartDefaults
+      ? smartDefaults.expense.category
+      : quickPreview?.kind === "expense"
+        ? quickPreview.category
+        : null;
   const commandFocusBudget =
-    quickPreview?.kind === "expense" && workspaceFocusBudget?.category === quickPreview.category
-      ? workspaceFocusBudget
+    quickPreview?.kind === "expense"
+      ? (
+          workspaceFocusBudget?.category === quickSmartCategory
+            ? workspaceFocusBudget
+            : data?.budgets.find(
+                (budget) =>
+                  budget.id === smartDefaults?.expense.budget_id &&
+                  budget.category === quickSmartCategory,
+              ) || null
+        )
       : null;
+  const quickContextWarnings =
+    data && quickPreview?.valid
+      ? quickPreview.kind === "expense"
+        ? expenseContextWarnings(data, {
+            amount: quickPreview.amount,
+            category: quickSmartCategory || quickPreview.category,
+            budget_id: commandFocusBudget?.id || "",
+          })
+        : itemContextWarnings(data, { start_local: quickPreview.start_local })
+      : [];
   const rememberQuickEntry = (text: string) => {
     if (!user || !selectedId || !text.trim()) return;
     const next = [text.trim(), ...recentQuickEntries.filter((x) => x !== text.trim())].slice(0, 6);
     setRecentQuickEntries(next);
     try {
       localStorage.setItem(`tripflow:quick-entry:${user.id}:${selectedId}`, JSON.stringify(next));
+    } catch {}
+  };
+  const updateCommandFabCollapsed = (next: boolean) => {
+    setCommandFabCollapsed(next);
+    try {
+      localStorage.setItem(`tripflow:command-fab:${user.id}`, next ? "collapsed" : "open");
     } catch {}
   };
   const openQuickEntryInEditor = () => {
@@ -1459,9 +1546,10 @@ function App() {
         defaults: {
           title: quickPreview.title,
           amount: quickPreview.amount,
-          category: commandFocusBudget?.category || quickPreview.category,
+          category: commandFocusBudget?.category || quickSmartCategory || quickPreview.category,
           budget_id: commandFocusBudget?.id || "",
           spent_on: quickPreview.spent_on,
+          payer: smartDefaults?.expense.payer || "",
         },
       });
     } else {
@@ -1471,6 +1559,7 @@ function App() {
           defaults: {
             title: quickPreview.title,
             start_at: utcTime(quickPreview.start_local, quickZone),
+            location: smartDefaults?.item.location || "",
           },
         });
       } catch (e) {
@@ -1495,14 +1584,17 @@ function App() {
             id,
             data: {
               title: quickPreview.title,
-              category: commandFocusBudget?.category || quickPreview.category,
+              category: commandFocusBudget?.category || quickSmartCategory || quickPreview.category,
               amount: quickPreview.amount,
               kind: "payment",
               budget_id: commandFocusBudget?.id || "",
               refund_of: "",
               spent_on: quickPreview.spent_on,
-              payer: "",
-              note: quickPreview.time_hint ? `Nhập nhanh lúc ${quickPreview.time_hint}` : "",
+              payer: smartDefaults?.expense.payer || "",
+              note: [
+                quickPreview.time_hint ? `Nhập nhanh lúc ${quickPreview.time_hint}` : "",
+                smartDefaults?.expense.source.length ? `Smart default: ${smartDefaults.expense.source.join(" · ")}` : "",
+              ].filter(Boolean).join(" · "),
               receipt_url: "",
             },
           }
@@ -1514,7 +1606,7 @@ function App() {
             id,
             data: {
               title: quickPreview.title,
-              location: "",
+              location: smartDefaults?.item.location || "",
               start_at: utcTime(quickPreview.start_local, quickZone),
               end_at: null,
               map_url: "",
@@ -1579,9 +1671,11 @@ function App() {
   };
   const openAnalytics = () => {
     navigate("more");
-    setTimeout(() =>
-      document.getElementById("trip-analytics")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-    120);
+    setTimeout(() => {
+      const group = document.getElementById("module-reporting") as HTMLDetailsElement | null;
+      if (group) group.open = true;
+      document.getElementById("trip-analytics")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
   };
   const liveCard = () => {
     if (!trip || !progress) return null;
@@ -3296,6 +3390,20 @@ function App() {
               )}
               {tab === "more" && data && (
                 <>
+                  <section className="more-hub-intro">
+                    <div>
+                      <span className="eyebrow">TRIPFLOW MODULE HUB · V1.6.0</span>
+                      <h2>Thêm & quản lý</h2>
+                      <p>Thông tin được gom theo module. Mở đúng nhóm bạn cần để màn hình gọn và dễ tập trung hơn.</p>
+                    </div>
+                  </section>
+                  <details className="module-block" id="module-trip">
+                    <summary>
+                      <span className="module-block-icon"><Compass size={20} /></span>
+                      <span><b>Chuyến đi, thành viên & kế hoạch</b><small>Thông tin chuyến, người tham gia, cộng tác và template</small></span>
+                      <ChevronDown size={19} className="module-chevron" />
+                    </summary>
+                    <div className="module-block-content">
                   <div className="settings-grid">
                     <section className="panel">
                       <div className="section-heading">
@@ -3485,6 +3593,17 @@ function App() {
                           </div>
                         ))}
                   </section>
+                  {planningTemplatesPanel(true)}
+                    </div>
+                  </details>
+
+                  <details className="module-block" id="module-reporting">
+                    <summary>
+                      <span className="module-block-icon"><FileText size={20} /></span>
+                      <span><b>Báo cáo & tổng kết chuyến đi</b><small>Analytics, tài chính và Post-Trip Report</small></span>
+                      <ChevronDown size={19} className="module-chevron" />
+                    </summary>
+                    <div className="module-block-content">
                   {analytics && financeReport && (
                     <section className="panel analytics-panel" id="trip-analytics">
                       <div className="section-heading analytics-heading">
@@ -3717,7 +3836,16 @@ function App() {
                       </p>
                     </section>
                   )}
-                  {planningTemplatesPanel(true)}
+                    </div>
+                  </details>
+
+                  <details className="module-block" id="module-system">
+                    <summary>
+                      <span className="module-block-icon"><ShieldCheck size={20} /></span>
+                      <span><b>Ứng dụng, dữ liệu & vận hành</b><small>PWA, backup, offline, production, roadmap và audit</small></span>
+                      <ChevronDown size={19} className="module-chevron" />
+                    </summary>
+                    <div className="module-block-content">
                   <ReleaseReadiness online={online} />
                   <section className="panel pwa-panel">
                     <div className="section-heading">
@@ -3932,6 +4060,8 @@ function App() {
                       </button>
                     </section>
                   )}
+                    </div>
+                  </details>
                 </>
               )}
             </>
@@ -3958,15 +4088,36 @@ function App() {
         ))}
       </nav>
       {data && (
-        <button
-          className="command-fab"
-          onClick={() => setQuickActionsOpen(true)}
-          aria-label="Mở TripFlow Command Center"
-          title="Command Center · Ctrl+K"
+        <div
+          className={`command-fab-dock ${commandFabCollapsed ? "collapsed" : ""}`}
+          onTouchStart={(event) => { commandFabTouchX.current = event.touches[0]?.clientX ?? null; }}
+          onTouchEnd={(event) => {
+            const start = commandFabTouchX.current;
+            const end = event.changedTouches[0]?.clientX;
+            commandFabTouchX.current = null;
+            if (start == null || end == null) return;
+            if (end - start > 36) updateCommandFabCollapsed(true);
+            if (start - end > 36) updateCommandFabCollapsed(false);
+          }}
         >
-          <Zap size={21} />
-          <span>Quick</span>
-        </button>
+          <button
+            className="command-fab-toggle"
+            onClick={() => updateCommandFabCollapsed(!commandFabCollapsed)}
+            aria-label={commandFabCollapsed ? "Hiện nút Quick" : "Ẩn nút Quick sang phải"}
+            title={commandFabCollapsed ? "Hiện Quick" : "Thu gọn Quick"}
+          >
+            {commandFabCollapsed ? <ChevronLeft size={19} /> : <ChevronRight size={19} />}
+          </button>
+          <button
+            className="command-fab"
+            onClick={() => setQuickActionsOpen(true)}
+            aria-label="Mở TripFlow Command Center"
+            title="Command Center · Ctrl+K"
+          >
+            <Zap size={21} />
+            <span>Quick</span>
+          </button>
+        </div>
       )}
       {spec && (
         <Editor
@@ -4019,7 +4170,7 @@ function App() {
                     <b>{quickPreview.kind === "expense" ? "Khoản chi" : "Hoạt động"} · {quickPreview.title}</b>
                     {quickPreview.kind === "expense" ? (
                       <small>
-                        {money(quickPreview.amount)} · {commandFocusBudget?.category || quickPreview.category} · {dateLabel(quickPreview.spent_on)}
+                        {money(quickPreview.amount)} · {commandFocusBudget?.category || quickSmartCategory || quickPreview.category} · {dateLabel(quickPreview.spent_on)}
                         {commandFocusBudget ? ` · ${commandFocusBudget.title}` : ""}
                         {quickPreview.time_hint ? ` · ${quickPreview.time_hint}` : ""}
                       </small>
@@ -4027,6 +4178,26 @@ function App() {
                       <small>{dateLabel(quickPreview.start_local.slice(0, 10))} · {quickPreview.start_local.slice(11)} · chưa bắt buộc giờ kết thúc</small>
                     )}
                     {!quickPreview.valid && <em>{quickPreview.error}</em>}
+                    {quickPreview.valid && smartDefaults && (
+                      <span className="smart-default-inline">
+                        <Sparkles size={13} />
+                        {quickPreview.kind === "expense"
+                          ? [
+                              smartDefaults.expense.payer ? `Người trả: ${smartDefaults.expense.payer}` : "",
+                              commandFocusBudget ? `Budget: ${commandFocusBudget.title}` : "",
+                            ].filter(Boolean).join(" · ") || "Đang dùng ngữ cảnh chuyến đi"
+                          : smartDefaults.item.location
+                            ? `Địa điểm gợi ý: ${smartDefaults.item.location}`
+                            : "Thời gian được kiểm tra theo lịch trình hiện tại"}
+                      </span>
+                    )}
+                    {quickContextWarnings.length > 0 && (
+                      <div className="smart-warning-list">
+                        {quickContextWarnings.map((warning) => (
+                          <span key={warning}><AlertTriangle size={13} /> {warning}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {quickPreview.valid && writable && (
                     <button className="btn secondary compact" onClick={openQuickEntryInEditor}>Mở form</button>

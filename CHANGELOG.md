@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.0 — Smart Defaults & Context Automation
+
+- Smart Defaults tự gợi ý người trả, nhóm chi, budget, ngày chi, giờ hoạt động và địa điểm từ dữ liệu/context hiện tại.
+- Quick Entry hiển thị cảnh báo vượt dự toán, khoản chi bất thường, trùng giờ hoặc nằm ngoài phạm vi chuyến trước khi lưu.
+- Bottom taskbar trong PWA standalone được neo cố định sát đáy, tôn trọng safe-area và chống dịch chuyển khi scroll.
+- Nút ⚡ Quick chuyển thành dock có thể thu sang mép phải, giữ lại mũi tên để mở lại; trạng thái được nhớ theo user.
+- Mục Thêm được gom thành Module Hub theo block đóng/mở để giảm mật độ thông tin.
+- App version `1.6.0`, service worker `tripflow-shell-v160`, Database yêu cầu vẫn `1.4.0`; không có migration mới.
+- Phiên bản tiếp theo: V1.7.0 – Planning Board & Timeline Pro.
+
 ## 1.5.1 — Deploy Typecheck Fix
 
 - Sửa lỗi `TS18048: data is possibly undefined` ở thao tác **Lặp khoản chi gần nhất** bằng optional access trước khi đọc `expenses`.

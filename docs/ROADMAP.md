@@ -137,10 +137,14 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Sửa `TS2304` trong `tests/domain.test.ts` bằng cách import `dateLabel` đúng từ domain.
 - Không đổi schema; App V1.5.1 tiếp tục dùng Database V1.4.0.
 
-## ⬜ V1.6.0 — Smart Defaults & Context Automation
+## ✅ V1.6.0 — Smart Defaults & Context Automation
 
-- Tự điền người trả, category, activity, budget, ngày/giờ dựa trên context và lựa chọn gần nhất.
-- Cảnh báo/xác nhận thông minh trước khi lưu để giảm nhập lặp và lỗi dữ liệu.
+- Tự gợi ý người trả, category, budget, ngày chi, thời gian và địa điểm từ dữ liệu gần nhất/context hiện tại.
+- Quick Entry cảnh báo vượt dự toán, khoản chi bất thường, activity trùng giờ hoặc ngoài ngày chuyến trước khi lưu.
+- PWA standalone cố định bottom taskbar sát đáy khi scroll.
+- Nút ⚡ Quick có thể thu sang mép phải và chỉ để lại mũi tên mở lại.
+- Mục **Thêm** được gom theo Module Hub dạng block đóng/mở để giảm nhiễu thông tin.
+- Không đổi schema; App V1.6.0 tiếp tục dùng Database V1.4.0.
 
 ## ⬜ V1.7.0 — Planning Board & Timeline Pro
 
@@ -158,4 +162,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.5.1 đã hoàn thành; phiên bản tiếp theo là **V1.6.0 – Smart Defaults & Context Automation**.
+**Roadmap hiện tại:** V1.6.0 đã hoàn thành; phiên bản tiếp theo là **V1.7.0 – Planning Board & Timeline Pro**.

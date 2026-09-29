@@ -118,3 +118,14 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] `npm run build` không còn TS2304 `dateLabel` ở `tests/domain.test.ts`.
 - [ ] App version `1.5.1`; Database required `1.4.0`; channel `stable`.
 - [ ] Service worker `tripflow-shell-v151` active sau deploy.
+
+
+## V1.6.0 Smart Defaults & Context Automation
+
+- [ ] App version `1.6.0`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v160` active.
+- [ ] PWA standalone: bottom taskbar không bị kéo lên khi scroll.
+- [ ] Quick dock có thể ẩn sang phải và mở lại bằng mũi tên.
+- [ ] Thêm hiển thị 3 Module Hub đóng/mở, không bung toàn bộ nội dung.
+- [ ] Expense mới gợi ý payer/category/budget hợp lý và vẫn sửa được.
+- [ ] Quick Entry cảnh báo vượt budget / trùng lịch trước khi lưu.

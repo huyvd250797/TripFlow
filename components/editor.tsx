@@ -12,11 +12,13 @@ import {
   type Mutation,
 } from "@/lib/types";
 import { dateLabel, parseDate, localTime, utcTime } from "@/lib/domain";
+import { expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
 import { schemas } from "@/lib/validation";
 export type EditSpec = {
   entity: Entity;
   record?: Record<string, unknown>;
   defaults?: Record<string, unknown>;
+  smartHints?: string[];
 };
 type Field = {
   key: string;
@@ -303,6 +305,16 @@ export function Editor({
         ? bundle?.expenses.find((x) => x.id === watch("refund_of"))?.category
         : bundle?.budgets.find((x) => x.id === watch("budget_id"))?.category
       : undefined;
+  const contextWarnings =
+    !row && bundle && spec.entity === "expense" && watch("kind") !== "refund"
+      ? expenseContextWarnings(bundle, {
+          amount: parseMoneyInput(watch("amount")),
+          category: String(linkedCategory || watch("category") || ""),
+          budget_id: String(watch("budget_id") || ""),
+        })
+      : !row && bundle && spec.entity === "item" && watch("start_at")
+        ? itemContextWarnings(bundle, { start_local: String(watch("start_at")) })
+        : [];
   return (
     <Dialog
       open
@@ -311,6 +323,20 @@ export function Editor({
     >
       <form onSubmit={submit} className="editor-form">
         <div className="dialog-body form-grid">
+          {!row && spec.smartHints && spec.smartHints.length > 0 && (
+            <div className="smart-default-banner full">
+              <span><Check size={16} /> Smart Defaults</span>
+              <p>{spec.smartHints.join(" · ")}</p>
+              <small>Đây là gợi ý theo dữ liệu gần nhất; bạn vẫn có thể sửa trước khi lưu.</small>
+            </div>
+          )}
+          {contextWarnings.length > 0 && (
+            <div className="context-warning-banner full">
+              {contextWarnings.map((warning) => (
+                <span key={warning}>{warning}</span>
+              ))}
+            </div>
+          )}
           {fields.map((field) => (
             <div
               className={`field ${["textarea", "url"].includes(field.kind || "") ? "full" : ""}`}

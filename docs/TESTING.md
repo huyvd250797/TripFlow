@@ -225,3 +225,12 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] `repeatLastExpense` hoạt động an toàn khi Bundle chưa tải.
 - [ ] `tests/domain.test.ts` import và gọi `dateLabel` hợp lệ.
 - [ ] `npm run build` qua type-check trên Node 24.x.
+
+
+## Smart Defaults V1.6.0
+
+- Unit: payer/category/budget gần nhất được gợi ý theo context.
+- Unit: cảnh báo vượt phần còn lại của budget.
+- Unit: activity mới trùng lịch phát cảnh báo.
+- UI/PWA: bottom nav fixed ở standalone và Quick dock collapsed vẫn để lộ mũi tên.
+- UI: Module Hub trong Thêm đóng/mở được và Analytics tự mở block khi điều hướng từ dashboard.

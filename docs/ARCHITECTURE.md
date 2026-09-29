@@ -142,3 +142,8 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 ## V1.5.1 patch architecture
 
 Không thay đổi kiến trúc hay schema. Patch chỉ làm an toàn đường đọc Bundle khi UI chưa tải dữ liệu (`data?.expenses`) và sửa import test cho `dateLabel`. Runtime App `1.5.1`, Database requirement `1.4.0`.
+
+
+## V1.6.0 context automation
+
+Smart Defaults được tính ở client từ Bundle đã xác thực (activity/budget/expense gần nhất), không tạo nguồn dữ liệu thứ hai và không cần schema mới. Đây chỉ là giá trị gợi ý; mutation vẫn đi qua validation/API/RLS hiện hữu. Cảnh báo context không tự chặn hoặc tự ghi dữ liệu.

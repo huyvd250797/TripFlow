@@ -128,9 +128,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V1.6.0",
     title: "Smart Defaults & Context Automation",
-    done: false,
+    done: true,
     description:
-      "Tự điền người trả/nhóm chi/activity/ngày giờ theo ngữ cảnh, nhớ lựa chọn gần nhất, gợi ý budget và cảnh báo dữ liệu bất thường trước khi lưu.",
+      "Tự điền người trả/nhóm chi/ngày giờ/địa điểm theo dữ liệu gần nhất và activity hiện tại, gợi ý budget, cảnh báo vượt dự toán/trùng lịch, cố định taskbar PWA, Quick dock thu gọn và gom mục Thêm theo module.",
   },
   {
     version: "V1.7.0",

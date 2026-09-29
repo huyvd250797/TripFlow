@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V1.5.1 giữ Quick Entry & Command Center và sửa lỗi type-check khi deploy ở frontend; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
+            V1.6.0 bổ sung Smart Defaults & Context Automation, cố định taskbar PWA, Quick dock thu gọn và Module Hub; database vẫn dùng schema V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>
