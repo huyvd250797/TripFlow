@@ -185,13 +185,14 @@ async function main() {
   await page.route("**/api/release", async (route) => {
     await route.fulfill({
       json: {
-        app_version: "1.2.0",
+        app_version: "1.3.0",
         channel: "stable",
-        database_version: "1.0.0",
+        database_version: "1.3.0",
         checked_at: new Date().toISOString(),
         ready: true,
         checks: [
-          { key: "stable_marker", label: "Stable schema marker V1.0", ok: true },
+          { key: "schema_marker", label: "Schema marker V1.3.0", ok: true },
+          { key: "storytelling", label: "Media storytelling metadata V1.3", ok: true },
           { key: "account_gate", label: "Account gate V0.2", ok: true },
           { key: "finance", label: "Finance integrity V0.3", ok: true },
           { key: "live_trip", label: "Live Trip history V0.4", ok: true },

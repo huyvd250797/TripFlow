@@ -45,3 +45,8 @@ V1.1.0 không thay đổi database. Production readiness hợp lệ khi **App 1.
 ## V1.2.0 Smart Workspace release
 
 V1.2.0 không thay đổi database. Production readiness hợp lệ khi **App 1.2.0 / DB 1.0.0 / stable** và các guard đều đạt. Sau deploy, xác nhận service worker `tripflow-shell-v120`, test search/quick actions ở mobile thật và có thể rollback frontend về V1.1.1 mà không rollback database.
+
+
+## V1.3.0 Media storytelling release
+
+Chạy `202609280006_v130_media_memories_storytelling.sql` trước khi deploy frontend V1.3.0. Sau deploy xác nhận `tripflow-shell-v130`, Production Readiness App/DB 1.3.0, Realtime `media_links`, một-cover-per-trip và restore backup. Không rollback schema bằng cách drop cột.

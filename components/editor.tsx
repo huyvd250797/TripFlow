@@ -67,6 +67,10 @@ export function Editor({
     budget_id: "",
     refund_of: "",
     kind: spec.entity === "media" ? "album" : "payment",
+    taken_on: "",
+    is_highlight: false,
+    is_cover: false,
+    story_order: 0,
     start_date: dateLabel(today),
     end_date: dateLabel(today),
     spent_on: dateLabel(today),
@@ -77,7 +81,7 @@ export function Editor({
   };
   const source = row || spec.defaults;
   if (source) {
-    for (const k of ["start_date", "end_date", "spent_on"])
+    for (const k of ["start_date", "end_date", "spent_on", "taken_on"])
       if (source[k]) initial[k] = dateLabel(String(source[k]));
     for (const k of ["start_at", "end_at"])
       if (source[k]) initial[k] = localTime(String(source[k]), zone);
@@ -189,6 +193,11 @@ export function Editor({
     ]);
     f("url", "Liên kết Google Drive hoặc HTTPS *", "url", true);
     sel("item_id", "Thuộc hoạt động", itemOptions);
+    f("taken_on", "Ngày kỷ niệm", "day");
+    f("story_order", "Thứ tự kể chuyện", "number");
+    f("is_highlight", "Đánh dấu Trip Highlight", "checkbox");
+    f("is_cover", "Dùng làm ảnh bìa chuyến đi", "checkbox");
+    f("note", "Caption / câu chuyện", "textarea");
   }
   if (spec.entity === "participant")
     f("name", "Tên người tham gia *", "text", true);
@@ -205,7 +214,7 @@ export function Editor({
       ["viewer", "Chỉ xem"],
     ]);
   if (spec.entity === "snapshot") title("Tên lần chốt dự toán *");
-  if (!["invitation", "member", "snapshot"].includes(spec.entity))
+  if (!["invitation", "member", "snapshot", "media"].includes(spec.entity))
     f("note", "Ghi chú", "textarea");
   const names: Record<Entity, string> = {
     trip: "chuyến đi",
@@ -229,8 +238,8 @@ export function Editor({
     setError("");
     try {
       const data = { ...values };
-      for (const k of ["start_date", "end_date", "spent_on"])
-        if (fields.some((f) => f.key === k))
+      for (const k of ["start_date", "end_date", "spent_on", "taken_on"])
+        if (fields.some((f) => f.key === k) && data[k])
           data[k] = parseDate(String(data[k]));
       for (const k of ["start_at", "end_at"])
         if (fields.some((f) => f.key === k))
@@ -282,7 +291,7 @@ export function Editor({
               className={`field ${["textarea", "url"].includes(field.kind || "") ? "full" : ""}`}
               key={field.key}
             >
-              <label htmlFor={"tf-field-" + field.key}>{field.label}</label>
+              {field.kind !== "checkbox" && <label htmlFor={"tf-field-" + field.key}>{field.label}</label>}
               {field.kind === "select" ? (
                 <select
                   id={"tf-field-" + field.key}
@@ -305,13 +314,22 @@ export function Editor({
                   rows={3}
                   maxLength={5000}
                 />
+              ) : field.kind === "checkbox" ? (
+                <label className="check-field" htmlFor={"tf-field-" + field.key}>
+                  <input
+                    id={"tf-field-" + field.key}
+                    type="checkbox"
+                    {...register(field.key)}
+                  />
+                  <span>{field.label}</span>
+                </label>
               ) : field.kind === "day" ? (
                 <div className="date-field">
                   <input
                     id={"tf-field-" + field.key}
                     {...register(field.key)}
                     placeholder="DD/MM/YYYY"
-                    required
+                    required={field.required}
                     inputMode="numeric"
                     maxLength={10}
                   />

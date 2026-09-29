@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 — Media, Memories & Storytelling
+
+- Nâng Media thành **Travel Journal** theo ngày, liên kết hoạt động và địa điểm.
+- Bổ sung metadata `taken_on`, `is_highlight`, `is_cover`, `story_order`; mỗi chuyến chỉ có một cover đang hiệu lực.
+- Thêm **Trip Highlights**, cover hero, caption/câu chuyện và thứ tự kể chuyện.
+- Post-Trip Report/CSV/JSON bổ sung phần Memories & Storytelling.
+- Media được đưa vào Supabase Realtime; backup/restore giữ nguyên metadata storytelling.
+- Database nâng lên **V1.3.0** qua migration `202609280006_v130_media_memories_storytelling.sql`.
+- Roadmap đánh dấu V1.3.0 ✅; tiếp theo **V1.4.0 – Smart Planning Templates & Reuse**.
+
 ## 1.2.0 — Smart Trip Workspace & Quick Actions
 
 - Thêm **Smart Workspace** trên Tổng quan với quick add cho chi tiêu, hoạt động, media và hành động Live Trip theo Current/Next.

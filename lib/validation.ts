@@ -16,6 +16,7 @@ const link = z
   .default("");
 const ref = z.union([z.uuid(), z.literal(""), z.null()]).optional();
 const day = z.iso.date();
+const optionalDay = z.union([z.literal(""), day, z.null()]).optional();
 const amount = z.coerce.number().int().min(1).max(1e12);
 export const schemas = {
   trip: z
@@ -86,6 +87,10 @@ export const schemas = {
     kind: z.enum(["album", "photo", "video", "document"]),
     item_id: ref,
     url: link.refine((v) => !!v, "Vui lòng nhập liên kết."),
+    taken_on: optionalDay,
+    is_highlight: z.boolean().default(false),
+    is_cover: z.boolean().default(false),
+    story_order: z.coerce.number().int().min(0).max(9999).default(0),
     note,
   }),
   participant: z.object({ name: text.max(160), note }),

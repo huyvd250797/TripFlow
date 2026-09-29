@@ -1,5 +1,5 @@
-export const VERSION = "1.2.0";
-export const DATABASE_VERSION = "1.0.0";
+export const VERSION = "1.3.0";
+export const DATABASE_VERSION = "1.3.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -101,6 +101,10 @@ export type Media = Row & {
   url: string;
   item_id: string | null;
   note: string;
+  taken_on?: string | null;
+  is_highlight?: boolean;
+  is_cover?: boolean;
+  story_order?: number;
 };
 export type Participant = Row & { name: string; note: string };
 export type Member = Row & {
@@ -249,6 +253,22 @@ export type TripAnalyticsReport = {
   warnings: string[];
 };
 
+
+export type TripMemoryDay = {
+  day: string;
+  title: string;
+  items: Item[];
+  media: Media[];
+  highlights: Media[];
+};
+
+export type TripStory = {
+  cover: Media | null;
+  highlights: Media[];
+  days: TripMemoryDay[];
+  media_total: number;
+  memory_days: number;
+};
 
 export type Audit = {
   id: number;

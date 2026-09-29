@@ -82,3 +82,13 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Viewer không được mở quick mutation từ Smart Workspace.
 - [ ] 320/390px không horizontal overflow ở Tổng quan và search dialog.
 - [ ] Service worker shell đã là `tripflow-shell-v120`.
+
+
+## V1.3.0 Media storytelling
+
+- [ ] App version `1.3.0`; Database version `1.3.0`; channel `stable`.
+- [ ] Migration `202609280006_v130_media_memories_storytelling.sql` đã chạy.
+- [ ] Cover/Highlight/Travel Journal hoạt động trên mobile và desktop.
+- [ ] Backup/restore metadata storytelling đã test.
+- [ ] Media Realtime đã test hai session.
+- [ ] Service worker là `tripflow-shell-v130`.

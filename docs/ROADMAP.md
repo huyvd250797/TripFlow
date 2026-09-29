@@ -114,7 +114,7 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Shortcut `/` trên desktop, search topbar trên mobile/desktop và điều hướng đúng module/ngày.
 - Giảm số bước thao tác; quick expense/media tự gắn activity/budget phù hợp khi có thể.
 
-## ⬜ V1.3.0 — Media, Memories & Storytelling
+## ✅ V1.3.0 — Media, Memories & Storytelling
 
 - Album theo ngày/hoạt động, cover chuyến đi, highlight và báo cáo chia sẻ đẹp hơn.
 
@@ -126,4 +126,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Sharing/public-private view, export nâng cao và nền mở rộng cho đa tiền tệ/tích hợp dịch vụ/AI khi có nhu cầu rõ ràng.
 
-**Roadmap hiện tại:** V1.2.0 đã hoàn thành; phiên bản tiếp theo là **V1.3.0 – Media, Memories & Storytelling**.
+**Roadmap hiện tại:** V1.3.0 đã hoàn thành; phiên bản tiếp theo là **V1.4.0 – Smart Planning Templates & Reuse**.

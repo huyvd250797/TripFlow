@@ -100,7 +100,7 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V1.3.0",
     title: "Media, Memories & Storytelling",
-    done: false,
+    done: true,
     description:
       "Nâng trải nghiệm ảnh/video theo ngày và hoạt động, cover chuyến đi, highlight hành trình và báo cáo chia sẻ đẹp hơn sau chuyến đi.",
   },

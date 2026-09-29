@@ -8,6 +8,8 @@ import {
   type Item,
   type FinanceReport,
   type TripAnalyticsReport,
+  type TripStory,
+  type Media,
 } from "./types";
 export const money = (n: number) =>
   new Intl.NumberFormat("vi-VN", {
@@ -265,6 +267,78 @@ export function financeJson(bundle: Bundle) {
   );
 }
 
+
+export function mediaPreviewUrl(media: Media) {
+  if (media.kind !== "photo") return null;
+  const value = media.url.trim();
+  try {
+    const url = new URL(value);
+    if (/\.(avif|gif|jpe?g|png|webp)$/i.test(url.pathname)) return value;
+    if (url.hostname === "drive.google.com") {
+      const match = url.pathname.match(/\/file\/d\/([^/]+)/) || url.search.match(/[?&]id=([^&]+)/);
+      const id = match?.[1];
+      if (id) return `https://drive.google.com/uc?export=view&id=${encodeURIComponent(id)}`;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function memoryDayForMedia(bundle: Bundle, media: Media) {
+  if (media.taken_on) return media.taken_on;
+  const item = media.item_id ? bundle.items.find((x) => x.id === media.item_id) : undefined;
+  if (item) return localTime(item.start_at, bundle.trip.timezone).slice(0, 10);
+  return localTime(media.created_at, bundle.trip.timezone).slice(0, 10);
+}
+
+export function buildTripStory(bundle: Bundle): TripStory {
+  const orderedMedia = [...bundle.media].sort((a, b) =>
+    Number(b.is_cover) - Number(a.is_cover) ||
+    Number(b.is_highlight) - Number(a.is_highlight) ||
+    Number(a.story_order || 0) - Number(b.story_order || 0) ||
+    memoryDayForMedia(bundle, a).localeCompare(memoryDayForMedia(bundle, b)) ||
+    a.created_at.localeCompare(b.created_at),
+  );
+  const cover =
+    orderedMedia.find((x) => x.is_cover) ||
+    orderedMedia.find((x) => x.is_highlight && x.kind === "photo") ||
+    orderedMedia.find((x) => x.kind === "photo") ||
+    orderedMedia.find((x) => x.kind === "album") ||
+    null;
+  const highlights = orderedMedia
+    .filter((x) => x.is_highlight || x.is_cover)
+    .filter((x, index, list) => list.findIndex((y) => y.id === x.id) === index)
+    .slice(0, 12);
+  const dayKeys = new Set<string>();
+  for (const item of bundle.items)
+    dayKeys.add(localTime(item.start_at, bundle.trip.timezone).slice(0, 10));
+  for (const media of orderedMedia) dayKeys.add(memoryDayForMedia(bundle, media));
+  const days = [...dayKeys]
+    .sort()
+    .map((day, index) => {
+      const items = bundle.items
+        .filter((x) => localTime(x.start_at, bundle.trip.timezone).slice(0, 10) === day)
+        .sort((a, b) => a.start_at.localeCompare(b.start_at));
+      const media = orderedMedia.filter((x) => memoryDayForMedia(bundle, x) === day);
+      return {
+        day,
+        title: `Ngày ${index + 1} · ${dateLabel(day)}`,
+        items,
+        media,
+        highlights: media.filter((x) => x.is_highlight || x.is_cover),
+      };
+    })
+    .filter((x) => x.items.length || x.media.length);
+  return {
+    cover,
+    highlights,
+    days,
+    media_total: bundle.media.length,
+    memory_days: days.filter((x) => x.media.length > 0).length,
+  };
+}
+
 export function buildTripAnalytics(bundle: Bundle): TripAnalyticsReport {
   const finance = bundle.finance_report || buildFinanceReport(bundle);
   const total = bundle.items.length;
@@ -359,8 +433,12 @@ export function buildTripAnalytics(bundle: Bundle): TripAnalyticsReport {
   }
   if (topCategory)
     highlights.push(`Nhóm chi nhiều nhất: ${topCategory.category} · ${money(Number(topCategory.actual))}.`);
-  if (bundle.media.length)
-    highlights.push(`Đã lưu ${bundle.media.length} liên kết media/tài liệu cho chuyến đi.`);
+  if (bundle.media.length) {
+    const story = buildTripStory(bundle);
+    highlights.push(`Đã lưu ${bundle.media.length} media/tài liệu trên ${story.memory_days || 1} ngày kỷ niệm.`);
+    if (story.highlights.length)
+      highlights.push(`Có ${story.highlights.length} Trip Highlight được chọn để kể lại hành trình.`);
+  }
 
   return {
     generated_at: new Date().toISOString(),
@@ -472,6 +550,10 @@ export function postTripCsv(bundle: Bundle) {
     ["ĐIỂM NỔI BẬT"],
     ...analytics.highlights.map((x) => [x]),
     [],
+    ["KỶ NIỆM & STORY"],
+    ["Ngày", "Tiêu đề", "Loại", "Highlight", "Cover", "Caption", "Liên kết"],
+    ...buildTripStory(bundle).days.flatMap((day) => day.media.map((m) => [dateLabel(day.day), m.title, m.kind, m.is_highlight ? "Có" : "", m.is_cover ? "Có" : "", m.note, m.url])),
+    [],
     ["CẦN RÀ SOÁT"],
     ...(analytics.warnings.length ? analytics.warnings.map((x) => [x]) : [["Không có cảnh báo."]]),
   ];
@@ -486,6 +568,7 @@ export function postTripJson(bundle: Bundle) {
       exported_at: new Date().toISOString(),
       trip: bundle.trip,
       analytics: buildTripAnalytics(bundle),
+      story: buildTripStory(bundle),
       finance: bundle.finance_report || buildFinanceReport(bundle),
       itinerary: bundle.items,
       expenses: bundle.expenses,
@@ -509,6 +592,7 @@ function htmlEscape(value: unknown) {
 export function postTripHtml(bundle: Bundle) {
   const analytics = buildTripAnalytics(bundle);
   const finance = bundle.finance_report || buildFinanceReport(bundle);
+  const story = buildTripStory(bundle);
   const categoryRows = finance.categories
     .filter((x) => Number(x.current) || Number(x.actual))
     .map(
@@ -526,6 +610,16 @@ export function postTripHtml(bundle: Bundle) {
       (x) => `<tr><td>${htmlEscape(x.title)}</td><td>${htmlEscape(ITEM_STATUS[x.status])}</td><td>${htmlEscape(dateLabel(localTime(x.start_at, bundle.trip.timezone)))}</td><td>${htmlEscape(localTime(x.start_at, bundle.trip.timezone).slice(11))}</td></tr>`,
     )
     .join("");
+  const storyHighlights = story.highlights
+    .map((m) => {
+      const preview = mediaPreviewUrl(m);
+      return `<article class="memory-card">${preview ? `<img src="${htmlEscape(preview)}" alt="">` : `<div class="memory-placeholder">${htmlEscape(m.kind.toUpperCase())}</div>`}<div><b>${htmlEscape(m.title)}</b>${m.note ? `<p>${htmlEscape(m.note)}</p>` : ""}<a href="${htmlEscape(m.url)}">Mở media</a></div></article>`;
+    })
+    .join("");
+  const storyDays = story.days
+    .filter((d) => d.media.length || d.items.length)
+    .map((d) => `<section class="memory-day"><h3>${htmlEscape(d.title)}</h3><p class="muted">${d.items.length} hoạt động · ${d.media.length} media · ${d.highlights.length} highlight</p>${d.media.length ? `<div class="memory-grid">${d.media.map((m) => `<div><b>${htmlEscape(m.title)}</b><small>${htmlEscape(m.kind)}${m.is_highlight ? " · Highlight" : ""}${m.is_cover ? " · Cover" : ""}</small>${m.note ? `<p>${htmlEscape(m.note)}</p>` : ""}</div>`).join("")}</div>` : ""}</section>`)
+    .join("");
   const list = (values: string[], empty: string) =>
     values.length
       ? `<ul>${values.map((x) => `<li>${htmlEscape(x)}</li>`).join("")}</ul>`
@@ -533,11 +627,13 @@ export function postTripHtml(bundle: Bundle) {
   return `<!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TripFlow · ${htmlEscape(bundle.trip.name)}</title>
 <style>
-:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f4f6f8}*{box-sizing:border-box}body{margin:0;padding:32px}.report{max-width:980px;margin:auto;background:white;padding:38px;border-radius:24px;box-shadow:0 12px 40px #10213b14}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;color:#667085}.header{display:flex;justify-content:space-between;gap:24px;border-bottom:1px solid #e6e9ee;padding-bottom:24px}.header h1{font-size:34px;margin:6px 0 8px}.muted{color:#667085}.status{font-size:13px;font-weight:700;border:1px solid #d8dde6;padding:8px 12px;border-radius:999px;align-self:flex-start}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0}.kpi{border:1px solid #e6e9ee;border-radius:16px;padding:16px}.kpi span{display:block;color:#667085;font-size:12px}.kpi b{display:block;font-size:22px;margin-top:6px}.section{margin-top:28px}.section h2{font-size:20px;margin-bottom:12px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:10px;border-bottom:1px solid #eceff3}th{color:#667085}.good{background:#eef9f2;border-radius:14px;padding:14px}.warn{background:#fff7e8;border-radius:14px;padding:14px}ul{padding-left:20px}.footer{margin-top:34px;padding-top:18px;border-top:1px solid #e6e9ee;color:#667085;font-size:12px}@media(max-width:720px){body{padding:0}.report{border-radius:0;padding:22px}.header{display:block}.status{display:inline-block;margin-top:12px}.grid{grid-template-columns:1fr 1fr}.table-wrap{overflow:auto}}@media print{body{background:white;padding:0}.report{box-shadow:none;max-width:none;padding:0}.no-print{display:none}}
+:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f4f6f8}*{box-sizing:border-box}body{margin:0;padding:32px}.report{max-width:980px;margin:auto;background:white;padding:38px;border-radius:24px;box-shadow:0 12px 40px #10213b14}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;color:#667085}.header{display:flex;justify-content:space-between;gap:24px;border-bottom:1px solid #e6e9ee;padding-bottom:24px}.header h1{font-size:34px;margin:6px 0 8px}.muted{color:#667085}.status{font-size:13px;font-weight:700;border:1px solid #d8dde6;padding:8px 12px;border-radius:999px;align-self:flex-start}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0}.kpi{border:1px solid #e6e9ee;border-radius:16px;padding:16px}.kpi span{display:block;color:#667085;font-size:12px}.kpi b{display:block;font-size:22px;margin-top:6px}.section{margin-top:28px}.section h2{font-size:20px;margin-bottom:12px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:10px;border-bottom:1px solid #eceff3}th{color:#667085}.good{background:#eef9f2;border-radius:14px;padding:14px}.warn{background:#fff7e8;border-radius:14px;padding:14px}ul{padding-left:20px}.footer{margin-top:34px;padding-top:18px;border-top:1px solid #e6e9ee;color:#667085;font-size:12px}.memory-strip{margin:24px 0;padding:22px;border-radius:20px;background:linear-gradient(135deg,#eaf8f6,#fff5eb)}.memory-strip h2{margin:0 0 6px}.memory-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.memory-card{border:1px solid #e6e9ee;border-radius:16px;overflow:hidden;background:#fff}.memory-card img,.memory-placeholder{width:100%;height:150px;object-fit:cover;background:#eef4f1;display:grid;place-items:center}.memory-card>div:last-child{padding:14px}.memory-card p{font-size:13px}.memory-card a{font-size:12px;font-weight:700;color:#087f75}.memory-day{border-left:3px solid #0d9488;padding:0 0 18px 18px;margin:18px 0}.memory-day h3{margin:0}.memory-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.memory-grid>div{border:1px solid #e6e9ee;border-radius:12px;padding:12px}.memory-grid small{display:block;color:#667085;margin-top:3px}.memory-grid p{font-size:13px;margin-bottom:0}@media(max-width:720px){body{padding:0}.report{border-radius:0;padding:22px}.header{display:block}.status{display:inline-block;margin-top:12px}.grid{grid-template-columns:1fr 1fr}.memory-cards,.memory-grid{grid-template-columns:1fr}.table-wrap{overflow:auto}}@media print{body{background:white;padding:0}.report{box-shadow:none;max-width:none;padding:0}.no-print{display:none}}
 </style></head><body><main class="report">
 <header class="header"><div><span class="eyebrow">TRIPFLOW · POST-TRIP REPORT · V${VERSION}</span><h1>${htmlEscape(bundle.trip.name)}</h1><div class="muted">${htmlEscape(bundle.trip.destination)} · ${htmlEscape(dateLabel(bundle.trip.start_date))} – ${htmlEscape(dateLabel(bundle.trip.end_date))} · ${bundle.trip.people} người</div></div><span class="status">${analytics.report_state === "post_trip" ? "Báo cáo sau chuyến" : "Báo cáo tạm thời"}</span></header>
 <section class="grid"><div class="kpi"><span>Hoàn thành lịch trình</span><b>${analytics.itinerary.completion_rate}%</b></div><div class="kpi"><span>Thực chi ròng</span><b>${htmlEscape(money(analytics.finance.net_actual))}</b></div><div class="kpi"><span>Chi phí / người</span><b>${htmlEscape(money(analytics.finance.per_person))}</b></div><div class="kpi"><span>Media</span><b>${analytics.media.total}</b></div></section>
 <section class="section"><h2>Điểm nổi bật</h2><div class="good">${list(analytics.highlights, "Chưa có dữ liệu nổi bật.")}</div></section>
+<section class="memory-strip"><span class="eyebrow">MEMORIES · STORYTELLING</span><h2>Câu chuyện chuyến đi</h2><p class="muted">${story.memory_days} ngày có kỷ niệm · ${story.highlights.length} Trip Highlight</p>${storyHighlights ? `<div class="memory-cards">${storyHighlights}</div>` : '<p>Chưa chọn Trip Highlight.</p>'}</section>
+<section class="section"><h2>Nhật ký theo ngày</h2>${storyDays || '<p>Chưa có dữ liệu kỷ niệm theo ngày.</p>'}</section>
 <section class="section"><h2>Cần rà soát</h2><div class="${analytics.warnings.length ? "warn" : "good"}">${list(analytics.warnings, "Dữ liệu đã sẵn sàng để lưu trữ báo cáo.")}</div></section>
 <section class="section"><h2>Tài chính theo nhóm</h2><div class="table-wrap"><table><thead><tr><th>Nhóm</th><th>Dự toán</th><th>Thực chi</th><th>Chênh lệch</th></tr></thead><tbody>${categoryRows || '<tr><td colspan="4">Chưa có dữ liệu tài chính.</td></tr>'}</tbody></table></div></section>
 <section class="section"><h2>Tổng kết theo ngày</h2><div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Hoạt động</th><th>Hoàn thành</th><th>Bỏ qua</th><th>Thực chi</th></tr></thead><tbody>${dayRows || '<tr><td colspan="5">Chưa có dữ liệu theo ngày.</td></tr>'}</tbody></table></div></section>

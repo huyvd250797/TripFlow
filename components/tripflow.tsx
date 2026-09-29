@@ -47,6 +47,10 @@ import {
   Zap,
   CirclePlus,
   Navigation,
+  Sparkles,
+  Camera,
+  BookOpen,
+  Crown,
 } from "lucide-react";
 import { browserClient, configured } from "@/lib/supabase/client";
 import { Auth } from "./auth";
@@ -83,6 +87,8 @@ import {
   postTripCsv,
   postTripJson,
   postTripHtml,
+  buildTripStory,
+  mediaPreviewUrl,
 } from "@/lib/domain";
 import { MasterAdmin } from "./admin";
 import { ProductRoadmap } from "./roadmap";
@@ -595,6 +601,16 @@ function App() {
           event: "*",
           schema: "public",
           table: "expenses",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "media_links",
           filter: `trip_id=eq.${selectedId}`,
         },
         refreshTrip,
@@ -1155,6 +1171,8 @@ function App() {
     ? data.finance_report || buildFinanceReport(data)
     : null;
   const analytics = data ? buildTripAnalytics(data) : null;
+  const story = data ? buildTripStory(data) : null;
+  const storyCoverPreview = story?.cover ? mediaPreviewUrl(story.cover) : null;
   const progress = data
     ? live(data.items, now || new Date().toISOString())
     : null;
@@ -1193,7 +1211,12 @@ function App() {
   const quickMedia = () =>
     setSpec({
       entity: "media",
-      defaults: workspaceFocusItem ? { item_id: workspaceFocusItem.id } : undefined,
+      defaults: workspaceFocusItem
+        ? {
+            item_id: workspaceFocusItem.id,
+            taken_on: dateLabel(localTime(workspaceFocusItem.start_at, trip.timezone).slice(0, 10)),
+          }
+        : undefined,
     });
   const orderedSnapshots = data?.snapshots.toSorted((a, b) =>
     (a.snapshot_no ?? 999999) - (b.snapshot_no ?? 999999) ||
@@ -1821,6 +1844,22 @@ function App() {
                           Xem báo cáo
                         </button>
                       </div>
+                    </section>
+                  )}
+                  {story && story.media_total > 0 && (
+                    <section className="memory-glance">
+                      <div className="memory-glance-mark"><Sparkles size={22} /></div>
+                      <div>
+                        <span className="eyebrow">MEMORIES · V1.3.0</span>
+                        <h2>{story.cover ? story.cover.title : "Câu chuyện chuyến đi"}</h2>
+                        <p className="muted">
+                          {story.memory_days} ngày có kỷ niệm · {story.highlights.length} Trip Highlight · {story.media_total} media
+                        </p>
+                      </div>
+                      <button className="btn secondary" onClick={() => navigate("media")}>
+                        <BookOpen size={16} />
+                        Xem câu chuyện
+                      </button>
                     </section>
                   )}
                   <div className="dashboard-grid">
@@ -2901,67 +2940,144 @@ function App() {
                   )}
                 </>
               )}
-              {tab === "media" && data && (
+              {tab === "media" && data && story && (
                 <>
+                  <section className="story-hero panel">
+                    <div className="story-hero-visual">
+                      {storyCoverPreview ? (
+                        <img src={storyCoverPreview} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                      ) : (
+                        <div className="story-hero-placeholder">
+                          <Compass size={42} />
+                          <span>TRIPFLOW MEMORIES</span>
+                        </div>
+                      )}
+                      {story.cover && <span className="story-cover-badge"><Crown size={14} /> Ảnh bìa</span>}
+                    </div>
+                    <div className="story-hero-copy">
+                      <span className="eyebrow">MEDIA · MEMORIES · STORYTELLING · V1.3.0</span>
+                      <h2>{story.cover?.title || trip.name}</h2>
+                      <p>
+                        {story.cover?.note || `Gom những khoảnh khắc của ${trip.destination} thành một câu chuyện dễ xem lại và chia sẻ.`}
+                      </p>
+                      <div className="story-stats">
+                        <span><Images size={15} /><b>{story.media_total}</b> media</span>
+                        <span><CalendarDays size={15} /><b>{story.memory_days}</b> ngày kỷ niệm</span>
+                        <span><Sparkles size={15} /><b>{story.highlights.length}</b> highlight</span>
+                      </div>
+                      <div className="actions">
+                        {writable && <button className="btn primary" onClick={() => edit("media")}><Camera size={17} /> Thêm kỷ niệm</button>}
+                        {story.cover && <Link url={story.cover.url}>Mở media bìa</Link>}
+                      </div>
+                    </div>
+                  </section>
+
                   <div className="notice">
                     <Link2 size={20} />
                     <span>
-                      Ảnh và video nằm tại Google Drive hoặc trang nguồn.
-                      TripFlow chỉ lưu liên kết; người xem cần được cấp quyền ở
-                      nguồn.
+                      TripFlow quản lý metadata/câu chuyện; ảnh và video vẫn nằm tại Google Drive hoặc nguồn HTTPS. Người xem cần quyền tại nguồn.
                     </span>
                   </div>
-                  <div className="media-grid">
-                    {data.media.map((m) => (
-                      <section className="panel media-card" key={m.id}>
-                        <div className="media-cover">
-                          {m.kind === "document" ? (
-                            <FileText size={35} />
-                          ) : (
-                            <Images size={35} />
-                          )}
-                          <span>
-                            {
-                              {
-                                album: "ALBUM",
-                                photo: "ẢNH",
-                                video: "VIDEO",
-                                document: "TÀI LIỆU",
-                              }[m.kind]
-                            }
-                          </span>
+
+                  {story.highlights.length > 0 && (
+                    <section className="story-section">
+                      <div className="section-heading">
+                        <div>
+                          <span className="eyebrow">TRIP HIGHLIGHTS</span>
+                          <h2>Khoảnh khắc đáng nhớ</h2>
                         </div>
-                        <div className="section-heading">
-                          <h3>{m.title}</h3>
-                          {rowTools("media", m)}
-                        </div>
-                        {m.item_id && (
-                          <p className="muted">
-                            {data.items.find((x) => x.id === m.item_id)?.title}
-                          </p>
-                        )}
-                        {m.note && <p className="prewrap">{m.note}</p>}
-                        <Link url={m.url}>
-                          Mở{" "}
-                          {
-                            {
-                              album: "album",
-                              photo: "ảnh",
-                              video: "video",
-                              document: "tài liệu",
-                            }[m.kind]
-                          }
-                        </Link>
-                      </section>
-                    ))}
-                  </div>
+                        <span className="pill">{story.highlights.length} highlight</span>
+                      </div>
+                      <div className="highlight-grid">
+                        {story.highlights.map((m) => {
+                          const preview = mediaPreviewUrl(m);
+                          return (
+                            <article className="highlight-card" key={m.id}>
+                              <div className="highlight-visual">
+                                {preview ? <img src={preview} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} /> : <span><Sparkles size={28} /></span>}
+                                <div className="highlight-badges">
+                                  {m.is_cover && <em><Crown size={12} /> Cover</em>}
+                                  {m.is_highlight && <em><Sparkles size={12} /> Highlight</em>}
+                                </div>
+                              </div>
+                              <div className="highlight-copy">
+                                <div className="section-heading"><h3>{m.title}</h3>{rowTools("media", m)}</div>
+                                <small>{m.taken_on ? dateLabel(m.taken_on) : "Kỷ niệm chuyến đi"}</small>
+                                {m.note && <p className="prewrap">{m.note}</p>}
+                                <Link url={m.url}>Mở {m.kind === "photo" ? "ảnh" : m.kind === "video" ? "video" : m.kind === "album" ? "album" : "tài liệu"}</Link>
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="story-section memory-timeline-section">
+                    <div className="section-heading">
+                      <div>
+                        <span className="eyebrow">TRAVEL JOURNAL</span>
+                        <h2>Nhật ký theo ngày</h2>
+                      </div>
+                      <span className="pill">{story.days.length} ngày</span>
+                    </div>
+                    <div className="memory-timeline">
+                      {story.days.map((memoryDay) => (
+                        <article className="memory-day" key={memoryDay.day}>
+                          <div className="memory-day-marker"><span /></div>
+                          <div className="memory-day-content">
+                            <div className="memory-day-head">
+                              <div>
+                                <span className="eyebrow">{memoryDay.title}</span>
+                                <h3>{memoryDay.items[0]?.location || trip.destination}</h3>
+                              </div>
+                              <small>{memoryDay.items.length} hoạt động · {memoryDay.media.length} media</small>
+                            </div>
+                            {memoryDay.items.length > 0 && (
+                              <div className="memory-activities">
+                                {memoryDay.items.slice(0, 4).map((item) => <span key={item.id}><MapPin size={13} /> {item.title}</span>)}
+                              </div>
+                            )}
+                            {memoryDay.media.length > 0 ? (
+                              <div className="memory-media-grid">
+                                {memoryDay.media.map((m) => {
+                                  const preview = mediaPreviewUrl(m);
+                                  return (
+                                    <section className={`memory-media-card ${m.is_highlight ? "highlighted" : ""}`} key={m.id}>
+                                      <div className="memory-media-preview">
+                                        {preview ? <img src={preview} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} /> : m.kind === "document" ? <FileText size={28} /> : <Images size={28} />}
+                                        <span>{({ album: "ALBUM", photo: "ẢNH", video: "VIDEO", document: "TÀI LIỆU" } as const)[m.kind]}</span>
+                                      </div>
+                                      <div className="memory-media-body">
+                                        <div className="section-heading"><h3>{m.title}</h3>{rowTools("media", m)}</div>
+                                        <div className="memory-meta">
+                                          {m.is_highlight && <span><Sparkles size={12} /> Highlight</span>}
+                                          {m.is_cover && <span><Crown size={12} /> Cover</span>}
+                                          {(m.story_order || 0) > 0 && <span>#{m.story_order}</span>}
+                                        </div>
+                                        {m.note && <p className="prewrap">{m.note}</p>}
+                                        <Link url={m.url}>Mở media</Link>
+                                      </div>
+                                    </section>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="muted memory-empty-day">Chưa gắn kỷ niệm cho ngày này.</p>
+                            )}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+
                   {!data.media.length && (
                     <section className="panel">
                       <Empty
-                        title="Một nơi cho những kỷ niệm"
-                        text="Gắn album Google Drive để cả nhóm mở xem."
+                        title="Bắt đầu câu chuyện chuyến đi"
+                        text="Gắn ảnh, video hoặc album; chọn ảnh bìa và Trip Highlight để TripFlow tự dựng nhật ký theo ngày."
                         onAdd={writable ? () => edit("media") : undefined}
-                        label="Gắn liên kết"
+                        label="Thêm kỷ niệm"
                       />
                     </section>
                   )}

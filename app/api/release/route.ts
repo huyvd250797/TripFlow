@@ -32,8 +32,8 @@ export async function GET() {
         return reply(
           {
             error:
-              "Database chưa có capability kiểm tra phát hành. Hãy chạy các migration còn thiếu đến V1.0.0.",
-            code: "V100_MIGRATION_REQUIRED",
+              "Database chưa có capability V1.3.0. Hãy chạy migration Media, Memories & Storytelling còn thiếu.",
+            code: "V130_MIGRATION_REQUIRED",
           },
           503,
         );
@@ -51,8 +51,8 @@ export async function GET() {
       return reply(
         {
           error:
-            "Database chưa đạt nền Stable V1.0.0. Hãy chạy migration 202609280005_v100_stable_production_release.sql trước khi dùng V1.2.0.",
-          code: "V100_MIGRATION_REQUIRED",
+            "Database chưa đạt schema V1.3.0. Hãy chạy migration 202609280006_v130_media_memories_storytelling.sql trước khi dùng V1.3.0.",
+          code: "V130_MIGRATION_REQUIRED",
           currentDatabaseVersion: state?.database_version || null,
         },
         503,
@@ -62,7 +62,7 @@ export async function GET() {
       ...state,
       app_version: VERSION,
       database_required_version: DATABASE_VERSION,
-      ui_release: "smart-workspace",
+      ui_release: "media-memories-storytelling",
     });
   } catch (error) {
     console.error("TripFlow production readiness failed", error instanceof Error ? error.message : "unknown");

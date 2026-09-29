@@ -180,3 +180,17 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Phím `/` mở search trên desktop nhưng không chặn khi đang gõ trong input/textarea/select.
 - [ ] Topbar search và dialog không làm bể mobile layout đã fix ở V1.1.1.
 - [ ] Production readiness hiển thị App 1.2.0 / DB 1.0.0 / stable.
+
+
+## Media, Memories & Storytelling V1.3.0
+
+- [ ] Migration V1.3.0 chạy thành công trên database V1.0.0 hiện tại.
+- [ ] Tạo/sửa media với ngày kỷ niệm, Highlight, Cover và story order.
+- [ ] Chọn cover mới tự bỏ cover cũ; không thể tồn tại hai cover active.
+- [ ] Travel Journal nhóm đúng ngày; media gắn activity lấy ngày activity khi `taken_on` trống.
+- [ ] Viewer chỉ xem, không sửa metadata storytelling.
+- [ ] Media thay đổi trên thiết bị A được thiết bị B refetch qua Realtime.
+- [ ] Backup/restore giữ nguyên `taken_on/is_highlight/is_cover/story_order`.
+- [ ] Report HTML/CSV/JSON có Memories & Storytelling và không crash khi chưa có media.
+- [ ] Mobile 320/390px không overflow ở cover hero, highlight grid, timeline.
+- [ ] Production readiness hiển thị App 1.3.0 / DB 1.3.0 / stable.

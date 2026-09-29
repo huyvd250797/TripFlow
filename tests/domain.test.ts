@@ -13,6 +13,8 @@ import {
   postTripCsv,
   postTripJson,
   postTripHtml,
+  buildTripStory,
+  mediaPreviewUrl,
 } from "../lib/domain";
 import { mutationSchema } from "../lib/validation";
 import type { Budget, Expense, Item, Bundle } from "../lib/types";
@@ -208,4 +210,27 @@ test("trip analytics summarizes itinerary, finance, media and post-trip exports"
   const html = postTripHtml(bundle);
   assert.match(html, /Nhận phòng &lt;script&gt;/);
   assert.doesNotMatch(html, /Nhận phòng <script>/);
+});
+
+
+test("V1.3 trip story groups memories, cover and highlights", () => {
+  const bundle = {
+    trip: { id: "t", name: "Đà Lạt", destination: "Đà Lạt", start_date: "2026-09-25", end_date: "2026-09-27", timezone: "Asia/Ho_Chi_Minh", people: 2, status: "completed" },
+    items: [
+      { id: "i1", title: "Hồ Xuân Hương", location: "Đà Lạt", start_at: "2026-09-25T02:00:00Z", end_at: "2026-09-25T03:00:00Z", status: "done" },
+    ],
+    media: [
+      { id: "m1", title: "Bình minh", kind: "photo", url: "https://example.com/a.jpg", item_id: "i1", note: "Khoảnh khắc đầu ngày", created_at: "2026-09-25T03:00:00Z", taken_on: "2026-09-25", is_highlight: true, is_cover: true, story_order: 2 },
+      { id: "m2", title: "Album", kind: "album", url: "https://drive.google.com/drive/folders/x", item_id: "i1", note: "", created_at: "2026-09-25T04:00:00Z", taken_on: null, is_highlight: false, is_cover: false, story_order: 3 },
+    ],
+    budgets: [], expenses: [], snapshots: [], participants: [], members: [], invitations: [], audits: [], role: "owner",
+  } as unknown as Bundle;
+  const story = buildTripStory(bundle);
+  assert.equal(story.cover?.id, "m1");
+  assert.equal(story.highlights.length, 1);
+  assert.equal(story.memory_days, 1);
+  assert.equal(story.days[0].media.length, 2);
+  assert.equal(mediaPreviewUrl(bundle.media[0]), "https://example.com/a.jpg");
+  assert.match(postTripJson(bundle), /"story"/);
+  assert.match(postTripHtml(bundle), /Câu chuyện chuyến đi/);
 });

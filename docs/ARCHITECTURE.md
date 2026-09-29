@@ -113,3 +113,12 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - Smart Workspace là lớp client trên `Bundle` hiện có; không tạo bảng/index/search service mới và không tạo nguồn dữ liệu thứ hai.
 - Search chạy cục bộ trên bundle của chuyến đang mở, normalize Unicode để hỗ trợ tìm không dấu. Kết quả chỉ chứa navigation metadata, không cache thêm dữ liệu riêng.
 - Quick actions tái sử dụng `Editor`, `status()` và mutation API hiện hữu nên tiếp tục chịu RLS/account gate/idempotency như các thao tác chuẩn.
+
+
+## V1.3.0 Media storytelling schema
+
+- `VERSION = 1.3.0`; `DATABASE_VERSION = 1.3.0`.
+- `media_links` bổ sung `taken_on`, `is_highlight`, `is_cover`, `story_order`; unique partial index bảo đảm tối đa một cover đang hiệu lực/chuyến.
+- `tf_mutate` V1.3 bọc mutation chain hiện hữu để giữ nguyên account gate, role check và mutation receipt/idempotency.
+- Backup JSON tự mang các cột mới; `tf_restore_trip_backup` V1.3 restore metadata storytelling và remap `item_id`.
+- Không lưu bảng story riêng: Travel Journal được suy ra từ `media_links` + `itinerary_items`, tránh tạo nguồn sự thật thứ hai.

@@ -97,6 +97,12 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202609280006_v130_media_memories_storytelling.sql",
+      "utf8",
+    ),
+  );
   await asUser(owner);
   const trip = await mutation("trip", "create", {
     name: "Test cloud",
@@ -298,8 +304,28 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     url: "https://drive.google.com/drive/my-drive",
     kind: "album",
     item_id: item.id,
+    taken_on: "2026-09-25",
+    is_highlight: true,
+    is_cover: true,
+    story_order: 1,
+    note: "Ngày đầu tiên ở Đà Lạt",
   });
   assert.ok(media.id);
+  assert.equal(media.is_cover, true);
+  assert.equal(media.is_highlight, true);
+  const media2 = await mutation("media", "create", {
+    title: "Ảnh thứ hai",
+    url: "https://example.com/photo.jpg",
+    kind: "photo",
+    item_id: item.id,
+    taken_on: "2026-09-25",
+    is_highlight: true,
+    is_cover: true,
+    story_order: 2,
+    note: "Đổi ảnh bìa",
+  });
+  assert.equal(media2.is_cover, true);
+  assert.equal((await rows("media_links")).filter((x) => x.is_cover && x.deleted_at === null).length, 1);
   const inv = await mutation("invitation", "create", {
     email: editor + "@test.local",
     role: "editor",
@@ -473,6 +499,9 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   ).rows[0].result;
   assert.notEqual(restored.trip_id, tripId);
   assert.equal((await rows("trips")).some((x) => x.id === restored.trip_id), true);
+  const restoredMedia = (await rows("media_links")).filter((x) => x.trip_id === restored.trip_id);
+  assert.equal(restoredMedia.some((x) => x.is_highlight === true), true);
+  assert.equal(restoredMedia.filter((x) => x.is_cover === true).length, 1);
 
   // V1.0.0 production-readiness must confirm the stable marker and critical guards.
   const readiness = (
@@ -480,8 +509,8 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
       "select public.tf_release_readiness() as result",
     )
   ).rows[0].result;
-  assert.equal(readiness.app_version, "1.0.0");
-  assert.equal(readiness.database_version, "1.0.0");
+  assert.equal(readiness.app_version, "1.3.0");
+  assert.equal(readiness.database_version, "1.3.0");
   assert.equal(readiness.channel, "stable");
   assert.equal(readiness.ready, true);
   assert.equal(Array.isArray(readiness.checks), true);
