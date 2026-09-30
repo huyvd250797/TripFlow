@@ -122,6 +122,15 @@ export function Editor({
     ["", "Không gắn hoạt động"],
     ...(bundle?.items || []).map((x) => [x.id, x.title] as [string, string]),
   ];
+  const participantNames = [...new Set((bundle?.participants || []).map((x) => x.name.trim()).filter(Boolean))];
+  const legacyPayer = row?.payer ? String(row.payer).trim() : "";
+  const payerOptions: [string, string][] = [
+    ["", participantNames.length ? "Chọn người thanh toán" : "Chưa có người tham gia"],
+    ...participantNames.map((name) => [name, name] as [string, string]),
+    ...(legacyPayer && !participantNames.includes(legacyPayer)
+      ? [[legacyPayer, `${legacyPayer} (dữ liệu cũ)`] as [string, string]]
+      : []),
+  ];
   if (spec.entity === "trip") {
     f("name", "Tên chuyến đi *", "text", true);
     f("destination", "Điểm đến *", "text", true);
@@ -194,7 +203,7 @@ export function Editor({
       ]);
     sel("category", "Nhóm chi phí", pair(CATEGORIES));
     f("spent_on", "Ngày chi *", "day", true);
-    f("payer", "Người thanh toán");
+    sel("payer", "Người thanh toán", payerOptions);
     f("receipt_url", "Link hóa đơn hoặc chứng từ", "url");
   }
   if (spec.entity === "media") {

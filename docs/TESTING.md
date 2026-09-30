@@ -299,3 +299,13 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Nhập `Grab sân bay`, `Buffet hải sản`, `Khách sạn` hiển thị gợi ý category phù hợp; không tự áp dụng nếu user chưa bấm **Dùng gợi ý**.
 - [ ] Mobile 320/390 px: 5 tab Finance cuộn ngang, Travel Wallet và shortcut cards không tràn màn hình.
 - [ ] Regression: short link Google Maps V1.8.4 vẫn giữ nguyên khi save/edit và Map không đọc nhầm tọa độ.
+
+
+## V2.0.0 Pro Travel Operating System
+
+- [ ] Tổng quan hiển thị Trip Operating Center với Planning / Live Trip / Finance / Memories.
+- [ ] Mỗi card điều hướng đến đúng module.
+- [ ] Travel Wallet mobile: nút Ghi chi tiêu hiển thị ngang, đủ chiều rộng, icon + text cân đối.
+- [ ] Tạo 2 participant A/B, mở Ghi chi tiêu: dropdown Người thanh toán có A/B và không phải text input.
+- [ ] Sửa expense cũ có payer không nằm trong participants: giá trị cũ vẫn hiển thị `(dữ liệu cũ)` và lưu không mất dữ liệu.
+- [ ] App version 2.0.0, DB 1.4.0, service worker `tripflow-shell-v200`.

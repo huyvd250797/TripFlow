@@ -184,9 +184,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V2.0.0",
     title: "TripFlow Pro Travel Operating System",
-    done: false,
+    done: true,
     description:
-      "Hợp nhất Planning, Live Trip, Map, Finance và Memories thành một workspace du lịch xuyên suốt trước, trong và sau chuyến đi.",
+      "Hợp nhất Planning, Live Trip, Map, Finance và Memories bằng Trip Operating Center; Travel Wallet tối ưu thao tác mobile và Người thanh toán lấy trực tiếp từ người tham gia chuyến đi.",
   },
 ];
 

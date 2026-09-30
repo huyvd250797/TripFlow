@@ -200,4 +200,11 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
 
-**Roadmap hiện tại:** V1.9.0 đã hoàn thành; phiên bản tiếp theo là **V2.0.0 – TripFlow Pro Travel Operating System**.
+## ✅ V2.0.0 — TripFlow Pro Travel Operating System
+
+- Trip Operating Center hợp nhất Planning, Live Trip, Finance và Memories tại màn hình Tổng quan.
+- Travel Wallet tối ưu nút Ghi chi tiêu cho mobile.
+- Người thanh toán chọn từ danh sách Người tham gia chuyến đi; dữ liệu payer cũ vẫn được bảo toàn khi chỉnh sửa.
+- Không migration database; tiếp tục Database V1.4.0.
+
+**Roadmap hiện tại:** đã hoàn thành đến **V2.0.0 – TripFlow Pro Travel Operating System**.

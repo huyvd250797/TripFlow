@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V1.9.0 bổ sung Travel Wallet và Expense Intelligence trên nền dữ liệu tài chính hiện có; không tạo nguồn tổng tiền thứ hai và vẫn dùng database V{DATABASE_VERSION}. Bản fix Google Maps V1.8.4 tiếp tục được giữ nguyên. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
+            V2.0.0 hợp nhất Planning, Live Trip, Finance và Memories bằng Trip Operating Center; Travel Wallet dùng người tham gia làm nguồn chọn Người thanh toán và vẫn dùng database V{DATABASE_VERSION}. Bản fix Google Maps V1.8.4 tiếp tục được giữ nguyên. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

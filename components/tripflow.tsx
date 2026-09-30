@@ -1884,6 +1884,47 @@ function App() {
       document.getElementById("trip-analytics")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
   };
+  const operatingCenter = () => {
+    if (!trip || !data || !totals || !progress) return null;
+    const phase = trip.status === "completed" ? "Sau chuyến đi" : trip.status === "traveling" ? "Đang đi" : "Chuẩn bị";
+    const itineraryPercent = data.items.length ? Math.round((progress.done / data.items.length) * 100) : 0;
+    const budgetPercent = totals.plan ? Math.round((totals.actual / totals.plan) * 100) : 0;
+    return (
+      <section className="trip-os-panel">
+        <div className="trip-os-head">
+          <div>
+            <span className="eyebrow">TRIPFLOW PRO · V2.0.0</span>
+            <h2>Trip Operating Center</h2>
+            <p className="muted">Một điểm điều hành xuyên suốt kế hoạch, chuyến đi thực tế, tài chính và kỷ niệm.</p>
+          </div>
+          <span className="trip-os-phase">{phase}</span>
+        </div>
+        <div className="trip-os-grid">
+          <button onClick={() => navigate("route")} className="trip-os-card">
+            <span className="trip-os-icon"><Route size={20} /></span>
+            <div><small>PLANNING</small><b>{data.items.length} hoạt động</b><span>{itineraryPercent}% hoàn thành</span></div>
+            <ChevronRight size={18} />
+          </button>
+          <button onClick={() => navigate("route")} className="trip-os-card">
+            <span className="trip-os-icon"><Navigation size={20} /></span>
+            <div><small>LIVE TRIP</small><b>{progress.active ? "Đang check-in" : progress.next ? "Có chặng tiếp theo" : "Chưa có chặng live"}</b><span>{progress.next?.title || progress.active?.title || "Mở lịch trình để điều hành"}</span></div>
+            <ChevronRight size={18} />
+          </button>
+          <button onClick={() => navigate("money")} className="trip-os-card">
+            <span className="trip-os-icon"><Wallet size={20} /></span>
+            <div><small>FINANCE</small><b>{money(totals.remaining >= 0 ? totals.remaining : Math.abs(totals.remaining))}</b><span>{totals.remaining >= 0 ? `Còn lại · đã dùng ${budgetPercent}%` : `Vượt dự toán · đã dùng ${budgetPercent}%`}</span></div>
+            <ChevronRight size={18} />
+          </button>
+          <button onClick={() => navigate("media")} className="trip-os-card">
+            <span className="trip-os-icon"><Images size={20} /></span>
+            <div><small>MEMORIES</small><b>{data.media.length} media</b><span>{data.participants.length} người tham gia chuyến đi</span></div>
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </section>
+    );
+  };
+
   const liveCard = () => {
     if (!trip || !progress) return null;
     const overdueActive = progress.activeLateMinutes > 0;
@@ -2317,6 +2358,7 @@ function App() {
                     <span className="pill">{TRIP_STATUS[trip.status]}</span>
                   </div>
                   {liveCard()}
+                  {operatingCenter()}
                   <div className="stats">
                     <div className="stat">
                       <span>Dự toán hiện hành</span>
@@ -3084,13 +3126,14 @@ function App() {
                       <section className="panel travel-wallet-panel">
                         <div className="section-heading wallet-heading">
                           <div>
-                            <span className="eyebrow">TRAVEL WALLET · V1.9.0</span>
+                            <span className="eyebrow">TRAVEL WALLET · V2.0.0</span>
                             <h2>Ví chuyến đi</h2>
                             <p className="muted">Nhìn nhanh số tiền còn lại, mức chi an toàn và tốc độ sử dụng ngân sách.</p>
                           </div>
                           {writable && (
-                            <button className="btn primary" onClick={() => edit("expense")}>
-                              <Plus size={16} /> Ghi chi tiêu
+                            <button className="wallet-add-expense" onClick={() => edit("expense")}>
+                              <span className="wallet-add-expense-icon"><Plus size={18} /></span>
+                              <span><b>Ghi chi tiêu</b><small>Thêm khoản mới</small></span>
                             </button>
                           )}
                         </div>
@@ -3156,7 +3199,7 @@ function App() {
                         ) : (
                           <p className="muted">Chưa có giao dịch để tổng hợp người thanh toán.</p>
                         )}
-                        <p className="wallet-note">Travel Wallet V1.9.0 chỉ tổng hợp ai đã trả và mức đóng góp. Chức năng chia nợ/quyết toán giữa thành viên sẽ được xử lý riêng ở phiên bản sau để tránh tự suy diễn cách chia tiền.</p>
+                        <p className="wallet-note">Travel Wallet V2.0.0 dùng danh sách người tham gia chuyến đi cho trường Người thanh toán, giúp dữ liệu người trả nhất quán khi tổng hợp.</p>
                       </section>
 
                       <section className="panel wallet-shortcuts-panel">

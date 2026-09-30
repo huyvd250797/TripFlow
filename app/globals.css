@@ -6733,3 +6733,135 @@ h3 {
     grid-column: auto;
   }
 }
+
+
+/* TripFlow V2.0.0 · Pro Travel Operating System */
+.trip-os-panel {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid #cfe3e6;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #f9fdfd, #edf7f7);
+  box-shadow: 0 12px 34px rgba(20, 88, 95, .06);
+}
+.trip-os-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.trip-os-head h2 { margin: 4px 0; }
+.trip-os-head p { margin: 0; }
+.trip-os-phase {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #dff1f1;
+  color: #12656d;
+  font-size: 12px;
+  font-weight: 800;
+}
+.trip-os-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.trip-os-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 13px;
+  text-align: left;
+  border: 1px solid #d8e7e8;
+  border-radius: 15px;
+  background: rgba(255,255,255,.9);
+  color: inherit;
+}
+.trip-os-card:hover { border-color: #9fcdd0; transform: translateY(-1px); }
+.trip-os-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #e6f3f3;
+  color: #0b6f78;
+}
+.trip-os-card div { min-width: 0; }
+.trip-os-card small,
+.trip-os-card b,
+.trip-os-card span { display: block; }
+.trip-os-card small {
+  color: #628287;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .8px;
+}
+.trip-os-card b {
+  margin: 3px 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.trip-os-card div > span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wallet-add-expense {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 148px;
+  min-height: 52px;
+  padding: 8px 14px 8px 9px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0b6e77, #16a5ad);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(11, 110, 119, .18);
+  text-align: left;
+}
+.wallet-add-expense:hover { transform: translateY(-1px); box-shadow: 0 13px 26px rgba(11, 110, 119, .22); }
+.wallet-add-expense-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(255,255,255,.16);
+}
+.wallet-add-expense b,
+.wallet-add-expense small { display: block; white-space: nowrap; }
+.wallet-add-expense b { font-size: 13px; line-height: 1.2; }
+.wallet-add-expense small { margin-top: 2px; color: rgba(255,255,255,.78); font-size: 10px; }
+
+@media (max-width: 900px) {
+  .trip-os-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+  .wallet-heading { align-items: stretch; gap: 12px; }
+  .wallet-add-expense {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    min-height: 50px;
+    border-radius: 14px;
+  }
+  .wallet-add-expense b { font-size: 14px; }
+  .trip-os-panel { padding: 14px; border-radius: 17px; }
+  .trip-os-head { align-items: flex-start; }
+}
+@media (max-width: 520px) {
+  .trip-os-grid { grid-template-columns: 1fr; }
+  .trip-os-card { padding: 11px 12px; }
+  .trip-os-head { flex-direction: column; gap: 8px; }
+}

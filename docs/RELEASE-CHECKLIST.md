@@ -192,3 +192,12 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Favorite/Recent Expense không sửa dữ liệu cloud khi chỉ đánh dấu sao.
 - [ ] Category suggestion là opt-in và Quick Entry dùng cùng inference rule.
 - [ ] Không có migration database mới.
+
+
+## V2.0.0 Pro Travel Operating System
+
+- [ ] App version `2.0.0`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v200` active.
+- [ ] Trip Operating Center hiển thị và điều hướng đúng 4 module.
+- [ ] Payer dropdown lấy từ trip participants.
+- [ ] Travel Wallet CTA không bị co hẹp trên mobile 375–430px.

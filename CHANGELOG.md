@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0 — TripFlow Pro Travel Operating System
+
+- Thêm **Trip Operating Center** tại Tổng quan để nối Planning, Live Trip, Finance và Memories trong một workspace điều hành.
+- Thiết kế lại nút **Ghi chi tiêu** trong Travel Wallet theo dạng ngang cân đối, tối ưu mobile.
+- Trường **Người thanh toán** khi ghi/chỉnh sửa chi tiêu chuyển sang chọn từ **Người tham gia chuyến đi**; dữ liệu payer cũ ngoài danh sách vẫn được giữ khi chỉnh sửa để không mất dữ liệu lịch sử.
+- Không thay đổi schema; App `2.0.0` tiếp tục dùng Database `1.4.0`. Service worker `tripflow-shell-v200`.
+
 ## 1.9.0 — Expense Intelligence & Travel Wallet
 
 - Thêm tab **Ví du lịch** trong Chi phí với số tiền còn lại/vượt dự toán, bình quân theo người, mức chi an toàn mỗi ngày và thanh tiến độ chuyến đi so với % ngân sách đã sử dụng.
