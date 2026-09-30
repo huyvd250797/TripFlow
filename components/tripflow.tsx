@@ -272,6 +272,8 @@ function App() {
     [workspaceSearch, setWorkspaceSearch] = useState(false),
     [quickActionsOpen, setQuickActionsOpen] = useState(false),
     [quickEntryText, setQuickEntryText] = useState(""),
+    [quickPayerOverride, setQuickPayerOverride] = useState(""),
+    [quickBudgetOverride, setQuickBudgetOverride] = useState(""),
     [quickEntryBusy, setQuickEntryBusy] = useState(false),
     [recentQuickEntries, setRecentQuickEntries] = useState<string[]>([]),
     [favoriteExpenseIds, setFavoriteExpenseIds] = useState<string[]>([]),
@@ -553,6 +555,12 @@ function App() {
     window.addEventListener("keydown", openWorkspaceSearch);
     return () => window.removeEventListener("keydown", openWorkspaceSearch);
   }, [user, selectedId]);
+
+  useEffect(() => {
+    setQuickEntryText("");
+    setQuickPayerOverride("");
+    setQuickBudgetOverride("");
+  }, [selectedId]);
 
   useEffect(() => {
     if (!user || !selectedId) {
@@ -1647,23 +1655,35 @@ function App() {
   const quickZone = trip?.timezone || "Asia/Ho_Chi_Minh";
   const quickBaseDay = day !== "all" ? day : localTime(now || new Date().toISOString(), quickZone).slice(0, 10);
   const quickNowLocal = localTime(now || new Date().toISOString(), quickZone);
-  const quickPreview = parseQuickEntry(quickEntryText, { baseDay: quickBaseDay, nowLocal: quickNowLocal });
+  const quickPreview = parseQuickEntry(quickEntryText, {
+    baseDay: quickBaseDay,
+    nowLocal: quickNowLocal,
+    participants: data?.participants || [],
+    budgets: data?.budgets || [],
+    expenseHistory: data?.expenses || [],
+    defaultPayer: smartDefaults?.expense.payer || "",
+    forcedPayerId: quickPayerOverride,
+    forcedBudgetId: quickBudgetOverride,
+  });
   const quickSmartCategory =
-    quickPreview?.kind === "expense" && quickPreview.category === "Khác" && smartDefaults
-      ? smartDefaults.expense.category
-      : quickPreview?.kind === "expense"
-        ? quickPreview.category
-        : null;
+    quickPreview?.kind === "expense" && quickPreview.budget_id
+      ? quickPreview.category
+      : quickPreview?.kind === "expense" && quickPreview.category === "Khác" && smartDefaults
+        ? smartDefaults.expense.category
+        : quickPreview?.kind === "expense"
+          ? quickPreview.category
+          : null;
   const commandFocusBudget =
     quickPreview?.kind === "expense"
       ? (
-          workspaceFocusBudget?.category === quickSmartCategory
+          data?.budgets.find((budget) => budget.id === quickPreview.budget_id) ||
+          (workspaceFocusBudget?.category === quickSmartCategory
             ? workspaceFocusBudget
             : data?.budgets.find(
                 (budget) =>
                   budget.id === smartDefaults?.expense.budget_id &&
                   budget.category === quickSmartCategory,
-              ) || null
+              ) || null)
         )
       : null;
   const quickContextWarnings =
@@ -1738,7 +1758,7 @@ function App() {
           category: commandFocusBudget?.category || quickSmartCategory || quickPreview.category,
           budget_id: commandFocusBudget?.id || "",
           spent_on: quickPreview.spent_on,
-          payer: smartDefaults?.expense.payer || "",
+          payer: quickPreview.payer || smartDefaults?.expense.payer || "",
         },
       });
     } else {
@@ -1779,7 +1799,7 @@ function App() {
               budget_id: commandFocusBudget?.id || "",
               refund_of: "",
               spent_on: quickPreview.spent_on,
-              payer: smartDefaults?.expense.payer || "",
+              payer: quickPreview.payer || smartDefaults?.expense.payer || "",
               note: [
                 quickPreview.time_hint ? `Nhập nhanh lúc ${quickPreview.time_hint}` : "",
                 smartDefaults?.expense.source.length ? `Smart default: ${smartDefaults.expense.source.join(" · ")}` : "",
@@ -1805,6 +1825,8 @@ function App() {
       await save(mutation);
       rememberQuickEntry(quickEntryText);
       setQuickEntryText("");
+      setQuickPayerOverride("");
+      setQuickBudgetOverride("");
       if (!keepOpen) setQuickActionsOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không lưu được nhập nhanh.");
@@ -1893,7 +1915,7 @@ function App() {
       <section className="trip-os-panel">
         <div className="trip-os-head">
           <div>
-            <span className="eyebrow">TRIPFLOW PRO · V2.0.0</span>
+            <span className="eyebrow">TRIPFLOW PRO · V{VERSION}</span>
             <h2>Trip Operating Center</h2>
             <p className="muted">Một điểm điều hành xuyên suốt kế hoạch, chuyến đi thực tế, tài chính và kỷ niệm.</p>
           </div>
@@ -3126,7 +3148,7 @@ function App() {
                       <section className="panel travel-wallet-panel">
                         <div className="section-heading wallet-heading">
                           <div>
-                            <span className="eyebrow">TRAVEL WALLET · V2.0.0</span>
+                            <span className="eyebrow">TRAVEL WALLET · V{VERSION}</span>
                             <h2>Ví chuyến đi</h2>
                             <p className="muted">Nhìn nhanh số tiền còn lại, mức chi an toàn và tốc độ sử dụng ngân sách.</p>
                           </div>
@@ -3199,7 +3221,7 @@ function App() {
                         ) : (
                           <p className="muted">Chưa có giao dịch để tổng hợp người thanh toán.</p>
                         )}
-                        <p className="wallet-note">Travel Wallet V2.0.0 dùng danh sách người tham gia chuyến đi cho trường Người thanh toán, giúp dữ liệu người trả nhất quán khi tổng hợp.</p>
+                        <p className="wallet-note">Travel Wallet V{VERSION} dùng danh sách người tham gia chuyến đi cho trường Người thanh toán, giúp dữ liệu người trả nhất quán khi tổng hợp.</p>
                       </section>
 
                       <section className="panel wallet-shortcuts-panel">
@@ -4802,22 +4824,26 @@ function App() {
                   autoFocus
                   value={quickEntryText}
                   disabled={!writable || quickEntryBusy}
-                  onChange={(event) => setQuickEntryText(event.target.value)}
+                  onChange={(event) => {
+                    setQuickEntryText(event.target.value);
+                    setQuickPayerOverride("");
+                    setQuickBudgetOverride("");
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && quickPreview?.valid && writable) {
                       event.preventDefault();
                       void submitQuickEntry(false);
                     }
                   }}
-                  placeholder={writable ? "Ví dụ: chi Taxi sân bay 350k · hoặc: lịch Ăn sáng 7:30" : "Bạn đang ở quyền chỉ xem"}
+                  placeholder={writable ? "Ví dụ: chi 150k ăn trưa Viện Hải Dương Học HuyVo" : "Bạn đang ở quyền chỉ xem"}
                   aria-label="Nhập nhanh TripFlow"
                 />
                 {quickEntryText && (
-                  <button className="command-clear" aria-label="Xóa nội dung" onClick={() => setQuickEntryText("")}>×</button>
+                  <button className="command-clear" aria-label="Xóa nội dung" onClick={() => { setQuickEntryText(""); setQuickPayerOverride(""); setQuickBudgetOverride(""); }}>×</button>
                 )}
               </div>
               <div className="command-help">
-                <span><b>Chi tiêu:</b> “Taxi sân bay 350k”, “chi cafe 120.000 hôm nay”</span>
+                <span><b>Chi tiêu tự nhiên:</b> “chi 150k ăn trưa Viện Hải Dương Học HuyVo” → tiền · nội dung · dự toán · người trả</span>
                 <span><b>Lịch trình:</b> “lịch Ăn sáng 7:30”, “Check-in khách sạn 14h ngày mai”</span>
               </div>
               {quickPreview && (
@@ -4829,26 +4855,50 @@ function App() {
                     <span className="eyebrow">TRIPFLOW HIỂU LÀ</span>
                     <b>{quickPreview.kind === "expense" ? "Khoản chi" : "Hoạt động"} · {quickPreview.title}</b>
                     {quickPreview.kind === "expense" ? (
-                      <small>
-                        {money(quickPreview.amount)} · {commandFocusBudget?.category || quickSmartCategory || quickPreview.category} · {dateLabel(quickPreview.spent_on)}
-                        {commandFocusBudget ? ` · ${commandFocusBudget.title}` : ""}
-                        {quickPreview.time_hint ? ` · ${quickPreview.time_hint}` : ""}
-                      </small>
+                      <>
+                        <small>
+                          Chi tiền · {money(quickPreview.amount)} · {commandFocusBudget?.category || quickSmartCategory || quickPreview.category} · {dateLabel(quickPreview.spent_on)}
+                          {quickPreview.time_hint ? ` · ${quickPreview.time_hint}` : ""}
+                        </small>
+                        <span className="smart-default-inline">
+                          <Sparkles size={13} />
+                          {[
+                            quickPreview.payer ? `Người trả: ${quickPreview.payer}` : "Chưa xác định người trả",
+                            commandFocusBudget ? `Dự toán: ${commandFocusBudget.title}` : "Chưa gắn dự toán",
+                            `Tin cậy: ${quickPreview.confidence}%`,
+                          ].join(" · ")}
+                        </span>
+                        {quickPreview.payer_match.state === "ambiguous" && (
+                          <div className="command-match-picker">
+                            <small>Chọn người thanh toán</small>
+                            <div>
+                              {quickPreview.payer_match.options.map((option) => (
+                                <button key={option.id} type="button" onClick={() => setQuickPayerOverride(option.id)}>{option.label}</button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {quickPreview.budget_match.state === "ambiguous" && (
+                          <div className="command-match-picker">
+                            <small>Chọn khoản dự toán</small>
+                            <div>
+                              {quickPreview.budget_match.options.map((option) => (
+                                <button key={option.id} type="button" onClick={() => setQuickBudgetOverride(option.id)}>{option.label}</button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <small>{dateLabel(quickPreview.start_local.slice(0, 10))} · {quickPreview.start_local.slice(11)} · chưa bắt buộc giờ kết thúc</small>
                     )}
                     {!quickPreview.valid && <em>{quickPreview.error}</em>}
-                    {quickPreview.valid && smartDefaults && (
+                    {quickPreview.kind === "item" && quickPreview.valid && smartDefaults && (
                       <span className="smart-default-inline">
                         <Sparkles size={13} />
-                        {quickPreview.kind === "expense"
-                          ? [
-                              smartDefaults.expense.payer ? `Người trả: ${smartDefaults.expense.payer}` : "",
-                              commandFocusBudget ? `Budget: ${commandFocusBudget.title}` : "",
-                            ].filter(Boolean).join(" · ") || "Đang dùng ngữ cảnh chuyến đi"
-                          : smartDefaults.item.location
-                            ? `Địa điểm gợi ý: ${smartDefaults.item.location}`
-                            : "Thời gian được kiểm tra theo lịch trình hiện tại"}
+                        {smartDefaults.item.location
+                          ? `Địa điểm gợi ý: ${smartDefaults.item.location}`
+                          : "Thời gian được kiểm tra theo lịch trình hiện tại"}
                       </span>
                     )}
                     {quickContextWarnings.length > 0 && (

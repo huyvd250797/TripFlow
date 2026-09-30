@@ -1,4 +1,4 @@
-const CACHE = "tripflow-shell-v200";
+const CACHE = "tripflow-shell-v220";
 const SHELL = [
   "/",
   "/manifest.webmanifest",

@@ -1,4 +1,4 @@
-# TripFlow 2.0.0 · Pro Travel Operating System
+# TripFlow 2.2.0 · Smart Forms & Defaults
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -7,13 +7,14 @@ Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu ti
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
 
 
-## V2.0.0 nổi bật
+## V2.2.0 nổi bật
 
-- **Trip Operating Center:** hợp nhất Planning, Live Trip, Finance và Memories ngay tại Tổng quan để điều hành chuyến đi xuyên suốt.
-- **Travel Wallet mobile polish:** nút Ghi chi tiêu được làm lại theo dạng ngang cân đối, dễ bấm trên mobile.
-- **Người thanh toán từ người tham gia:** form chi tiêu chọn payer trực tiếp từ danh sách Người tham gia của chuyến đi; không còn nhập tự do cho giao dịch mới.
-- **Tương thích dữ liệu cũ:** khoản chi đã có payer ngoài danh sách vẫn hiển thị khi chỉnh sửa, tránh mất dữ liệu lịch sử.
-- **Không migration:** App V2.0.0 tiếp tục dùng Database V1.4.0; service worker `tripflow-shell-v200`.
+- **Smart Forms:** form tạo mới chỉ hiện các trường cốt lõi; trường nâng cao được gom vào **Thêm chi tiết** để giảm scroll và số quyết định khi nhập.
+- **Smart Defaults giữ nguyên ngữ cảnh:** người trả, nhóm chi, dự toán, ngày/giờ và địa điểm vẫn được điền từ dữ liệu gần nhất/chặng hiện tại; người dùng có thể mở chi tiết để thay đổi bất kỳ lúc nào.
+- **Edit an toàn:** khi chỉnh sửa bản ghi cũ, form vẫn hiển thị đầy đủ trường để không che dữ liệu đang tồn tại.
+- **Quick dock UI fix:** nút **X** luôn nằm trên lớp của nút ⚡, dễ nhìn và dễ bấm trên mobile/PWA.
+- **Quick Entry V2.1.0 được giữ nguyên:** câu lệnh tự nhiên vẫn nhận số tiền, nội dung, dự toán gần đúng và người thanh toán từ người tham gia.
+- **Không migration:** App V2.2.0 tiếp tục dùng Database V1.4.0; service worker `tripflow-shell-v220`.
 
 ## V1.9.0 nổi bật
 
@@ -60,7 +61,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.0.0 đều được đánh dấu ✅.
+- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.2.0 đều được đánh dấu ✅.
 
 **Phạm vi offline:** cho phép thêm thực chi, thêm/cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -79,7 +80,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609280005_v100_stable_production_release.sql` — Stable Production marker + production-readiness V1.0.0.
    - `supabase/migrations/202609280006_v130_media_memories_storytelling.sql` — metadata Media/Storytelling + Realtime/restore compatibility + Database marker V1.3.0.
    - `supabase/migrations/202609290001_v140_smart_planning_templates_reuse.sql` — Planning Templates/Reuse + optional end date/time + Database marker V1.4.0.
-   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0 và V2.0.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0, V2.0.0 và V2.2.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
@@ -307,7 +308,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap hiện đã hoàn thành đến V2.0.0 – TripFlow Pro Travel Operating System.
+- Roadmap hiện đã hoàn thành đến V2.2.0 – Smart Quick Actions & Contextual UX; phiên bản tiếp theo là V2.2.0 – Smart Forms & Defaults.
 
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
@@ -348,4 +349,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **2.0.0**; Database version yêu cầu: **1.4.0**; V2.0.0 không có migration database.
+- App version: **2.2.0**; Database version yêu cầu: **1.4.0**; V2.2.0 không có migration database.

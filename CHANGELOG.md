@@ -1,5 +1,25 @@
 # Changelog
 
+## V2.2.0 – Smart Forms & Defaults
+
+- Form tạo mới chuyển sang progressive disclosure: trường quan trọng hiển thị trước, trường ít dùng nằm trong **Thêm chi tiết**.
+- Giữ Smart Defaults theo dữ liệu gần nhất/ngữ cảnh hiện tại và vẫn cho phép mở chi tiết để thay đổi đầy đủ.
+- Form chỉnh sửa dữ liệu cũ vẫn hiển thị đầy đủ để tránh che thông tin đang tồn tại.
+- Sửa nút **X** của Quick dock luôn nằm trên lớp của nút ⚡, không còn bị chìm bên dưới.
+- Không đổi schema; App `2.2.0` tiếp tục dùng Database `1.4.0`. Service worker `tripflow-shell-v220`.
+
+## 2.1.0 — Smart Quick Actions & Contextual UX
+
+- Chỉ nâng cấp **Quick Entry trong Command Center (nút ⚡)**, không thêm ô nhập hoặc màn hình Quick Entry mới ở nơi khác.
+- Một câu lệnh như `chi 150k ăn trưa viện hải dương học HuyVo` được tách thành: loại giao dịch Chi tiền, số tiền 150.000đ, nội dung Ăn trưa, khoản dự toán khớp gần đúng và người thanh toán lấy từ người tham gia chuyến đi.
+- Match người thanh toán theo dữ liệu `participants`; ưu tiên exact match, hỗ trợ fuzzy match có kiểm soát và không tự chọn khi có nhiều người gần giống.
+- Match khoản dự toán theo tiêu đề `budgets`, bỏ qua các tiền tố phổ biến như Vé/Chi phí/Dự toán và category để nhận các cách nhập rút gọn như `hải dương học`.
+- Nếu có nhiều kết quả gần giống, Command Center hiển thị lựa chọn ngay trong preview; người dùng chọn một lần rồi lưu, không phải mở form.
+- Preview hiển thị rõ Chi tiền, số tiền, category, ngày, người trả, dự toán và mức tin cậy trước khi lưu.
+- Category tiếp tục dùng lịch sử/từ khóa, nhưng khi đã gắn một budget hợp lệ thì dùng category của budget để giữ dữ liệu tài chính nhất quán.
+- Không đổi schema; App `2.1.0` tiếp tục dùng Database `1.4.0`. Service worker `tripflow-shell-v210`.
+- Phiên bản tiếp theo: **V2.2.0 – Smart Forms & Defaults**.
+
 ## 2.0.0 — TripFlow Pro Travel Operating System
 
 - Thêm **Trip Operating Center** tại Tổng quan để nối Planning, Live Trip, Finance và Memories trong một workspace điều hành.

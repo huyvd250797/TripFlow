@@ -188,6 +188,27 @@ export const ROADMAP: RoadmapItem[] = [
     description:
       "Hợp nhất Planning, Live Trip, Map, Finance và Memories bằng Trip Operating Center; Travel Wallet tối ưu thao tác mobile và Người thanh toán lấy trực tiếp từ người tham gia chuyến đi.",
   },
+  {
+    version: "V2.1.0",
+    title: "Smart Quick Actions & Contextual UX",
+    done: true,
+    description:
+      "Nâng Quick Entry ngay trong nút ⚡ Command Center: một câu lệnh chi tiêu có thể nhận số tiền, nội dung, người thanh toán từ người tham gia và khoản dự toán theo exact/fuzzy match; preview rõ dữ liệu sẽ lưu và chỉ yêu cầu chọn khi có nhiều kết quả gần giống.",
+  },
+  {
+    version: "V2.2.0",
+    title: "Smart Forms & Defaults",
+    done: true,
+    description:
+      "Giảm thao tác trong các form bằng progressive disclosure, mặc định thông minh và chỉ hiện các trường nâng cao khi thật sự cần, vẫn giữ đủ dữ liệu để quản lý chuyên nghiệp.",
+  },
+  {
+    version: "V2.3.0",
+    title: "Trip Daily Command Center",
+    done: false,
+    description:
+      "Tập trung trải nghiệm đang đi vào một màn hình Hôm nay: lịch trình tiếp theo, trạng thái chuyến đi, chi tiêu trong ngày và hành động nhanh theo ngữ cảnh để giảm việc chuyển qua lại giữa các module.",
+  },
 ];
 
 export const NEXT_VERSION = ROADMAP.find((item) => !item.done) ?? null;

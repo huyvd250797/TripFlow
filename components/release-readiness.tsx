@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V2.0.0 hợp nhất Planning, Live Trip, Finance và Memories bằng Trip Operating Center; Travel Wallet dùng người tham gia làm nguồn chọn Người thanh toán và vẫn dùng database V{DATABASE_VERSION}. Bản fix Google Maps V1.8.4 tiếp tục được giữ nguyên. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
+            V2.2.0 tối ưu form bằng Smart Defaults và progressive disclosure: trường chính luôn hiện, trường ít dùng chỉ mở khi cần; Quick Entry V2.1.0 và Google Maps V1.8.4 tiếp tục được giữ nguyên; vẫn dùng database V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

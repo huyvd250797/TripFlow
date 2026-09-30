@@ -201,3 +201,24 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Trip Operating Center hiển thị và điều hướng đúng 4 module.
 - [ ] Payer dropdown lấy từ trip participants.
 - [ ] Travel Wallet CTA không bị co hẹp trên mobile 375–430px.
+
+## V2.1.0 Smart Quick Actions & Contextual UX
+
+- [ ] App version `2.1.0`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v220` active.
+- [ ] Nút ⚡ Command Center vẫn là nơi duy nhất dùng Quick Entry; không có ô nhập Quick Entry mới ở module khác.
+- [ ] `chi 150k ăn trưa viện hải dương học HuyVo` nhận đúng 150.000đ, nội dung `ăn trưa`, loại `payment`, participant `HuyVo` và budget Viện Hải Dương Học.
+- [ ] Budget exact/fuzzy match không tự chọn khi có hai kết quả gần ngang nhau; preview hiển thị lựa chọn ngay trong Command Center.
+- [ ] Participant exact/fuzzy match chỉ dùng danh sách Người tham gia của chuyến hiện tại; dữ liệu từ chuyến khác không được dùng.
+- [ ] Lưu nhanh dùng đúng payer/budget đã preview; mở form cũng nhận đúng các giá trị này.
+- [ ] Regression: lệnh Quick Entry cũ như `Taxi sân bay 350k` và `lịch Ăn sáng 7:30 ngày mai` vẫn hoạt động.
+- [ ] Không có migration database mới.
+
+## V2.2.0 Smart Forms & Defaults
+
+- [ ] App version `2.2.0`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v220` active.
+- [ ] Smart Forms progressive disclosure hoạt động cho Trip/Item/Budget/Expense.
+- [ ] Smart Defaults vẫn được submit khi các trường chi tiết đang ẩn.
+- [ ] Form chỉnh sửa dữ liệu cũ vẫn hiển thị đầy đủ.
+- [ ] Quick dock close X nằm trên nút ⚡ và không bị che/chìm.

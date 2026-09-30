@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Check, CalendarDays } from "lucide-react";
+import { Check, CalendarDays, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { Dialog } from "./ui/dialog";
 import {
   CATEGORIES,
@@ -108,7 +108,8 @@ export function Editor({
     formState: { isDirty },
   } = useForm<Record<string, unknown>>({ defaultValues: initial });
   const [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [advancedOpen, setAdvancedOpen] = useState(Boolean(row));
   const operation = useRef<{ hash: string; id: string } | null>(null);
   const id = useRef(crypto.randomUUID());
   const fields: Field[] = [];
@@ -239,6 +240,17 @@ export function Editor({
   if (spec.entity === "snapshot") title("Tên lần chốt dự toán *");
   if (!["invitation", "member", "snapshot", "media"].includes(spec.entity))
     f("note", "Ghi chú", "textarea");
+
+  const advancedKeys: Partial<Record<Entity, Set<string>>> = {
+    trip: new Set(["end_date", "timezone", "status", "note"]),
+    item: new Set(["end_at", "map_url", "note"]),
+    budget: new Set(["category", "item_id", "note"]),
+    expense: new Set(["kind", "refund_of", "budget_id", "category", "spent_on", "payer", "receipt_url", "note"]),
+  };
+  const advancedSet = advancedKeys[spec.entity];
+  const advancedFields = advancedSet ? fields.filter((field) => advancedSet.has(field.key)) : [];
+  const hasProgressiveFields = !row && advancedFields.length > 0;
+  const isAdvancedField = (field: Field) => Boolean(hasProgressiveFields && advancedSet?.has(field.key));
   const names: Record<Entity, string> = {
     trip: "chuyến đi",
     item: "hoạt động",
@@ -367,9 +379,30 @@ export function Editor({
               ))}
             </div>
           )}
-          {fields.map((field) => (
+          {hasProgressiveFields && (
+            <div className="smart-form-control full">
+              <div>
+                <span><SlidersHorizontal size={15} /> Form thông minh</span>
+                <small>TripFlow đã điền các giá trị theo ngữ cảnh. Chỉ mở phần chi tiết khi cần thay đổi.</small>
+              </div>
+              <button
+                type="button"
+                className="smart-form-toggle"
+                aria-expanded={advancedOpen}
+                onClick={() => setAdvancedOpen((value) => !value)}
+              >
+                {advancedOpen ? "Ẩn chi tiết" : `Thêm chi tiết (${advancedFields.length})`}
+                <ChevronDown size={16} aria-hidden="true" />
+              </button>
+            </div>
+          )}
+          {fields.map((field) => {
+            if (isAdvancedField(field) && !advancedOpen) {
+              return <input key={field.key} type="hidden" {...register(field.key)} />;
+            }
+            return (
             <div
-              className={`field ${["textarea", "url"].includes(field.kind || "") ? "full" : ""}`}
+              className={`field ${["textarea", "url"].includes(field.kind || "") ? "full" : ""} ${isAdvancedField(field) ? "smart-advanced-field" : ""}`}
               key={field.key}
             >
               {field.kind !== "checkbox" && <label htmlFor={"tf-field-" + field.key}>{field.label}</label>}
@@ -495,7 +528,8 @@ export function Editor({
                 />
               )}
             </div>
-          ))}
+            );
+          })}
           {spec.entity === "item" && (
             <p className="hint full">
               Giờ tại {zone}. Google Maps: chọn địa điểm → Chia sẻ → Sao chép đường liên kết rồi dán trực tiếp link maps.app.goo.gl vào đây; TripFlow V1.8.4 giữ nguyên link bạn dán và chỉ đọc tọa độ ngầm khi cần. Ngày/giờ kết thúc có thể để trống.

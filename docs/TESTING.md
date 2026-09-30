@@ -309,3 +309,24 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Tạo 2 participant A/B, mở Ghi chi tiêu: dropdown Người thanh toán có A/B và không phải text input.
 - [ ] Sửa expense cũ có payer không nằm trong participants: giá trị cũ vẫn hiển thị `(dữ liệu cũ)` và lưu không mất dữ liệu.
 - [ ] App version 2.0.0, DB 1.4.0, service worker `tripflow-shell-v200`.
+
+## V2.1.0 Smart Quick Actions & Contextual UX
+
+- [ ] Mở nút ⚡ → nhập `chi 150k ăn trưa viện hải dương học HuyVo` → preview phải hiện Chi tiền / 150.000đ / Ăn trưa / đúng dự toán / đúng người trả.
+- [ ] Thử bỏ dấu: `chi 150k an trua vien hai duong hoc huyvo` → vẫn match dữ liệu tương ứng.
+- [ ] Thử rút gọn budget: `chi 80k cafe hai duong hoc HuyVo` → budget Viện Hải Dương Học được nhận theo fuzzy match.
+- [ ] Tạo hai budget gần giống nhau → Quick Entry không tự lưu; phải cho chọn một budget ngay trong preview.
+- [ ] Tạo hai participant tên gần giống → Quick Entry không tự lưu; phải cho chọn người thanh toán.
+- [ ] Bấm lựa chọn trong preview → title không được chứa lại tên participant/budget đã được dùng làm ngữ cảnh.
+- [ ] Bấm `Lưu nhanh` → expense lưu đúng `kind=payment`, `amount`, `title`, `budget_id`, `payer`, `spent_on`.
+- [ ] Bấm `Mở form` → các trường trên được điền đúng và vẫn chỉnh được trước khi lưu.
+- [ ] App version 2.2.0, DB 1.4.0, service worker `tripflow-shell-v220`.
+
+## V2.2.0 Smart Forms & Defaults
+
+- [ ] Tạo Chi tiêu: mặc định chỉ thấy Số tiền + Nội dung; **Thêm chi tiết** mở loại giao dịch, dự toán, nhóm, ngày, người trả, chứng từ, ghi chú.
+- [ ] Tạo Hoạt động/Dự toán/Chuyến đi: trường chính hiển thị trước, trường ít dùng mở bằng **Thêm chi tiết**.
+- [ ] Smart Defaults vẫn được giữ khi phần chi tiết đang đóng và lưu đúng xuống dữ liệu.
+- [ ] Chỉnh sửa bản ghi cũ hiển thị đầy đủ trường ngay khi mở form.
+- [ ] Nút X của Quick dock nằm trên nút ⚡ và bấm được trên desktop/mobile/PWA.
+- [ ] App version 2.2.0, DB 1.4.0, service worker `tripflow-shell-v220`.

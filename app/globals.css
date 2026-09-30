@@ -6865,3 +6865,110 @@ h3 {
   .trip-os-card { padding: 11px 12px; }
   .trip-os-head { flex-direction: column; gap: 8px; }
 }
+
+/* TripFlow V2.1.0 · Smart Quick Actions & Contextual UX */
+.command-preview-main .smart-default-inline {
+  flex-wrap: wrap;
+  line-height: 1.45;
+}
+.command-match-picker {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 9px 10px;
+  border: 1px solid #d9e8e8;
+  border-radius: 11px;
+  background: #f7fbfb;
+}
+.command-match-picker > small {
+  color: #536f73;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .45px;
+}
+.command-match-picker > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.command-match-picker button {
+  max-width: 100%;
+  border: 1px solid #b9d8d5;
+  border-radius: 999px;
+  background: #fff;
+  padding: 7px 10px;
+  color: #176d68;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.command-match-picker button:hover,
+.command-match-picker button:focus-visible {
+  border-color: #6eb8b0;
+  background: #edf8f6;
+  outline: none;
+}
+
+/* TripFlow V2.2.0 · Smart Forms & Defaults */
+.smart-form-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #d8e9e8;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfefe, #f4fafa);
+}
+.smart-form-control > div { min-width: 0; display: grid; gap: 3px; }
+.smart-form-control span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #0b6873;
+  font-size: 12px;
+  font-weight: 850;
+}
+.smart-form-control small { color: #728b8e; font-size: 11px; line-height: 1.4; }
+.smart-form-toggle {
+  flex: 0 0 auto;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid #c9dddd;
+  border-radius: 11px;
+  background: #fff;
+  color: #315e63;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.smart-form-toggle svg { transition: transform .18s ease; }
+.smart-form-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.smart-advanced-field { animation: tf-v180-enter .16s ease both; }
+
+/* Keep the Quick close control physically and visually above the lightning button. */
+.command-fab-dock { overflow: visible !important; isolation: isolate; }
+.command-fab-dock .command-fab { position: relative !important; z-index: 1; }
+.command-fab-close {
+  z-index: 6 !important;
+  top: -10px !important;
+  right: -7px !important;
+  box-shadow: 0 6px 14px rgba(11, 74, 82, .24) !important;
+}
+.command-fab-close:hover { transform: scale(1.06); }
+
+@media (max-width: 760px) {
+  .smart-form-control { align-items: stretch; flex-direction: column; gap: 9px; }
+  .smart-form-toggle { width: 100%; }
+  .command-fab-close { top: -9px !important; right: -6px !important; }
+}

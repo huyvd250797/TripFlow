@@ -27,3 +27,68 @@ test("V1.5 quick entry parses itinerary date and time", () => {
   assert.equal(row.title, "Ăn sáng");
   assert.equal(row.start_local, "2026-09-30T07:30");
 });
+
+test("V2.1 quick entry understands amount, content, budget and payer from one natural command", () => {
+  const row = parseQuickEntry("chi 150k ăn trưa viện hải dương học HuyVo", {
+    ...context,
+    participants: [
+      { id: "p-huy", version: 1, created_at: "", updated_at: "", name: "HuyVo", note: "" },
+      { id: "p-lan", version: 1, created_at: "", updated_at: "", name: "Lan", note: "" },
+    ],
+    budgets: [
+      {
+        id: "b-hdh",
+        version: 1,
+        created_at: "",
+        updated_at: "",
+        title: "Vé Viện Hải Dương Học",
+        category: "Tham quan",
+        quantity: 1,
+        unit_price: 200000,
+        amount: 200000,
+        item_id: null,
+        note: "",
+      },
+    ],
+  });
+  assert.equal(row?.kind, "expense");
+  if (row?.kind !== "expense") throw new Error("Expected expense");
+  assert.equal(row.amount, 150000);
+  assert.equal(row.title.toLowerCase(), "ăn trưa");
+  assert.equal(row.transaction_kind, "payment");
+  assert.equal(row.budget_id, "b-hdh");
+  assert.equal(row.budget_title, "Vé Viện Hải Dương Học");
+  assert.equal(row.payer, "HuyVo");
+  assert.equal(row.payer_id, "p-huy");
+  assert.equal(row.valid, true);
+});
+
+test("V2.1 quick entry fuzzy-matches a shortened budget name", () => {
+  const row = parseQuickEntry("chi 80k cafe hải dương học HuyVo", {
+    ...context,
+    participants: [
+      { id: "p-huy", version: 1, created_at: "", updated_at: "", name: "HuyVo", note: "" },
+    ],
+    budgets: [
+      {
+        id: "b-hdh",
+        version: 1,
+        created_at: "",
+        updated_at: "",
+        title: "Vé Viện Hải Dương Học",
+        category: "Tham quan",
+        quantity: 1,
+        unit_price: 200000,
+        amount: 200000,
+        item_id: null,
+        note: "",
+      },
+    ],
+  });
+  assert.equal(row?.kind, "expense");
+  if (row?.kind !== "expense") throw new Error("Expected expense");
+  assert.equal(row.budget_id, "b-hdh");
+  assert.equal(row.payer, "HuyVo");
+  assert.equal(row.title.toLowerCase(), "cafe");
+  assert.equal(row.valid, true);
+});
