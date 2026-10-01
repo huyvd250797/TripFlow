@@ -106,6 +106,7 @@ import { searchTripWorkspace, type WorkspaceSearchResult } from "@/lib/workspace
 import { parseQuickEntry } from "@/lib/quick-entry";
 import { buildSmartDefaults, expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
 import { buildTravelWallet } from "@/lib/expense-intelligence";
+import { buildDailyCommandCenter } from "@/lib/daily-command-center";
 import { moveItemToDay, planningDays, shiftItemMinutes } from "@/lib/planning";
 import { analyzeRouteDay, extractMapCoordinate, mapPointLayout } from "@/lib/route-intelligence";
 import {
@@ -280,6 +281,7 @@ function App() {
     [commandFabCollapsed, setCommandFabCollapsed] = useState(false),
     [planningView, setPlanningView] = useState<"timeline" | "board" | "map">("timeline"),
     [planningBusyId, setPlanningBusyId] = useState(""),
+    [dailyBusyId, setDailyBusyId] = useState(""),
     [resolvedMapLinks, setResolvedMapLinks] = useState<Record<string, string | null>>({}),
     [mapResolveBusy, setMapResolveBusy] = useState(false),
     [mediaViewerId, setMediaViewerId] = useState(""),
@@ -1576,6 +1578,9 @@ function App() {
   const progress = data
     ? live(data.items, now || new Date().toISOString())
     : null;
+  const daily = data
+    ? buildDailyCommandCenter(data, now || new Date().toISOString())
+    : null;
   const boardDays = data && trip ? planningDays(trip, data.items, trip.timezone) : [];
   const routeDay =
     trip && boardDays.length
@@ -1906,47 +1911,269 @@ function App() {
       document.getElementById("trip-analytics")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
   };
-  const operatingCenter = () => {
-    if (!trip || !data || !totals || !progress) return null;
-    const phase = trip.status === "completed" ? "Sau chuyến đi" : trip.status === "traveling" ? "Đang đi" : "Chuẩn bị";
-    const itineraryPercent = data.items.length ? Math.round((progress.done / data.items.length) * 100) : 0;
-    const budgetPercent = totals.plan ? Math.round((totals.actual / totals.plan) * 100) : 0;
+  const openTodayRoute = () => {
+    if (daily) setDay(daily.today);
+    navigate("route");
+  };
+  const openExpenseForItem = (item: Item) => {
+    if (!data || !daily) return;
+    const linkedBudget = data.budgets.find((budget) => budget.item_id === item.id) || null;
+    const smart = buildSmartDefaults(data, now || new Date().toISOString());
+    setSpec({
+      entity: "expense",
+      defaults: {
+        category: linkedBudget?.category || smart.expense.category,
+        budget_id: linkedBudget?.id || smart.expense.budget_id || "",
+        payer: smart.expense.payer || "",
+        spent_on: daily.today,
+      },
+      smartHints: [
+        `Theo hoạt động: ${item.title}`,
+        ...(linkedBudget ? [`Đã gắn dự toán: ${linkedBudget.title}`] : []),
+      ],
+    });
+  };
+  const quickDailyStatus = async (item: Item, next: "active" | "done") => {
+    if (!data || !writable || dailyBusyId) return;
+    setDailyBusyId(item.id);
+    setError("");
+    try {
+      const active = data.items.find((row) => row.status === "active");
+      await save({
+        operationId: crypto.randomUUID(),
+        tripId: selectedId,
+        entity: "item",
+        action: "status",
+        id: item.id,
+        version: item.version,
+        data: { status: next, previous_id: active?.id || "" },
+      });
+      notify(next === "done" ? `Đã hoàn thành “${item.title}”.` : `Đã chuyển đến “${item.title}”.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không cập nhật được hoạt động.");
+    } finally {
+      setDailyBusyId("");
+    }
+  };
+  const dailyMapUrl = (item: Item) =>
+    item.map_url ||
+    (item.location
+      ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(item.location)
+      : "");
+  const dailyItemActions = (item: Item, primary = false) => {
+    const mapUrl = dailyMapUrl(item);
     return (
-      <section className="trip-os-panel">
-        <div className="trip-os-head">
+      <div className={`daily-actions ${primary ? "primary-row" : ""}`}>
+        {mapUrl ? (
+          <Link url={mapUrl}>Bản đồ</Link>
+        ) : writable ? (
+          <button className="text-btn" onClick={() => edit("item", item)}>
+            <MapPin size={15} /> Thêm vị trí
+          </button>
+        ) : null}
+        {writable && (
+          <button className="text-btn" onClick={() => openExpenseForItem(item)}>
+            <Wallet size={15} /> Ghi chi
+          </button>
+        )}
+        {writable && item.status === "planned" && (
+          <button
+            className="btn secondary daily-status-btn"
+            disabled={dailyBusyId === item.id}
+            onClick={() => void quickDailyStatus(item, "active")}
+          >
+            <MapPin size={15} /> Tôi đã đến
+          </button>
+        )}
+        {writable && item.status === "active" && (
+          <button
+            className="btn primary daily-status-btn"
+            disabled={dailyBusyId === item.id}
+            onClick={() => void quickDailyStatus(item, "done")}
+          >
+            <Check size={15} /> Hoàn thành
+          </button>
+        )}
+      </div>
+    );
+  };
+  const contextualOverview = () => {
+    if (!trip || !data || !totals || !progress || !daily) return null;
+    const completedPercent = data.items.length ? Math.round((progress.done / data.items.length) * 100) : 0;
+    const firstUpcoming = progress.sorted.find((item) => item.status === "planned" || item.status === "active") || null;
+    const timelineRows = daily.today_items
+      .filter((item) => item.status !== "skipped")
+      .slice(0, 5);
+
+    if (daily.phase === "live") {
+      return (
+        <>
+          <section className="daily-command-panel">
+            <div className="daily-command-head">
+              <div>
+                <span className="eyebrow">HÔM NAY · {dateLabel(daily.today)} · NGÀY {daily.day_number}/{daily.trip_days}</span>
+                <h2>Điều hành chuyến đi</h2>
+                <p className="muted">Chỉ giữ những gì cần cho hôm nay: đang ở đâu, đi đâu tiếp và đã chi bao nhiêu.</p>
+              </div>
+              <button className="text-btn daily-view-all" onClick={openTodayRoute}>
+                Lịch hôm nay <ArrowRight size={16} />
+              </button>
+            </div>
+
+            <div className="daily-focus-grid">
+              <article className={`daily-focus-card current ${daily.current ? "has-item" : "empty-state"}`}>
+                <span className="daily-kicker">{daily.current ? "ĐANG DIỄN RA" : "HIỆN TẠI"}</span>
+                {daily.current ? (
+                  <>
+                    <h3>{daily.current.title}</h3>
+                    <p><Clock size={15} /> {localTime(daily.current.start_at, trip.timezone).slice(11)}{daily.current.end_at ? ` – ${localTime(daily.current.end_at, trip.timezone).slice(11)}` : ""}</p>
+                    <p><MapPin size={15} /> {daily.current.location || "Chưa có địa điểm"}</p>
+                    {dailyItemActions(daily.current, true)}
+                  </>
+                ) : (
+                  <>
+                    <h3>Không có hoạt động đang diễn ra</h3>
+                    <p>{daily.next ? "Bạn đang có thời gian trống trước hoạt động kế tiếp." : "Không còn hoạt động nào trong hôm nay."}</p>
+                  </>
+                )}
+              </article>
+
+              <article className={`daily-focus-card next ${daily.next ? "has-item" : "empty-state"}`}>
+                <span className="daily-kicker">TIẾP THEO</span>
+                {daily.next ? (
+                  <>
+                    <h3>{daily.next.title}</h3>
+                    <p><Clock size={15} /> {localTime(daily.next.start_at, trip.timezone).slice(11)}{progress.nextInMinutes != null && progress.next?.id === daily.next.id ? ` · còn ${minutesText(progress.nextInMinutes)}` : ""}</p>
+                    <p><MapPin size={15} /> {daily.next.location || "Chưa có địa điểm"}</p>
+                    {dailyItemActions(daily.next)}
+                  </>
+                ) : (
+                  <>
+                    <h3>Đã hết lịch hôm nay</h3>
+                    <p>{daily.today_done ? `${daily.today_done} hoạt động đã hoàn thành.` : "Chưa có hoạt động trong ngày."}</p>
+                  </>
+                )}
+              </article>
+            </div>
+
+            {timelineRows.length > 0 && (
+              <div className="daily-timeline-compact">
+                <div className="daily-section-title">
+                  <div><b>Lịch hôm nay</b><span>{daily.today_done}/{daily.today_items.length} hoàn thành</span></div>
+                  <button className="text-btn" onClick={openTodayRoute}>Xem tất cả</button>
+                </div>
+                {timelineRows.map((item) => (
+                  <button
+                    className={`daily-timeline-row ${item.status} ${daily.current?.id === item.id ? "focus" : ""}`}
+                    key={item.id}
+                    onClick={() => {
+                      setDay(daily.today);
+                      navigate("route");
+                    }}
+                  >
+                    <time>{localTime(item.start_at, trip.timezone).slice(11)}</time>
+                    <span className="daily-timeline-dot">{item.status === "done" ? <Check size={13} /> : null}</span>
+                    <span className="daily-timeline-copy"><b>{item.title}</b><small>{item.location || ITEM_STATUS[item.status]}</small></span>
+                    <ChevronRight size={15} />
+                  </button>
+                ))}
+                {daily.today_items.length > timelineRows.length && (
+                  <button className="daily-more-row" onClick={openTodayRoute}>+{daily.today_items.length - timelineRows.length} hoạt động khác</button>
+                )}
+              </div>
+            )}
+          </section>
+
+          <section className="daily-money-strip">
+            <div>
+              <span className="eyebrow">CHI HÔM NAY</span>
+              <strong>{money(daily.today_actual)}</strong>
+              <small>{daily.today_budget > 0 ? `Kế hoạch ${money(daily.today_budget)}` : "Chưa có dự toán theo hoạt động hôm nay"}</small>
+            </div>
+            <div className={daily.today_remaining_budget != null && daily.today_remaining_budget < 0 ? "negative" : ""}>
+              <span>{daily.today_remaining_budget == null ? "NGÂN SÁCH CHUYẾN" : daily.today_remaining_budget >= 0 ? "CÒN HÔM NAY" : "VƯỢT HÔM NAY"}</span>
+              <strong>{daily.today_remaining_budget == null ? money(Math.max(0, totals.remaining)) : money(Math.abs(daily.today_remaining_budget))}</strong>
+              <button className="text-btn" onClick={() => navigate("money")}>Xem chi phí <ArrowRight size={14} /></button>
+            </div>
+          </section>
+
+          {daily.attention.length > 0 && (
+            <section className="daily-attention-panel">
+              <div className="daily-section-title"><div><b>Cần chú ý</b><span>{daily.attention.length} mục ảnh hưởng đến hôm nay</span></div></div>
+              {daily.attention.slice(0, 3).map((attention, index) => {
+                const item = attention.item_id ? data.items.find((row) => row.id === attention.item_id) : null;
+                return (
+                  <button
+                    className="daily-attention-row"
+                    key={`${attention.code}-${attention.item_id || index}`}
+                    onClick={() => {
+                      if (item) {
+                        setDay(localTime(item.start_at, trip.timezone).slice(0, 10));
+                        navigate("route");
+                      } else navigate("money");
+                    }}
+                  >
+                    <AlertTriangle size={17} />
+                    <span><b>{attention.label}</b><small>{attention.detail}</small></span>
+                    <ChevronRight size={15} />
+                  </button>
+                );
+              })}
+            </section>
+          )}
+        </>
+      );
+    }
+
+    if (daily.phase === "posttrip") {
+      return (
+        <section className="context-hero posttrip">
           <div>
-            <span className="eyebrow">TRIPFLOW PRO · V{VERSION}</span>
-            <h2>Trip Operating Center</h2>
-            <p className="muted">Một điểm điều hành xuyên suốt kế hoạch, chuyến đi thực tế, tài chính và kỷ niệm.</p>
+            <span className="eyebrow">CHUYẾN ĐI ĐÃ KẾT THÚC</span>
+            <h2>Tổng kết hành trình</h2>
+            <p>{progress.done}/{data.items.length} hoạt động hoàn thành · {money(totals.actual)} thực chi · {data.media.length} media.</p>
           </div>
-          <span className="trip-os-phase">{phase}</span>
+          <div className="context-metrics">
+            <span><b>{completedPercent}%</b><small>Lịch trình</small></span>
+            <span><b>{money(totals.actual)}</b><small>Thực chi</small></span>
+            <span><b>{data.media.length}</b><small>Media</small></span>
+          </div>
+          <div className="context-actions">
+            <button className="btn secondary" onClick={openAnalytics}><FileText size={16} /> Xem báo cáo</button>
+            <button className="btn secondary" onClick={() => navigate("media")}><Images size={16} /> Xem kỷ niệm</button>
+          </div>
+          {daily.attention.length > 0 && <p className="inline-notice"><AlertTriangle size={15} /> {daily.attention[0].label}: {daily.attention[0].detail}.</p>}
+        </section>
+      );
+    }
+
+    if (daily.phase === "cancelled") {
+      return (
+        <section className="context-hero cancelled">
+          <div><span className="eyebrow">CHUYẾN ĐI ĐÃ HỦY</span><h2>{trip.name}</h2><p>Dữ liệu lịch trình, chi phí và media vẫn được giữ để bạn tra cứu khi cần.</p></div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="context-hero pretrip">
+        <div>
+          <span className="eyebrow">CHUẨN BỊ CHUYẾN ĐI</span>
+          <h2>{daily.days_until_start > 0 ? `Còn ${daily.days_until_start} ngày để khởi hành` : "Sẵn sàng khởi hành"}</h2>
+          <p>{firstUpcoming ? `Điểm đầu tiên: ${firstUpcoming.title} · ${dateLabel(localTime(firstUpcoming.start_at, trip.timezone))} ${localTime(firstUpcoming.start_at, trip.timezone).slice(11)}` : "Chưa có hoạt động. Thêm lịch trình để TripFlow chuẩn bị ngày đi cho bạn."}</p>
         </div>
-        <div className="trip-os-grid">
-          <button onClick={() => navigate("route")} className="trip-os-card">
-            <span className="trip-os-icon"><Route size={20} /></span>
-            <div><small>PLANNING</small><b>{data.items.length} hoạt động</b><span>{itineraryPercent}% hoàn thành</span></div>
-            <ChevronRight size={18} />
-          </button>
-          <button onClick={() => navigate("route")} className="trip-os-card">
-            <span className="trip-os-icon"><Navigation size={20} /></span>
-            <div><small>LIVE TRIP</small><b>{progress.active ? "Đang check-in" : progress.next ? "Có chặng tiếp theo" : "Chưa có chặng live"}</b><span>{progress.next?.title || progress.active?.title || "Mở lịch trình để điều hành"}</span></div>
-            <ChevronRight size={18} />
-          </button>
-          <button onClick={() => navigate("money")} className="trip-os-card">
-            <span className="trip-os-icon"><Wallet size={20} /></span>
-            <div><small>FINANCE</small><b>{money(totals.remaining >= 0 ? totals.remaining : Math.abs(totals.remaining))}</b><span>{totals.remaining >= 0 ? `Còn lại · đã dùng ${budgetPercent}%` : `Vượt dự toán · đã dùng ${budgetPercent}%`}</span></div>
-            <ChevronRight size={18} />
-          </button>
-          <button onClick={() => navigate("media")} className="trip-os-card">
-            <span className="trip-os-icon"><Images size={20} /></span>
-            <div><small>MEMORIES</small><b>{data.media.length} media</b><span>{data.participants.length} người tham gia chuyến đi</span></div>
-            <ChevronRight size={18} />
-          </button>
+        <div className="context-metrics">
+          <span><b>{data.items.length}</b><small>Hoạt động</small></span>
+          <span><b>{money(totals.plan)}</b><small>Dự toán</small></span>
+          <span><b>{data.participants.length || trip.people}</b><small>Người đi</small></span>
+        </div>
+        <div className="context-actions">
+          <button className="btn primary" onClick={() => navigate("route")}><Route size={16} /> Xem lịch trình</button>
+          {writable && <button className="btn secondary" onClick={() => edit("item")}><Plus size={16} /> Thêm hoạt động</button>}
         </div>
       </section>
     );
   };
-
   const liveCard = () => {
     if (!trip || !progress) return null;
     const overdueActive = progress.activeLateMinutes > 0;
@@ -2340,7 +2567,7 @@ function App() {
                             : "Thành viên & cài đặt"}
                   </h1>
                 </div>
-                {writable && tab !== "more" && (
+                {writable && ["route", "money", "media"].includes(tab) && (
                   <button
                     className="btn primary"
                     onClick={() =>
@@ -2362,220 +2589,47 @@ function App() {
                   </button>
                 )}
               </div>
-              {tab === "home" && data && totals && progress && (
+              {tab === "home" && data && totals && progress && daily && (
                 <>
-                  <div className="trip-meta">
-                    <span>
-                      <MapPin size={15} />
-                      {trip.destination}
-                    </span>
-                    <span>
-                      <CalendarDays size={15} />
-                      {dateLabel(trip.start_date)} – {dateLabel(trip.end_date)}
-                    </span>
-                    <span>
-                      <Users size={15} />
-                      {trip.people} người
-                    </span>
+                  <div className="trip-meta compact">
+                    <span><MapPin size={15} />{trip.destination}</span>
+                    <span><CalendarDays size={15} />{dateLabel(trip.start_date)} – {dateLabel(trip.end_date)}</span>
+                    <span><Users size={15} />{trip.people} người</span>
                     <span className="pill">{TRIP_STATUS[trip.status]}</span>
                   </div>
-                  {liveCard()}
-                  {operatingCenter()}
-                  <div className="stats">
-                    <div className="stat">
-                      <span>Dự toán hiện hành</span>
-                      <strong>{money(totals.plan)}</strong>
-                      <small>{data.budgets.length} khoản dự toán</small>
-                    </div>
-                    <div className="stat">
-                      <span>Đã chi thực tế</span>
-                      <strong>{money(totals.actual)}</strong>
-                      <small>
-                        {totals.plan
-                          ? Math.round((totals.actual / totals.plan) * 100) +
-                            "% ngân sách"
-                          : "Chưa lập dự toán"}
-                      </small>
-                      <Bar
-                        value={totals.actual}
-                        max={totals.plan}
-                        over={totals.actual > totals.plan}
-                      />
-                    </div>
-                    <div
-                      className={`stat ${totals.remaining < 0 ? "negative" : ""}`}
-                    >
-                      <span>
-                        {totals.remaining < 0
-                          ? "Vượt dự toán"
-                          : "Ngân sách còn lại"}
-                      </span>
-                      <strong>{money(Math.abs(totals.remaining))}</strong>
-                      <small>
-                        Bình quân {money(totals.actual / trip.people)}/người
-                      </small>
-                    </div>
-                  </div>
-                  {analytics && (
-                    <section className="analytics-glance">
-                      <div>
-                        <span className="eyebrow">TRIP ANALYTICS · V0.8.0</span>
-                        <h2>{analytics.report_state === "post_trip" ? "Tổng kết sau chuyến đi" : "Tổng kết tạm thời"}</h2>
-                        <p className="muted">
-                          {analytics.itinerary.done}/{analytics.itinerary.total} hoạt động hoàn thành · {money(analytics.finance.net_actual)} thực chi · {analytics.media.total} media
-                        </p>
-                      </div>
-                      <div className="analytics-glance-actions">
-                        <span className={`status-chip ${analytics.readiness === "ready" ? "active" : ""}`}>
-                          {analytics.readiness === "ready" ? "Sẵn sàng lưu trữ" : `${analytics.warnings.length} mục cần rà soát`}
-                        </span>
-                        <button className="btn secondary" onClick={openAnalytics}>
-                          <FileText size={16} />
-                          Xem báo cáo
-                        </button>
-                      </div>
-                    </section>
-                  )}
-                  {story && story.media_total > 0 && (
-                    <section className="memory-glance">
-                      <div className="memory-glance-mark"><Sparkles size={22} /></div>
-                      <div>
-                        <span className="eyebrow">MEMORIES · V1.3.0</span>
-                        <h2>{story.cover ? story.cover.title : "Câu chuyện chuyến đi"}</h2>
-                        <p className="muted">
-                          {story.memory_days} ngày có kỷ niệm · {story.highlights.length} Trip Highlight · {story.media_total} media
-                        </p>
-                      </div>
-                      <button className="btn secondary" onClick={() => navigate("media")}>
-                        <BookOpen size={16} />
-                        Xem câu chuyện
-                      </button>
-                    </section>
-                  )}
-                  <div className="dashboard-grid">
-                    <section className="panel">
-                      <div className="section-heading">
-                        <h2>Hành trình của bạn</h2>
-                        <button
-                          className="text-btn"
-                          onClick={() => navigate("route")}
-                        >
-                          Xem tất cả
-                          <ArrowRight size={16} />
-                        </button>
-                      </div>
-                      <div className="progress-label">
-                        <span>
-                          {progress.done}/{data.items.length} điểm hoàn thành
-                        </span>
-                        <b>
-                          {data.items.length
-                            ? Math.round(
-                                (progress.done / data.items.length) * 100,
-                              )
-                            : 0}
-                          %
-                        </b>
-                      </div>
-                      <Bar value={progress.done} max={data.items.length} />
-                      {(progress.late.length > 0 || progress.activeLateMinutes > 0) && (
-                        <p className="inline-notice">
-                          <Timer size={15} />
-                          {progress.activeLateMinutes > 0
-                            ? `Chặng hiện tại đang trễ ${minutesText(progress.activeLateMinutes)}.`
-                            : `${progress.late.length} hoạt động qua giờ chưa cập nhật.`}
-                        </p>
-                      )}
-                      <div className="mini-timeline">
-                        {progress.sorted.slice(0, 4).map((x, i) => (
-                          <button
-                            key={x.id}
-                            onClick={() => {
-                              navigate("route");
-                              setDay(
-                                localTime(x.start_at, trip.timezone).slice(
-                                  0,
-                                  10,
-                                ),
-                              );
-                            }}
-                          >
-                            <span className={`step ${x.status}`}>
-                              {x.status === "done" ? (
-                                <Check size={16} />
-                              ) : (
-                                String(i + 1).padStart(2, "0")
-                              )}
-                            </span>
-                            <span>
-                              <b>{x.title}</b>
-                              <small>
-                                {dateLabel(
-                                  localTime(x.start_at, trip.timezone),
-                                )}{" "}
-                                ·{" "}
-                                {localTime(x.start_at, trip.timezone).slice(11)}{" "}
-                                · {ITEM_STATUS[x.status]}
-                              </small>
-                            </span>
-                            <ChevronRight size={16} />
-                          </button>
-                        ))}
-                      </div>
-                      {!data.items.length && (
-                        <Empty
-                          title="Lịch trình còn trống"
-                          text="Thêm những hoạt động đầu tiên."
-                          onAdd={writable ? () => edit("item") : undefined}
-                        />
-                      )}
-                    </section>
-                    <section className="panel">
-                      <div className="section-heading">
-                        <h2>Chi phí theo nhóm</h2>
-                        <button
-                          className="text-btn"
-                          onClick={() => navigate("money")}
-                        >
-                          Chi tiết
-                        </button>
-                      </div>
-                      {totals.categories
-                        .filter((x) => x.plan || x.actual)
-                        .map((x) => (
-                          <div className="category-row" key={x.category}>
-                            <div>
-                              <b>{x.category}</b>
-                              <span>{money(x.actual)}</span>
-                            </div>
-                            <Bar
-                              value={x.actual}
-                              max={x.plan}
-                              over={x.actual > x.plan}
-                            />
-                            <small>Dự toán {money(x.plan)}</small>
-                          </div>
-                        ))}
-                      {!totals.plan && !totals.actual && (
-                        <Empty
-                          title="Ngân sách của chuyến đi"
-                          text="Lập dự toán để theo dõi từng khoản chi."
-                          onAdd={writable ? () => edit("budget") : undefined}
-                        />
-                      )}
-                      <div className="legend">
-                        <i />
-                        Thực chi
-                        <i className="over" />
-                        Vượt dự toán
-                      </div>
-                    </section>
-                  </div>
+
+                  {contextualOverview()}
+
+                  <section className="overview-compact-summary" aria-label="Tình trạng chuyến đi">
+                    <button onClick={() => navigate("route")}>
+                      <Route size={18} />
+                      <span><b>{progress.done}/{data.items.length}</b><small>Hoạt động</small></span>
+                    </button>
+                    <button onClick={() => navigate("money")}>
+                      <Wallet size={18} />
+                      <span><b>{money(totals.actual)}</b><small>Đã chi</small></span>
+                    </button>
+                    <button onClick={() => navigate("media")}>
+                      <Images size={18} />
+                      <span><b>{data.media.length}</b><small>Media</small></span>
+                    </button>
+                    <button onClick={() => {
+                      navigate("more");
+                      setTimeout(() => {
+                        const group = document.getElementById("module-trip") as HTMLDetailsElement | null;
+                        if (group) group.open = true;
+                      }, 80);
+                    }}>
+                      <Users size={18} />
+                      <span><b>{data.participants.length || trip.people}</b><small>Người đi</small></span>
+                    </button>
+                  </section>
+
                   {trip.note && (
-                    <section className="panel">
-                      <span className="eyebrow">GHI CHÚ CHUYẾN ĐI</span>
+                    <details className="trip-note-compact">
+                      <summary>Ghi chú chuyến đi</summary>
                       <p className="prewrap">{trip.note}</p>
-                    </section>
+                    </details>
                   )}
                 </>
               )}

@@ -212,9 +212,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V2.3.0",
     title: "Trip Daily Command Center",
-    done: false,
+    done: true,
     description:
-      "Tập trung trải nghiệm đang đi vào một màn hình Hôm nay: lịch trình tiếp theo, trạng thái chuyến đi, chi tiêu trong ngày và hành động nhanh theo ngữ cảnh để giảm việc chuyển qua lại giữa các module.",
+      "Tái cấu trúc tab Tổng quan theo ngữ cảnh thay vì chồng thêm dashboard: khi đang đi ưu tiên Đang diễn ra, Tiếp theo, timeline hôm nay, chi hôm nay và cảnh báo cần chú ý; trước/sau chuyến tự chuyển sang nội dung chuẩn bị hoặc tổng kết. Hành động Maps, Ghi chi và cập nhật trạng thái được thực hiện ngay tại activity để giảm chuyển màn hình.",
   },
   {
     version: "V2.4.0",

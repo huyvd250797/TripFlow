@@ -218,10 +218,14 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Loại bỏ rule mobile ép nút full-width; giữ bố cục Ví chuyến đi cân đối.
 - Không migration database; tiếp tục Database V1.4.0.
 
-## ⬜ V2.3.0 — Trip Daily Command Center
+## ✅ V2.3.0 — Trip Daily Command Center
 
-- Một màn hình **Hôm nay** cho lịch trình hiện tại/tiếp theo, chi tiêu trong ngày và quick action theo ngữ cảnh.
-- Mục tiêu: giảm chuyển tab trong lúc đang đi.
+- Tái cấu trúc Tổng quan theo ngữ cảnh, không thêm tab mới.
+- Đang đi: Current/Next, timeline hôm nay, chi hôm nay và cảnh báo cần chú ý.
+- Trước chuyến: countdown + điểm đầu tiên + snapshot kế hoạch.
+- Sau chuyến: tổng kết lịch trình/tài chính/media.
+- Action theo activity ngay tại Tổng quan: Maps, Ghi chi, Tôi đã đến/Hoàn thành.
+- Database vẫn V1.4.0; không migration.
 
 ## ⬜ V2.4.0 — Offline & Sync Reliability Pro
 
@@ -245,4 +249,6 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Giữ context/scroll khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm.
 - Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
 
-**Phiên bản tiếp theo:** **V2.3.0 – Trip Daily Command Center**.
+**Phiên bản tiếp theo:** **V2.4.0 – Offline & Sync Reliability Pro**.
+
+

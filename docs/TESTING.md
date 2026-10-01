@@ -338,3 +338,15 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Nội dung **Ví chuyến đi** và mô tả không bị ép thành cột chữ hẹp.
 - [ ] CTA vẫn mở đúng form Expense và có trạng thái hover/active nhẹ.
 - [ ] App version 2.2.1, DB 1.4.0, service worker `tripflow-shell-v221`.
+
+## V2.3.0 Trip Daily Command Center
+
+- [ ] Tổng quan không tạo tab Hôm nay mới.
+- [ ] Chuyến đang đi hiển thị Current/Next đúng theo ngày và múi giờ chuyến đi.
+- [ ] Timeline compact chỉ lấy hoạt động hôm nay và link **Xem tất cả** mở đúng ngày ở Lịch trình.
+- [ ] Chi hôm nay là net payment-refund của ngày hiện tại; dự toán hôm nay lấy các budget gắn activity trong ngày.
+- [ ] Maps/Ghi chi/Tôi đã đến/Hoàn thành hoạt động ngay tại activity card.
+- [ ] Cần chú ý chỉ xuất hiện khi có late/missing place/over budget.
+- [ ] Trước chuyến và sau chuyến đổi context đúng, không render dashboard đang đi.
+- [ ] App version 2.3.0, DB 1.4.0, service worker `tripflow-shell-v230`.
+

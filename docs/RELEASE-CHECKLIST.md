@@ -230,3 +230,13 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Service worker `tripflow-shell-v221` active.
 - [ ] Travel Wallet CTA compact ở 320–430 px, không full-width và không làm hẹp phần copy.
 - [ ] Không có migration database mới.
+
+## V2.3.0 Trip Daily Command Center
+
+- [ ] App version `2.3.0`; Database required `1.4.0`; không có migration mới.
+- [ ] Service worker `tripflow-shell-v230` active.
+- [ ] Tổng quan theo ngữ cảnh pass trên mobile 320/390/430 px và desktop.
+- [ ] Current/Next, chi hôm nay, action Maps/Ghi chi/status và cảnh báo cần chú ý pass UAT.
+- [ ] Không xuất hiện lại Trip Operating Center/stats/dashboard-grid cũ trên Tổng quan.
+- [ ] Roadmap đánh dấu V2.3.0 hoàn thành và NEXT_VERSION là V2.4.0.
+

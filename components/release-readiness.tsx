@@ -69,7 +69,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V2.2.1 giữ Smart Forms/Defaults của V2.2.0 và thu gọn CTA Ghi chi tiêu trong Travel Wallet trên mobile; Quick Entry V2.1.0 và Google Maps V1.8.4 tiếp tục được giữ nguyên; vẫn dùng database V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
+            V2.3.0 tái cấu trúc Tổng quan thành Trip Daily Command Center theo ngữ cảnh, ưu tiên Current/Next, lịch hôm nay, chi hôm nay và action nhanh nhưng không thêm tab mới; Smart Forms V2.2.x, Quick Entry V2.1.0 và Google Maps V1.8.4 tiếp tục được giữ nguyên; vẫn dùng database V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

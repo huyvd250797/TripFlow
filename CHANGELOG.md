@@ -1,5 +1,16 @@
 # Changelog
 
+## V2.3.0 – Trip Daily Command Center
+
+- Tái cấu trúc **Tổng quan** theo ngữ cảnh, không tạo thêm tab Hôm nay và không chồng thêm dashboard lên giao diện cũ.
+- Khi chuyến đang diễn ra: ưu tiên **Đang diễn ra**, **Tiếp theo**, timeline hôm nay, chi hôm nay và các mục cần chú ý.
+- Maps, Ghi chi, Tôi đã đến và Hoàn thành có thể thao tác ngay từ activity card; Ghi chi kế thừa budget/category theo activity và Smart Default người trả.
+- Trước chuyến: hiển thị countdown, điểm đầu tiên và snapshot kế hoạch. Sau chuyến: chuyển sang tổng kết lịch trình, chi phí và media.
+- Tinh gọn dashboard cũ thành 4 chỉ số compact để giảm chiều dài và độ rối của Tổng quan.
+- Thêm domain `daily-command-center` và regression test cho current/next, tiền hôm nay và phase trước/sau chuyến.
+- Không đổi schema; App `2.3.0` tiếp tục dùng Database `1.4.0`. Service worker `tripflow-shell-v230`.
+- Phiên bản tiếp theo: **V2.4.0 – Offline & Sync Reliability Pro**.
+
 ## V2.2.1 – Travel Wallet Compact CTA Fix
 
 - Thu nhỏ nút **Ghi chi tiêu** trong Travel Wallet thành CTA compact ở góc phải, không còn `width: 100%` trên mobile.
