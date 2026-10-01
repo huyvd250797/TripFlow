@@ -196,15 +196,53 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Gợi ý category theo lịch sử cùng nội dung và từ khóa du lịch; Quick Entry dùng chung rule.
 - Không có migration database mới; DB compatibility vẫn V1.4.0.
 
-## ⬜ V2.0.0 — TripFlow Pro Travel Operating System
-
-- Hợp nhất Planning + Live Trip + Map + Finance + Memories trong một travel workspace xuyên suốt.
-
 ## ✅ V2.0.0 — TripFlow Pro Travel Operating System
 
 - Trip Operating Center hợp nhất Planning, Live Trip, Finance và Memories tại màn hình Tổng quan.
-- Travel Wallet tối ưu nút Ghi chi tiêu cho mobile.
-- Người thanh toán chọn từ danh sách Người tham gia chuyến đi; dữ liệu payer cũ vẫn được bảo toàn khi chỉnh sửa.
+- Travel Wallet tối ưu thao tác mobile và Người thanh toán chọn từ Người tham gia chuyến đi.
 - Không migration database; tiếp tục Database V1.4.0.
 
-**Roadmap hiện tại:** đã hoàn thành đến **V2.0.0 – TripFlow Pro Travel Operating System**.
+## ✅ V2.1.0 — Smart Quick Actions & Contextual UX
+
+- Quick Entry ⚡ hiểu câu lệnh chi tiêu một dòng, số tiền, nội dung, người thanh toán và khoản dự toán exact/fuzzy.
+- Preview trước khi lưu và chỉ hỏi người dùng khi kết quả match bị mơ hồ.
+
+## ✅ V2.2.0 — Smart Forms & Defaults
+
+- Progressive disclosure cho form tạo mới; trường chính hiển thị trước, trường ít dùng nằm trong Thêm chi tiết.
+- Smart Defaults giảm thao tác nhưng không ghi đè lựa chọn chủ động của người dùng.
+
+## ✅ V2.2.1 — Travel Wallet Compact CTA Fix
+
+- Thu gọn **Ghi chi tiêu** thành CTA nhỏ ở góc phải Travel Wallet, đặc biệt trên mobile.
+- Loại bỏ rule mobile ép nút full-width; giữ bố cục Ví chuyến đi cân đối.
+- Không migration database; tiếp tục Database V1.4.0.
+
+## ⬜ V2.3.0 — Trip Daily Command Center
+
+- Một màn hình **Hôm nay** cho lịch trình hiện tại/tiếp theo, chi tiêu trong ngày và quick action theo ngữ cảnh.
+- Mục tiêu: giảm chuyển tab trong lúc đang đi.
+
+## ⬜ V2.4.0 — Offline & Sync Reliability Pro
+
+- Làm rõ trạng thái queue/sync, retry có kiểm soát và chống lưu trùng khi mạng yếu.
+- Ưu tiên không gián đoạn luồng sử dụng trên đường.
+
+## ⬜ V2.5.0 — Performance, Loading & Perceived Speed
+
+- Lazy loading/code splitting cho vùng nặng, giảm request/refetch thừa và tận dụng cache đúng ngữ cảnh.
+- Skeleton/loading state theo module thay spinner toàn màn hình khi không cần.
+- Optimistic UI cho thao tác an toàn và đo các điểm chậm thực tế trên mobile để tối ưu theo dữ liệu.
+
+## ⬜ V2.6.0 — UI/UX Motion & Visual Polish
+
+- Animation/micro-interaction nhẹ cho modal, bottom sheet, tab, card và trạng thái lưu/xóa/thành công.
+- Chuẩn hóa typography, spacing, button, loading/empty/error/success state trên toàn app.
+- Motion phải nhanh, có `prefers-reduced-motion` và không làm chậm thao tác.
+
+## ⬜ V2.7.0 — Mobile Navigation & Interaction Polish
+
+- Giữ context/scroll khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm.
+- Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
+
+**Phiên bản tiếp theo:** **V2.3.0 – Trip Daily Command Center**.

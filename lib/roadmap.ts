@@ -203,11 +203,46 @@ export const ROADMAP: RoadmapItem[] = [
       "Giảm thao tác trong các form bằng progressive disclosure, mặc định thông minh và chỉ hiện các trường nâng cao khi thật sự cần, vẫn giữ đủ dữ liệu để quản lý chuyên nghiệp.",
   },
   {
+    version: "V2.2.1",
+    title: "Travel Wallet Compact CTA Fix",
+    done: true,
+    description:
+      "Thu gọn nút Ghi chi tiêu trong Travel Wallet về CTA compact ở góc phải, đặc biệt trên mobile; không còn chiếm toàn chiều rộng hoặc làm hẹp phần mô tả Ví chuyến đi.",
+  },
+  {
     version: "V2.3.0",
     title: "Trip Daily Command Center",
     done: false,
     description:
       "Tập trung trải nghiệm đang đi vào một màn hình Hôm nay: lịch trình tiếp theo, trạng thái chuyến đi, chi tiêu trong ngày và hành động nhanh theo ngữ cảnh để giảm việc chuyển qua lại giữa các module.",
+  },
+  {
+    version: "V2.4.0",
+    title: "Offline & Sync Reliability Pro",
+    done: false,
+    description:
+      "Tăng độ tin cậy khi mạng yếu/mất mạng: queue thao tác rõ trạng thái, chống lưu trùng, retry có kiểm soát, phục hồi sync và thông báo lỗi ngắn gọn không làm gián đoạn chuyến đi.",
+  },
+  {
+    version: "V2.5.0",
+    title: "Performance, Loading & Perceived Speed",
+    done: false,
+    description:
+      "Tối ưu tốc độ mở app và chuyển màn hình bằng lazy loading, giảm request thừa, cache dữ liệu phù hợp, skeleton/loading state theo ngữ cảnh, optimistic UI và đo các điểm chậm thực tế trên mobile.",
+  },
+  {
+    version: "V2.6.0",
+    title: "UI/UX Motion & Visual Polish",
+    done: false,
+    description:
+      "Chuẩn hóa motion/animation nhẹ cho modal, bottom sheet, tab, card và trạng thái lưu; thống nhất spacing, typography, button, empty/error/success state, ưu tiên mượt nhưng không gây chậm hoặc rối mắt.",
+  },
+  {
+    version: "V2.7.0",
+    title: "Mobile Navigation & Interaction Polish",
+    done: false,
+    description:
+      "Tinh gọn điều hướng mobile, giữ vị trí scroll và context khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm để TripFlow dùng nhanh như ứng dụng native.",
   },
 ];
 

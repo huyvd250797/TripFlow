@@ -6818,47 +6818,70 @@ h3 {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-width: 148px;
-  min-height: 52px;
-  padding: 8px 14px 8px 9px;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 11px 6px 7px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #0b6e77, #16a5ad);
   color: #fff;
-  box-shadow: 0 10px 22px rgba(11, 110, 119, .18);
+  box-shadow: 0 7px 16px rgba(11, 110, 119, .16);
   text-align: left;
+  white-space: nowrap;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
 }
-.wallet-add-expense:hover { transform: translateY(-1px); box-shadow: 0 13px 26px rgba(11, 110, 119, .22); }
+.wallet-add-expense:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(11, 110, 119, .20); filter: saturate(1.04); }
+.wallet-add-expense:active { transform: translateY(0) scale(.98); }
 .wallet-add-expense-icon {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 9px;
   background: rgba(255,255,255,.16);
 }
 .wallet-add-expense b,
 .wallet-add-expense small { display: block; white-space: nowrap; }
-.wallet-add-expense b { font-size: 13px; line-height: 1.2; }
-.wallet-add-expense small { margin-top: 2px; color: rgba(255,255,255,.78); font-size: 10px; }
+.wallet-add-expense b { font-size: 12px; line-height: 1.15; }
+.wallet-add-expense small { display: none; }
+.wallet-heading > div:first-child { min-width: 0; flex: 1 1 auto; }
 
 @media (max-width: 900px) {
   .trip-os-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 760px) {
-  .wallet-heading { align-items: stretch; gap: 12px; }
-  .wallet-add-expense {
-    width: 100%;
-    min-width: 0;
-    justify-content: flex-start;
-    min-height: 50px;
-    border-radius: 14px;
+  .wallet-heading {
+    align-items: flex-start;
+    gap: 10px;
   }
-  .wallet-add-expense b { font-size: 14px; }
+  .wallet-add-expense {
+    width: auto;
+    max-width: 132px;
+    min-height: 38px;
+    padding: 5px 9px 5px 6px;
+    border-radius: 11px;
+    align-self: flex-start;
+  }
+  .wallet-add-expense-icon {
+    width: 26px;
+    height: 26px;
+    flex-basis: 26px;
+    border-radius: 8px;
+  }
+  .wallet-add-expense b { font-size: 11.5px; }
   .trip-os-panel { padding: 14px; border-radius: 17px; }
   .trip-os-head { align-items: flex-start; }
+}
+@media (max-width: 390px) {
+  .wallet-heading { gap: 8px; }
+  .wallet-add-expense {
+    max-width: 112px;
+    padding-right: 8px;
+  }
+  .wallet-add-expense b { font-size: 11px; }
 }
 @media (max-width: 520px) {
   .trip-os-grid { grid-template-columns: 1fr; }
@@ -6914,7 +6937,7 @@ h3 {
   outline: none;
 }
 
-/* TripFlow V2.2.0 · Smart Forms & Defaults */
+/* TripFlow V2.2.1 · Travel Wallet Compact CTA Fix + V2.2 Smart Forms */
 .smart-form-control {
   display: flex;
   align-items: center;

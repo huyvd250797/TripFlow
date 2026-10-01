@@ -222,3 +222,11 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Smart Defaults vẫn được submit khi các trường chi tiết đang ẩn.
 - [ ] Form chỉnh sửa dữ liệu cũ vẫn hiển thị đầy đủ.
 - [ ] Quick dock close X nằm trên nút ⚡ và không bị che/chìm.
+
+
+## V2.2.1 Travel Wallet Compact CTA Fix
+
+- [ ] App version `2.2.1`; Database required `1.4.0`; channel `stable`.
+- [ ] Service worker `tripflow-shell-v221` active.
+- [ ] Travel Wallet CTA compact ở 320–430 px, không full-width và không làm hẹp phần copy.
+- [ ] Không có migration database mới.

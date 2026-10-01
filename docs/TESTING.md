@@ -330,3 +330,11 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Chỉnh sửa bản ghi cũ hiển thị đầy đủ trường ngay khi mở form.
 - [ ] Nút X của Quick dock nằm trên nút ⚡ và bấm được trên desktop/mobile/PWA.
 - [ ] App version 2.2.0, DB 1.4.0, service worker `tripflow-shell-v220`.
+
+
+## V2.2.1 Travel Wallet Compact CTA Fix
+
+- [ ] Mobile 320/375/390/430 px: nút **Ghi chi tiêu** nằm gọn ở góc phải phần header Ví chuyến đi, không chiếm full width.
+- [ ] Nội dung **Ví chuyến đi** và mô tả không bị ép thành cột chữ hẹp.
+- [ ] CTA vẫn mở đúng form Expense và có trạng thái hover/active nhẹ.
+- [ ] App version 2.2.1, DB 1.4.0, service worker `tripflow-shell-v221`.

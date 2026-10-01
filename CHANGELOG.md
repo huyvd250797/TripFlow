@@ -1,5 +1,14 @@
 # Changelog
 
+## V2.2.1 – Travel Wallet Compact CTA Fix
+
+- Thu nhỏ nút **Ghi chi tiêu** trong Travel Wallet thành CTA compact ở góc phải, không còn `width: 100%` trên mobile.
+- Bỏ dòng phụ **Thêm khoản mới** khỏi CTA để giảm chiều cao và giữ phần mô tả Ví chuyến đi cân đối.
+- Thêm active/hover transition nhẹ cho CTA; không thêm animation nặng trong bản hotfix.
+- Mở rộng roadmap sau V2.3.0 với các nhánh **Offline & Sync Reliability**, **Performance/Loading/Perceived Speed**, **UI/UX Motion & Visual Polish** và **Mobile Navigation & Interaction Polish**.
+- Không đổi schema; App `2.2.1` tiếp tục dùng Database `1.4.0`. Service worker `tripflow-shell-v221`.
+- Phiên bản tính năng tiếp theo: **V2.3.0 – Trip Daily Command Center**.
+
 ## V2.2.0 – Smart Forms & Defaults
 
 - Form tạo mới chuyển sang progressive disclosure: trường quan trọng hiển thị trước, trường ít dùng nằm trong **Thêm chi tiết**.
