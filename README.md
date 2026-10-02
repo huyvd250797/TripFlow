@@ -1,4 +1,4 @@
-# TripFlow 2.3.0 · Trip Daily Command Center
+# TripFlow 2.4.0 · Offline & Sync Reliability Pro
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -6,6 +6,19 @@ Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu ti
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
 
+
+
+## V2.4.0 nổi bật
+
+- **Offline-first cho dữ liệu cốt lõi:** xem dữ liệu cache và tạo/sửa/xóa lịch trình, dự toán, chi tiêu, người tham gia, media; sửa thông tin chuyến hiện tại khi mạng yếu/mất mạng.
+- **Optimistic UI:** thao tác offline hiển thị ngay trên giao diện và được ghi vào IndexedDB, không phải chờ server.
+- **Queue compaction:** nhiều lần sửa cùng một record trước khi sync được gộp lại; tạo rồi xóa trước khi có mạng sẽ tự triệt tiêu, giảm request và tránh thao tác trùng.
+- **Idempotency:** tiếp tục dùng `operationId` + mutation receipt ở database để retry an toàn, không tạo bản ghi trùng khi request đã tới server nhưng client chưa nhận response.
+- **Auto retry:** lỗi mạng/5xx dùng exponential backoff tối đa 5 phút; app tự thử lại khi online, focus lại hoặc mở lại PWA.
+- **Crash recovery:** thao tác đang ở trạng thái `sending` khi app bị đóng được phục hồi về hàng đợi và gửi lại an toàn.
+- **Conflict resolution:** xung đột version không retry mù; người dùng chọn **Giữ bản trên máy** (rebase lên version cloud mới nhất) hoặc **Dùng bản cloud**.
+- **Không migration:** App V2.4.0 tiếp tục dùng Database V1.4.0; service worker `tripflow-shell-v240`.
+- **Roadmap tiếp theo:** V2.5.0 – Performance, Loading & Perceived Speed.
 
 ## V2.3.0 nổi bật
 
@@ -70,9 +83,9 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.2.1 đều được đánh dấu ✅.
+- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.4.0 đều được đánh dấu ✅.
 
-**Phạm vi offline:** cho phép thêm thực chi, thêm/cập nhật/check-in lịch trình, thêm/sửa người tham gia và media khi mất mạng. Phân quyền, lời mời, xóa chuyến, chốt dự toán và Master Admin yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
+**Phạm vi offline V2.4.0:** cho phép tạo/sửa/xóa lịch trình, dự toán, chi tiêu, người tham gia, media và sửa chuyến hiện tại; optimistic UI + queue tự đồng bộ. Phân quyền, lời mời, snapshot/chốt dự toán, xóa chuyến và Master Admin vẫn yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
 ## 1. Tạo database Supabase
 
@@ -89,7 +102,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609280005_v100_stable_production_release.sql` — Stable Production marker + production-readiness V1.0.0.
    - `supabase/migrations/202609280006_v130_media_memories_storytelling.sql` — metadata Media/Storytelling + Realtime/restore compatibility + Database marker V1.3.0.
    - `supabase/migrations/202609290001_v140_smart_planning_templates_reuse.sql` — Planning Templates/Reuse + optional end date/time + Database marker V1.4.0.
-   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0, V2.0.0, V2.2.0, V2.2.1 và V2.3.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0, V2.0.0, V2.2.0, V2.2.1, V2.3.0 và V2.4.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
@@ -317,7 +330,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap hiện đã hoàn thành đến V2.3.0 – Trip Daily Command Center; phiên bản tiếp theo là V2.4.0 – Offline & Sync Reliability Pro.
+- Roadmap hiện đã hoàn thành đến V2.4.0 – Offline & Sync Reliability Pro; phiên bản tiếp theo là V2.5.0 – Performance, Loading & Perceived Speed.
 
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
@@ -358,4 +371,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **2.3.0**; Database version yêu cầu: **1.4.0**; V2.3.0 không có migration database.
+- App version: **2.4.0**; Database version yêu cầu: **1.4.0**; V2.4.0 không có migration database.

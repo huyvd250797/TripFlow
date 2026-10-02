@@ -65,8 +65,11 @@ Lời mời là UUID ngẫu nhiên, gắn email, có hạn 7 ngày, dùng một 
 - Thay đổi múi giờ chuyến đi giữ nguyên thời điểm UTC của hoạt động; giờ hiển thị địa phương đổi. Nếu làm hoạt động ra ngoài ngày chuyến đi, database từ chối.
 - Ghi thay đổi theo `version`; dữ liệu cũ bị từ chối, không âm thầm ghi đè. Hiện chưa có UI hợp nhất xung đột từng trường.
 - Cùng operation ID + cùng nội dung trả lại kết quả đã ghi; đổi nội dung phải tạo operation ID mới. V0.2 giữ operation ID trong IndexedDB nên thao tác offline có thể retry qua reload mà không sinh bản ghi trùng.
-- Queue offline chỉ nhận một tập mutation được kiểm soát: thêm thực chi, cập nhật/check-in lịch trình, thêm/sửa participant và media. Xóa chuyến, phân quyền, lời mời, snapshot và Master Admin cần online.
-- Conflict/stale version không bị ghi đè: queue chuyển sang `conflict`; lỗi quyền/nghiệp vụ chuyển `rejected` và giữ lại để người dùng thấy nguyên nhân.
+- V2.4.0 mở rộng queue offline cho dữ liệu cốt lõi: Trip update, Item/Budget/Expense/Participant/Media create-update-delete và Item status. Xóa Trip, phân quyền, lời mời, snapshot và Master Admin vẫn cần online.
+- Optimistic mutation được áp dụng vào React Query + IndexedDB; khi có refetch cloud, các row `pending/sending` được overlay lại để dữ liệu chờ sync không biến mất khỏi UI.
+- Queue chỉ compact operation chưa từng gửi server (`attempts=0`): create→update gộp dữ liệu, update→update giữ version gốc, create→delete triệt tiêu. Operation đã có khả năng tới server không bao giờ đổi payload/operationId.
+- Lỗi network/5xx dùng exponential backoff và tự resume khi online/focus/pageshow; row `sending` bị bỏ dở được phục hồi sau timeout.
+- Conflict/stale version không bị ghi đè: queue chuyển sang `conflict`; người dùng chọn **Giữ bản trên máy** để rebase version hoặc **Dùng bản cloud** để bỏ mutation local. Lỗi quyền/nghiệp vụ chuyển `rejected`.
 - Khóa transaction theo chuyến đi tuần tự hóa thao tác ghi; phù hợp nhóm nhỏ. Partial unique index đảm bảo chỉ một hoạt động active.
 - Chuyển điểm active hoàn thành điểm cũ và cập nhật điểm mới trong cùng transaction. Check-in thay đổi trạng thái chuyến sang traveling.
 - Xóa nghiệp vụ là soft delete. Xóa dự toán giữ thực chi và bỏ liên kết; xóa hoạt động giữ dự toán/media và bỏ liên kết. Xóa chuyến đi làm mất quyền đọc qua app. Thu hồi member là xóa membership có audit riêng.

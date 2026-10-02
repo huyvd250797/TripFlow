@@ -219,9 +219,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V2.4.0",
     title: "Offline & Sync Reliability Pro",
-    done: false,
+    done: true,
     description:
-      "Tăng độ tin cậy khi mạng yếu/mất mạng: queue thao tác rõ trạng thái, chống lưu trùng, retry có kiểm soát, phục hồi sync và thông báo lỗi ngắn gọn không làm gián đoạn chuyến đi.",
+      "Offline-first cho dữ liệu cốt lõi: cache + optimistic UI, queue tự gộp thao tác để giảm request, idempotency chống ghi trùng, retry exponential backoff, tự phục hồi trạng thái sending sau khi app bị đóng và xử lý conflict theo lựa chọn Giữ bản trên máy / Dùng bản cloud.",
   },
   {
     version: "V2.5.0",

@@ -1,4 +1,4 @@
-export const VERSION = "2.3.0";
+export const VERSION = "2.4.0";
 export const DATABASE_VERSION = "1.4.0";
 export const CATEGORIES = [
   "Di chuyển",
@@ -348,6 +348,9 @@ export type QueuedMutation = {
   createdAt: string;
   updatedAt: string;
   error?: string;
+  sequence?: number;
+  lastAttemptAt?: string;
+  nextAttemptAt?: string;
 };
 
 

@@ -30,7 +30,9 @@ Theo dõi tăng trưởng audit, admin audit và mutation receipts. V0.7.0 có r
 | Link email sai domain hoặc hết hạn           | Sửa Site URL, kiểm tra templates, yêu cầu email mới; URL token dùng một lần                                               |
 | Lưu bị từ chối vì nguồn yêu cầu              | Dùng domain ứng dụng trực tiếp; reverse proxy tùy chỉnh phải giữ đúng host/origin, không tắt kiểm tra Origin để sửa nhanh |
 | Dữ liệu đã thay đổi                          | Giữ lại nội dung cần thiết, đóng form, tải lại và sửa trên phiên bản mới                                                  |
-| Thao tác offline chưa đồng bộ               | Mở **Thêm → Dữ liệu, offline & tài khoản** để xem queue; bật mạng và bấm Đồng bộ ngay. Conflict/rejected được giữ lại, không tự ghi đè |
+| Thao tác offline chưa đồng bộ               | Mở **Thêm → Dữ liệu, offline & tài khoản** để xem queue. V2.4.0 tự retry theo backoff khi mạng trở lại; **Đồng bộ ngay** chỉ là thao tác ép chạy thủ công |
+| Queue bị `conflict`                          | Không retry mù. Chọn **Giữ bản trên máy** để rebase lên version cloud mới nhất hoặc **Dùng bản cloud** để bỏ thay đổi local |
+| App bị đóng khi đang `sending`               | Mở lại app; sau ngưỡng stale, row tự phục hồi về `pending` và gửi lại với cùng operationId để giữ idempotency |
 | User bị hủy kích hoạt nhưng đang offline    | Quyền thu hồi được áp dụng khi thiết bị kết nối lại và account gate/server kiểm tra; dữ liệu đã cache trước đó không thể bị thu hồi từ xa khi thiết bị hoàn toàn offline |
 | Không thấy Quản trị Master                  | Gán role `master` cho đúng user bằng SQL tin cậy theo README; đăng xuất/đăng nhập lại và kiểm tra migration V0.2            |
 | Drive báo không có quyền                     | Chủ album cấp quyền tại Drive; quyền TripFlow không cấp quyền Drive                                                       |

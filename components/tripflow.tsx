@@ -120,9 +120,17 @@ import {
   readCachedTrips,
   removeCachedBundle,
   removeQueue,
-  retryQueue,
+  recoverStaleQueue,
   updateQueue,
 } from "@/lib/offline";
+import {
+  applyOptimisticMutation,
+  applyOptimisticTripList,
+  currentVersionForMutation,
+  overlayQueuedMutations,
+  overlayQueuedTripList,
+  retryDelayMs,
+} from "@/lib/offline-reliability";
 const tabs = [
   { id: "home", label: "Tổng quan", Icon: LayoutDashboard },
   { id: "route", label: "Lịch trình", Icon: Route },
@@ -474,14 +482,29 @@ function App() {
       if (updateTimer) clearInterval(updateTimer);
     };
   }, [notify]);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void readCachedTrips(user.id).then((cached) => {
+      if (cancelled || !cached) return;
+      const key = ["trips", user.id] as const;
+      if (!qc.getQueryData<TripListResponse>(key)) qc.setQueryData(key, cached);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, qc]);
+
   const tripsQ = useQuery<TripListResponse>({
     queryKey: ["trips", user?.id],
     queryFn: async () => {
       if (!user) throw new Error("Vui lòng đăng nhập.");
       try {
         const value = await api<TripListResponse>("/api/tripflow");
-        await cacheTrips(user.id, value);
-        return value;
+        const queued = await listQueue(user.id);
+        const visible = overlayQueuedTripList(value, queued);
+        await cacheTrips(user.id, visible);
+        return visible;
       } catch (e) {
         if (e instanceof ApiError && e.status !== 0) throw e;
         const cached = await readCachedTrips(user.id);
@@ -644,14 +667,29 @@ function App() {
       window.removeEventListener("pagehide", rememberScroll);
     };
   }, [user, selectedId, tab, day, category, financeTab]);
+  useEffect(() => {
+    if (!user || !selectedId) return;
+    let cancelled = false;
+    void readCachedBundle(user.id, selectedId).then((cached) => {
+      if (cancelled || !cached) return;
+      const key = ["trip", user.id, selectedId] as const;
+      if (!qc.getQueryData<Bundle>(key)) qc.setQueryData(key, cached);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, selectedId, qc]);
+
   const bq = useQuery<Bundle>({
     queryKey: ["trip", user?.id, selectedId],
     queryFn: async () => {
       if (!user || !selectedId) throw new Error("Chưa chọn chuyến đi.");
       try {
         const value = await api<Bundle>("/api/tripflow?trip=" + selectedId);
-        await cacheBundle(user.id, selectedId, value);
-        return value;
+        const queued = await listQueue(user.id);
+        const visible = overlayQueuedMutations(value, queued);
+        await cacheBundle(user.id, selectedId, visible);
+        return visible;
       } catch (e) {
         if (e instanceof ApiError && e.status !== 0) throw e;
         const cached = await readCachedBundle(user.id, selectedId);
@@ -854,6 +892,31 @@ function App() {
       void s.removeChannel(channel);
     };
   }, [user, selectedId, qc, online, notify]);
+  const applyOfflineMutationToClient = useCallback(
+    async (mutation: Mutation) => {
+      if (!user) return;
+      const stamp = new Date().toISOString();
+      const bundleKey = ["trip", user.id, mutation.tripId] as const;
+      const currentBundle =
+        qc.getQueryData<Bundle>(bundleKey) ||
+        (await readCachedBundle(user.id, mutation.tripId));
+      if (currentBundle) {
+        const nextBundle = applyOptimisticMutation(currentBundle, mutation, stamp);
+        qc.setQueryData<Bundle>(bundleKey, nextBundle);
+        await cacheBundle(user.id, mutation.tripId, nextBundle);
+      }
+      const listKey = ["trips", user.id] as const;
+      const currentList =
+        qc.getQueryData<TripListResponse>(listKey) || (await readCachedTrips(user.id));
+      if (currentList) {
+        const nextList = applyOptimisticTripList(currentList, mutation, stamp);
+        qc.setQueryData<TripListResponse>(listKey, nextList);
+        await cacheTrips(user.id, nextList);
+      }
+    },
+    [user, qc],
+  );
+
   const refreshQueue = useCallback(async () => {
     if (!user) {
       setQueueRows([]);
@@ -861,20 +924,39 @@ function App() {
     }
     setQueueRows(await listQueue(user.id));
   }, [user]);
+
   const syncPending = useCallback(
     async (showMessage = false) => {
       if (!user || !navigator.onLine || syncLock.current) return;
       syncLock.current = true;
       setSyncing(true);
       let sent = 0;
+      let issues = 0;
       try {
         const rows = await listQueue(user.id);
+        const blockedTrips = new Set(
+          rows
+            .filter((row) => row.state === "conflict" || row.state === "rejected")
+            .map((row) => row.tripId),
+        );
+        issues = rows.filter(
+          (row) => row.state === "conflict" || row.state === "rejected",
+        ).length;
         for (const row of rows) {
-          if (!['pending', 'sending'].includes(row.state)) continue;
+          if (row.state !== "pending" && row.state !== "sending") continue;
+          if (blockedTrips.has(row.tripId)) continue;
+          const nowMs = Date.now();
+          const retryAt = row.nextAttemptAt ? Date.parse(row.nextAttemptAt) : 0;
+          if (!showMessage && retryAt && retryAt > nowMs) break;
+
+          const attempt = row.attempts + 1;
+          const attemptAt = new Date().toISOString();
           await updateQueue(row.operationId, {
-            state: 'sending',
-            attempts: row.attempts + 1,
+            state: "sending",
+            attempts: attempt,
             error: undefined,
+            lastAttemptAt: attemptAt,
+            nextAttemptAt: undefined,
           });
           try {
             await api<{ result: Record<string, unknown> }>("/api/tripflow", {
@@ -885,26 +967,42 @@ function App() {
             await removeQueue(row.operationId);
             sent += 1;
           } catch (e) {
-            const err = e instanceof ApiError ? e : new ApiError((e as Error).message);
+            const err =
+              e instanceof ApiError ? e : new ApiError((e as Error).message);
             if (err.status === 0 || err.status >= 500) {
-              await updateQueue(row.operationId, { state: 'pending', error: err.message });
+              const nextAttemptAt = new Date(
+                Date.now() + retryDelayMs(attempt),
+              ).toISOString();
+              await updateQueue(row.operationId, {
+                state: "pending",
+                error: err.message,
+                nextAttemptAt,
+              });
               break;
             }
             await updateQueue(row.operationId, {
-              state: err.status === 409 ? 'conflict' : 'rejected',
+              state: err.status === 409 ? "conflict" : "rejected",
               error: err.message,
+              nextAttemptAt: undefined,
             });
-            if (err.code === 'ACCOUNT_DEACTIVATED') break;
+            issues += 1;
+            blockedTrips.add(row.tripId);
+            if (err.code === "ACCOUNT_DEACTIVATED") break;
           }
         }
-        if (sent) {
+
+        if (sent || issues) {
           await Promise.all([
-            qc.invalidateQueries({ queryKey: ["trips"] }),
-            qc.invalidateQueries({ queryKey: ["trip"] }),
+            qc.invalidateQueries({ queryKey: ["trips", user.id] }),
+            qc.invalidateQueries({ queryKey: ["trip", user.id] }),
           ]);
-          if (showMessage) notify(`Đã đồng bộ ${sent} thao tác.`);
-        } else if (showMessage) {
-          notify("Không có thao tác mới cần đồng bộ.");
+        }
+        if (showMessage) {
+          if (sent && !issues) notify(`Đã đồng bộ ${sent} thao tác.`);
+          else if (sent && issues)
+            notify(`Đã đồng bộ ${sent} thao tác; còn ${issues} thao tác cần kiểm tra.`);
+          else if (issues) notify(`${issues} thao tác cần xử lý trước khi đồng bộ tiếp.`);
+          else notify("Không có thao tác mới cần đồng bộ.");
         }
       } finally {
         await refreshQueue();
@@ -914,26 +1012,88 @@ function App() {
     },
     [user, qc, notify, refreshQueue],
   );
+
   useEffect(() => {
-    void refreshQueue();
-  }, [refreshQueue]);
+    if (!user) {
+      setQueueRows([]);
+      return;
+    }
+    void recoverStaleQueue(user.id).then(() => refreshQueue());
+  }, [user, refreshQueue]);
+
   useEffect(() => {
     if (online && user) void syncPending(false);
   }, [online, user, syncPending]);
 
-  async function queueOffline(m: Mutation) {
+  useEffect(() => {
+    if (!online || !user || syncing) return;
+    const blockedTrips = new Set(
+      queueRows
+        .filter((row) => row.state === "conflict" || row.state === "rejected")
+        .map((row) => row.tripId),
+    );
+    const firstPending = queueRows.find(
+      (row) => row.state === "pending" && !blockedTrips.has(row.tripId),
+    );
+    if (!firstPending) return;
+    const due = firstPending.nextAttemptAt
+      ? Date.parse(firstPending.nextAttemptAt)
+      : Date.now();
+    const delay = Math.max(250, Math.min(300000, due - Date.now()));
+    const timer = window.setTimeout(() => void syncPending(false), delay);
+    return () => window.clearTimeout(timer);
+  }, [online, user, syncing, queueRows, syncPending]);
+
+  useEffect(() => {
+    if (!user) return;
+    const resume = () => {
+      if (navigator.onLine) void syncPending(false);
+    };
+    window.addEventListener("focus", resume);
+    window.addEventListener("pageshow", resume);
+    return () => {
+      window.removeEventListener("focus", resume);
+      window.removeEventListener("pageshow", resume);
+    };
+  }, [user, syncPending]);
+
+  async function queueOffline(mutation: Mutation, attempted = false) {
     if (!user) throw new Error("Vui lòng đăng nhập lại.");
-    if (!canQueueMutation(m))
+    if (!canQueueMutation(mutation))
       throw new Error(
-        "Thao tác này cần kết nối mạng. Chế độ offline hiện cho phép ghi chi tiêu mới, thêm/cập nhật/check-in lịch trình, người tham gia và media.",
+        "Thao tác này cần kết nối mạng. Offline Pro hỗ trợ sửa chuyến hiện tại, lịch trình, dự toán, chi tiêu, người tham gia và media; phân quyền, lời mời, snapshot và quản trị vẫn yêu cầu online.",
       );
-    await enqueueMutation(user.id, m);
+    const result = await enqueueMutation(user.id, mutation, {
+      // Chỉ compact khi thật sự offline để không thay đổi payload của một
+      // operation có thể đang được sync song song khi mạng vừa trở lại.
+      allowCompaction: !attempted && !navigator.onLine,
+      attempted,
+    });
+    await applyOfflineMutationToClient(mutation);
     await refreshQueue();
-    notify("Đã lưu trên thiết bị · chờ đồng bộ khi có mạng.");
+    notify(
+      result.cancelled
+        ? "Đã hủy thay đổi chưa đồng bộ trên thiết bị."
+        : result.compacted
+          ? "Đã cập nhật bản chờ đồng bộ · không tạo thao tác trùng."
+          : "Đã lưu trên thiết bị · sẽ tự đồng bộ khi có mạng.",
+    );
   }
 
   async function save(m: Mutation) {
-    if (!navigator.onLine) {
+    if (user && canQueueMutation(m)) {
+      const existingQueue = await listQueue(user.id);
+      const hasTripPredecessor = existingQueue.some(
+        (row) =>
+          row.tripId === m.tripId &&
+          (row.state === "pending" || row.state === "sending"),
+      );
+      if (!navigator.onLine || hasTripPredecessor) {
+        await queueOffline(m);
+        if (navigator.onLine) void syncPending(false);
+        return;
+      }
+    } else if (!navigator.onLine) {
       await queueOffline(m);
       return;
     }
@@ -948,8 +1108,12 @@ function App() {
         },
       );
     } catch (e) {
-      if (e instanceof ApiError && e.status === 0 && canQueueMutation(m)) {
-        await queueOffline(m);
+      if (
+        e instanceof ApiError &&
+        (e.status === 0 || e.status >= 500) &&
+        canQueueMutation(m)
+      ) {
+        await queueOffline(m, true);
         return;
       }
       throw e;
@@ -970,11 +1134,80 @@ function App() {
         });
     }
     await Promise.all([
-      qc.invalidateQueries({ queryKey: ["trips"] }),
-      qc.invalidateQueries({ queryKey: ["trip"] }),
+      qc.invalidateQueries({ queryKey: ["trips", user?.id] }),
+      qc.invalidateQueries({ queryKey: ["trip", user?.id] }),
     ]);
     notify("Đã lưu trên hệ thống.");
   }
+
+  async function discardQueuedChange(row: QueuedMutation) {
+    if (!user || !navigator.onLine) return;
+    try {
+      setSyncing(true);
+      const latest = await api<Bundle>("/api/tripflow?trip=" + row.tripId);
+      await removeQueue(row.operationId);
+      const remaining = await listQueue(user.id);
+      const visible = overlayQueuedMutations(latest, remaining);
+      qc.setQueryData<Bundle>(["trip", user.id, row.tripId], visible);
+      await cacheBundle(user.id, row.tripId, visible);
+      await refreshQueue();
+      await qc.invalidateQueries({ queryKey: ["trips", user.id] });
+      notify("Đã bỏ thay đổi trên thiết bị và dùng dữ liệu cloud.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không tải được dữ liệu cloud.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function keepQueuedChange(row: QueuedMutation) {
+    if (!user || !navigator.onLine || row.mutation.action === "create") return;
+    let shouldSync = false;
+    try {
+      setSyncing(true);
+      const latest = await api<Bundle>("/api/tripflow?trip=" + row.tripId);
+      const version = currentVersionForMutation(latest, row.mutation);
+      if (!version) throw new Error("Dữ liệu cloud không còn tồn tại để áp dụng thay đổi.");
+      const activeId =
+        row.mutation.entity === "item" && row.mutation.action === "status"
+          ? latest.items.find((item) => item.status === "active")?.id || ""
+          : "";
+      const rebased: Mutation = {
+        ...row.mutation,
+        operationId: crypto.randomUUID(),
+        version,
+        ...(row.mutation.entity === "item" &&
+        row.mutation.action === "status" &&
+        row.mutation.data?.status === "active"
+          ? {
+              data: {
+                ...row.mutation.data,
+                previous_id: activeId === row.mutation.id ? "" : activeId,
+              },
+            }
+          : {}),
+      };
+      await removeQueue(row.operationId);
+      await enqueueMutation(user.id, rebased, {
+        allowCompaction: false,
+        createdAt: row.createdAt,
+        sequence: row.sequence,
+      });
+      const remaining = await listQueue(user.id);
+      const visible = overlayQueuedMutations(latest, remaining);
+      qc.setQueryData<Bundle>(["trip", user.id, row.tripId], visible);
+      await cacheBundle(user.id, row.tripId, visible);
+      await refreshQueue();
+      notify("Đã cập nhật thay đổi theo phiên bản cloud mới nhất · đang đồng bộ lại.");
+      shouldSync = true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể giữ thay đổi trên thiết bị.");
+    } finally {
+      setSyncing(false);
+    }
+    if (shouldSync) void syncPending(false);
+  }
+
   const edit = (entity: Entity, record?: object) => {
     const existing = record as Record<string, unknown> | undefined;
     if (existing || !data) {
@@ -2369,7 +2602,7 @@ function App() {
                 title="Đồng bộ dữ liệu offline"
               >
                 {queueIssues ? <AlertTriangle size={16} /> : <CloudUpload size={16} />}
-                <span>{queuePending || queueIssues}</span>
+                <span>{queueIssues || queuePending}</span>
               </button>
             )}
             {trip && (
@@ -4659,7 +4892,9 @@ function App() {
                               <b>{row.mutation.entity} · {row.mutation.action}</b>
                               <small>
                                 {row.state === "pending"
-                                  ? "Chờ gửi"
+                                  ? row.nextAttemptAt
+                                    ? "Đang chờ tự thử lại"
+                                    : "Chờ gửi"
                                   : row.state === "sending"
                                     ? "Đang gửi"
                                     : row.state === "conflict"
@@ -4667,6 +4902,26 @@ function App() {
                                       : "Bị từ chối"}
                                 {row.error ? ` · ${row.error}` : ""}
                               </small>
+                              {(row.state === "conflict" || row.state === "rejected") && (
+                                <div className="sync-row-actions">
+                                  {row.state === "conflict" && row.mutation.action !== "create" && (
+                                    <button
+                                      type="button"
+                                      disabled={!online || syncing}
+                                      onClick={() => void keepQueuedChange(row)}
+                                    >
+                                      Giữ bản trên máy
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    disabled={!online || syncing}
+                                    onClick={() => void discardQueuedChange(row)}
+                                  >
+                                    Dùng bản cloud
+                                  </button>
+                                </div>
+                              )}
                             </span>
                           </div>
                         ))}
@@ -4684,18 +4939,9 @@ function App() {
                         </button>
                       )}
                       {queueIssues > 0 && (
-                        <button
-                          className="btn secondary"
-                          disabled={!online || syncing}
-                          onClick={async () => {
-                            await retryQueue(user.id);
-                            await refreshQueue();
-                            void syncPending(true);
-                          }}
-                        >
-                          <RefreshCw size={17} />
-                          Thử lại thao tác lỗi
-                        </button>
+                        <span className="sync-resolution-hint">
+                          Xung đột được xử lý từng mục để tránh ghi đè dữ liệu ngoài ý muốn.
+                        </span>
                       )}
                       {account?.role === "master" && (
                         <button className="btn secondary" onClick={() => navigate("admin")}>
@@ -4739,7 +4985,7 @@ function App() {
                       </button>
                     </div>
                     <p className="hint">
-                      Chế độ offline hỗ trợ ghi chi tiêu mới, thêm/cập nhật/check-in lịch trình, người tham gia và media. Phân quyền, xóa chuyến, chốt dự toán và quản trị yêu cầu online.
+                      Offline Pro hỗ trợ tạo/sửa/xóa lịch trình, dự toán, chi tiêu, người tham gia, media và sửa thông tin chuyến hiện tại. Phân quyền, lời mời, snapshot, xóa chuyến và quản trị vẫn yêu cầu online.
                     </p>
                     <p className="hint">
                       {user.email} · TripFlow {VERSION}{account?.role === "master" ? " · MASTER" : ""}

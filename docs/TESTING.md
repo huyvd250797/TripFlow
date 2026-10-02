@@ -350,3 +350,19 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Trước chuyến và sau chuyến đổi context đúng, không render dashboard đang đi.
 - [ ] App version 2.3.0, DB 1.4.0, service worker `tripflow-shell-v230`.
 
+
+
+## V2.4.0 Offline & Sync Reliability Pro
+
+- [ ] `tests/offline-reliability.test.ts`: queue core entities, compaction create→update, create→delete, optimistic cache, overlay pending-only và retry backoff.
+- [ ] Online → tắt mạng → tạo Expense: record xuất hiện ngay, badge sync tăng và reload PWA vẫn còn dữ liệu.
+- [ ] Offline tạo rồi sửa cùng Expense nhiều lần: queue chỉ giữ một create với dữ liệu mới nhất.
+- [ ] Offline tạo rồi xóa trước sync: mutation local được triệt tiêu, không gửi create/delete thừa lên server.
+- [ ] Mạng trở lại: queue tự sync không cần bấm nút; request retry cùng `operationId` không tạo duplicate.
+- [ ] Giả lập 5xx/network: trạng thái quay về pending và có backoff; focus lại app tiếp tục retry.
+- [ ] Đóng app khi row đang `sending`, mở lại sau >45s: row tự phục hồi pending và sync lại.
+- [ ] Tạo conflict version trên thiết bị khác: row chuyển `conflict`, không retry tự động.
+- [ ] Chọn **Dùng bản cloud**: bỏ mutation local và UI refresh theo server.
+- [ ] Chọn **Giữ bản trên máy**: lấy version cloud mới nhất, tạo operationId mới và sync lại thay đổi local.
+- [ ] Offline hỗ trợ Item/Budget/Expense/Participant/Media create-update-delete, Item status và Trip update; Invitation/Member/Snapshot vẫn chặn offline.
+- [ ] App version 2.4.0, DB 1.4.0, service worker `tripflow-shell-v240`.

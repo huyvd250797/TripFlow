@@ -1,5 +1,18 @@
 # Changelog
 
+## V2.4.0 – Offline & Sync Reliability Pro
+
+- Nâng offline từ queue cơ bản lên offline-first cho dữ liệu cốt lõi: Trip update, Item, Budget, Expense, Participant và Media.
+- Optimistic UI + cache IndexedDB: thao tác offline xuất hiện ngay và vẫn còn sau khi đóng/mở lại app.
+- Queue compaction gộp create/update hoặc nhiều update cùng record, triệt tiêu create→delete trước khi sync và giữ nguyên version gốc để tránh conflict giả.
+- Retry mạng/5xx theo exponential backoff 2s → 5 phút; tự tiếp tục khi online/focus/pageshow.
+- Tự phục hồi queue `sending` bị gián đoạn sau crash/đóng PWA.
+- Query cloud luôn overlay các mutation pending/sending nên background refresh không làm biến mất dữ liệu đang chờ sync.
+- Conflict 409 không retry mù: hỗ trợ **Giữ bản trên máy** (rebase version mới nhất) hoặc **Dùng bản cloud**.
+- Tiếp tục dùng `operationId` + `private.mutation_receipts` hiện có để chống duplicate khi retry.
+- Không đổi schema; App `2.4.0` tiếp tục dùng Database `1.4.0`. Service worker `tripflow-shell-v240`.
+- Phiên bản tiếp theo: **V2.5.0 – Performance, Loading & Perceived Speed**.
+
 ## V2.3.0 – Trip Daily Command Center
 
 - Tái cấu trúc **Tổng quan** theo ngữ cảnh, không tạo thêm tab Hôm nay và không chồng thêm dashboard lên giao diện cũ.

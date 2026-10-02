@@ -240,3 +240,16 @@ Chỉ phát hành/duy trì V1.0.0 Production khi toàn bộ mục Critical/High 
 - [ ] Không xuất hiện lại Trip Operating Center/stats/dashboard-grid cũ trên Tổng quan.
 - [ ] Roadmap đánh dấu V2.3.0 hoàn thành và NEXT_VERSION là V2.4.0.
 
+
+
+## V2.4.0 Offline & Sync Reliability Pro
+
+- [ ] App version `2.4.0`; Database required `1.4.0`; không có migration mới.
+- [ ] Service worker `tripflow-shell-v240` active sau reload/PWA update.
+- [ ] IndexedDB `tripflow-v020` nâng schema version 2, giữ cache/queue cũ và có index `tripId`/`state`.
+- [ ] Offline optimistic UI + queue compaction pass UAT cho itinerary/budget/expense/participant/media/trip update.
+- [ ] Mutation receipt/idempotency trong DB V1.4.0 vẫn hoạt động; retry không sinh duplicate.
+- [ ] Backoff + auto resume + stale-sending recovery pass.
+- [ ] Conflict UI có **Giữ bản trên máy / Dùng bản cloud** và không retry 409 vô hạn.
+- [ ] Background refetch không làm mất mutation pending/sending khỏi UI.
+- [ ] Roadmap đánh dấu V2.4.0 hoàn thành và NEXT_VERSION là V2.5.0.

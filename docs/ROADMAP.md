@@ -227,10 +227,13 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Action theo activity ngay tại Tổng quan: Maps, Ghi chi, Tôi đã đến/Hoàn thành.
 - Database vẫn V1.4.0; không migration.
 
-## ⬜ V2.4.0 — Offline & Sync Reliability Pro
+## ✅ V2.4.0 — Offline & Sync Reliability Pro
 
-- Làm rõ trạng thái queue/sync, retry có kiểm soát và chống lưu trùng khi mạng yếu.
-- Ưu tiên không gián đoạn luồng sử dụng trên đường.
+- Offline-first cho dữ liệu cốt lõi với cache IndexedDB + optimistic UI.
+- Queue compaction giảm thao tác thừa, giữ idempotency `operationId` và tránh duplicate khi retry.
+- Exponential backoff, tự sync khi mạng trở lại/focus app và phục hồi thao tác `sending` bị gián đoạn.
+- Conflict 409 xử lý có chủ đích: Giữ bản trên máy hoặc Dùng bản cloud, không retry mù.
+- Database vẫn V1.4.0; không migration.
 
 ## ⬜ V2.5.0 — Performance, Loading & Perceived Speed
 
@@ -249,6 +252,6 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Giữ context/scroll khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm.
 - Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
 
-**Phiên bản tiếp theo:** **V2.4.0 – Offline & Sync Reliability Pro**.
+**Phiên bản tiếp theo:** **V2.5.0 – Performance, Loading & Perceived Speed**.
 
 

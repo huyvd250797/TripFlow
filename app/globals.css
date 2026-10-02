@@ -7314,3 +7314,35 @@ h3 {
   .daily-money-strip { grid-template-columns: 1fr; }
   .context-metrics { grid-template-columns: 1fr; }
 }
+
+/* V2.4.0 · Offline & Sync Reliability Pro */
+.sync-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+}
+.sync-row-actions button {
+  border: 1px solid var(--line);
+  background: #f8faf7;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sync-row-actions button:hover:not(:disabled) {
+  background: #eef4e9;
+}
+.sync-row-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sync-resolution-hint {
+  display: inline-flex;
+  align-items: center;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}

@@ -1,5 +1,6 @@
 "use client";
 import type { Bundle, Mutation, QueuedMutation, TripListResponse } from "./types";
+import { compareQueuedMutations, compactQueueRows, isCoreOfflineMutation } from "./offline-reliability";
 
 type CacheEntry<T = unknown> = {
   key: string;
@@ -11,7 +12,7 @@ type CacheEntry<T = unknown> = {
 };
 
 const DB_NAME = "tripflow-v020";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const CACHE = "cache";
 const QUEUE = "queue";
 let opening: Promise<IDBDatabase> | null = null;
@@ -27,16 +28,32 @@ function openDb(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(CACHE)) {
-        const store = db.createObjectStore(CACHE, { keyPath: "key" });
-        store.createIndex("userId", "userId", { unique: false });
-      }
-      if (!db.objectStoreNames.contains(QUEUE)) {
-        const store = db.createObjectStore(QUEUE, { keyPath: "operationId" });
-        store.createIndex("userId", "userId", { unique: false });
-      }
+      let cacheStore: IDBObjectStore;
+      if (!db.objectStoreNames.contains(CACHE))
+        cacheStore = db.createObjectStore(CACHE, { keyPath: "key" });
+      else cacheStore = request.transaction!.objectStore(CACHE);
+      if (!cacheStore.indexNames.contains("userId"))
+        cacheStore.createIndex("userId", "userId", { unique: false });
+
+      let queueStore: IDBObjectStore;
+      if (!db.objectStoreNames.contains(QUEUE))
+        queueStore = db.createObjectStore(QUEUE, { keyPath: "operationId" });
+      else queueStore = request.transaction!.objectStore(QUEUE);
+      if (!queueStore.indexNames.contains("userId"))
+        queueStore.createIndex("userId", "userId", { unique: false });
+      if (!queueStore.indexNames.contains("tripId"))
+        queueStore.createIndex("tripId", "tripId", { unique: false });
+      if (!queueStore.indexNames.contains("state"))
+        queueStore.createIndex("state", "state", { unique: false });
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => {
+        db.close();
+        opening = null;
+      };
+      resolve(db);
+    };
     request.onerror = () => reject(request.error || new Error("Không mở được IndexedDB."));
     request.onblocked = () => reject(new Error("IndexedDB đang bị khóa bởi phiên TripFlow khác."));
   });
@@ -84,6 +101,7 @@ async function remove(storeName: string, key: IDBValidKey) {
   });
 }
 
+
 export async function cacheTrips(userId: string, value: TripListResponse) {
   if (!available()) return;
   const row: CacheEntry<TripListResponse> = {
@@ -126,40 +144,55 @@ export async function removeCachedBundle(userId: string, tripId: string) {
   await remove(CACHE, `bundle:${userId}:${tripId}`);
 }
 
-export function canQueueMutation(m: Mutation) {
-  if (m.entity === "expense" && m.action === "create") return true;
-  if (m.entity === "item" && ["create", "status", "update"].includes(m.action)) return true;
-  if (m.entity === "participant" && ["create", "update"].includes(m.action)) return true;
-  if (m.entity === "media" && ["create", "update"].includes(m.action)) return true;
-  return false;
+export function canQueueMutation(mutation: Mutation) {
+  return isCoreOfflineMutation(mutation);
 }
 
-export async function enqueueMutation(userId: string, mutation: Mutation) {
+export async function enqueueMutation(
+  userId: string,
+  mutation: Mutation,
+  options: {
+    allowCompaction?: boolean;
+    attempted?: boolean;
+    createdAt?: string;
+    sequence?: number;
+  } = {},
+) {
   if (!available()) throw new Error("Trình duyệt không hỗ trợ lưu offline.");
+  const previous = await listQueue(userId);
   const now = new Date().toISOString();
-  const row: QueuedMutation = {
-    operationId: mutation.operationId,
-    userId,
-    tripId: mutation.tripId,
-    mutation,
-    state: "pending",
-    attempts: 0,
-    createdAt: now,
-    updatedAt: now,
-  };
-  await put(QUEUE, row);
-  return row;
+  const result = compactQueueRows(previous, mutation, userId, now, options);
+  const previousById = new Map(previous.map((row) => [row.operationId, row]));
+  const nextIds = new Set(result.rows.map((row) => row.operationId));
+  for (const row of previous) {
+    if (!nextIds.has(row.operationId)) await remove(QUEUE, row.operationId);
+  }
+  for (const row of result.rows) {
+    const before = previousById.get(row.operationId);
+    if (!before || JSON.stringify(before) !== JSON.stringify(row)) await put(QUEUE, row);
+  }
+  return result;
 }
 
 export async function listQueue(userId: string) {
   if (!available()) return [] as QueuedMutation[];
   const rows = await getByUser<QueuedMutation>(QUEUE, userId);
-  return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return rows.sort(compareQueuedMutations);
 }
 
 export async function updateQueue(
   operationId: string,
-  patch: Partial<Pick<QueuedMutation, "state" | "attempts" | "error" | "updatedAt">>,
+  patch: Partial<
+    Pick<
+      QueuedMutation,
+      | "state"
+      | "attempts"
+      | "error"
+      | "updatedAt"
+      | "lastAttemptAt"
+      | "nextAttemptAt"
+    >
+  >,
 ) {
   if (!available()) return;
   const row = await get<QueuedMutation>(QUEUE, operationId);
@@ -176,6 +209,25 @@ export async function removeQueue(operationId: string) {
   await remove(QUEUE, operationId);
 }
 
+export async function recoverStaleQueue(userId: string, staleMs = 45000) {
+  if (!available()) return 0;
+  const rows = await listQueue(userId);
+  const cutoff = Date.now() - staleMs;
+  let recovered = 0;
+  for (const row of rows) {
+    if (row.state !== "sending") continue;
+    const last = Date.parse(row.lastAttemptAt || row.updatedAt || row.createdAt);
+    if (Number.isFinite(last) && last > cutoff) continue;
+    await updateQueue(row.operationId, {
+      state: "pending",
+      error: "Phiên đồng bộ trước bị gián đoạn; TripFlow sẽ gửi lại an toàn.",
+      nextAttemptAt: undefined,
+    });
+    recovered += 1;
+  }
+  return recovered;
+}
+
 export async function retryQueue(userId: string) {
   if (!available()) return;
   const rows = await listQueue(userId);
@@ -185,6 +237,7 @@ export async function retryQueue(userId: string) {
         ...row,
         state: "pending",
         error: undefined,
+        nextAttemptAt: undefined,
         updatedAt: new Date().toISOString(),
       });
     }
