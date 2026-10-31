@@ -127,7 +127,13 @@ async function main() {
     ],
   });
   const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
+    viewport: {
+      width:
+        process.env.TRIPFLOW_MOBILE_TEST || process.env.TRIPFLOW_POLISH_TEST
+          ? 390
+          : 1280,
+      height: 844,
+    },
     deviceScaleFactor: 1,
     bypassCSP: true,
     reducedMotion: "reduce",
@@ -348,6 +354,88 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_MOBILE_TEST) {
+      await nav("Thêm");
+      await page.locator("#module-trip > summary").click();
+      const sheet = page.getByRole("dialog");
+      await expect(sheet.locator(".more-section-menu")).toBeVisible();
+      await sheet
+        .getByRole("button", { name: "Chia sẻ & phân quyền", exact: true })
+        .click();
+      await expect(sheet.locator(".permission-grants .pill")).toHaveCount(5);
+      await sheet
+        .getByRole("button", { name: "Các mục quản lý", exact: true })
+        .click();
+      await sheet
+        .getByRole("button", { name: "Người tham gia", exact: true })
+        .click();
+      await expect(
+        sheet
+          .getByRole("heading", { name: "Người tham gia", exact: true })
+          .last(),
+      ).toBeVisible();
+      await page.screenshot({
+        path: "test-results/v270-mobile-members.png",
+        fullPage: true,
+      });
+      await page.goBack();
+      await expect(sheet).toHaveCount(0);
+      await page.screenshot({
+        path: "test-results/v270-mobile-more.png",
+        fullPage: true,
+      });
+      await nav("Lịch trình");
+      const row = page.locator(".timeline-row").first();
+      await expect(row).toBeVisible();
+      const card = await row.locator(".stop-panel").boundingBox();
+      expect(card!.width).toBeGreaterThan(300);
+      await row.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: 260,
+        clientY: 200,
+      });
+      await row.dispatchEvent("pointermove", {
+        pointerType: "touch",
+        clientX: 255,
+        clientY: 260,
+      });
+      await expect(row.locator(".swipe-actions")).toHaveCount(0);
+      await row.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: 260,
+        clientY: 200,
+      });
+      await row.dispatchEvent("pointermove", {
+        pointerType: "touch",
+        clientX: 160,
+        clientY: 202,
+      });
+      await expect(row.locator(".swipe-actions")).toBeVisible();
+      await row
+        .locator(".swipe-actions")
+        .getByRole("button", { name: "Sửa", exact: true })
+        .click();
+      await expect(sheet).toBeVisible();
+      await page.goBack();
+      await expect(sheet).toHaveCount(0);
+      await expect(
+        page.locator('.screen-content[data-screen="route"]'),
+      ).toBeVisible();
+      await page.screenshot({
+        path: "test-results/v270-mobile-timeline.png",
+        fullPage: true,
+      });
+      await nav("Chi phí");
+      await page.goBack();
+      await expect(
+        page.locator('.screen-content[data-screen="route"]'),
+      ).toBeVisible();
+      expect(errors).toEqual([]);
+      console.log(
+        "PASS V2.7 mobile: More drill-down sheet, permissions, back closes sheet/editor first, tab history, wide compact timeline, vertical gesture safe, swipe edit, no JS errors.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_PERF_TEST) {
       await nav("Chi phí");
       await page
@@ -698,7 +786,7 @@ async function main() {
     await expect(page.locator(".error")).toHaveCount(0);
     expect(errors).toEqual([]);
     console.log(
-      "PASS V2.6.0 regression: five permission fields, owner grant persisted, viewer action visibility, offline Wallet+sync, theme persistence/system switching, 40 responsive views, delete-trip navigation/cache cleanup, no JS errors.",
+      "PASS V2.7.0 regression: five permission fields, owner grant persisted, viewer action visibility, offline Wallet+sync, theme persistence/system switching, 40 responsive views, delete-trip navigation/cache cleanup, no JS errors.",
     );
   } finally {
     await context.close();

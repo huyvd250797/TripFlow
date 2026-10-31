@@ -1,10 +1,19 @@
-# TripFlow 2.6.0 · UI/UX Motion & Visual Polish
+# TripFlow 2.7.0 · Mobile Navigation & Interaction Polish
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.7.0 — Mobile Navigation & Interaction Polish
+
+- Popup cập nhật thành bottom sheet mobile, nút lớn cạnh nhau, cuộn trong vùng nội dung và bám visual viewport; desktop giữ popup căn giữa.
+- Timeline tận dụng toàn bộ chiều ngang, giảm khoảng cách/card, thu gọn ghi chú và chỉnh giờ trong mục mở thêm; giữ các thông tin và hành động hiện có.
+- Màn hình Thêm mobile chọn nhóm rồi chọn đúng mục trong bottom sheet: người tham gia, phân quyền, mẫu, báo cáo, dữ liệu/vận hành; không bung toàn bộ danh sách lên trang chính.
+- Vuốt ngang lịch trình, khoản chi và media để hiện thao tác; giữ nút bấm thường cho bàn phím/desktop. Vuốt không tự xóa; quyền và xác nhận vẫn qua luồng cũ.
+- Lịch sử điều hướng tab; Back đóng popup trước, giữ cảnh báo bản nháp/busy và khôi phục scroll theo tab; tăng vùng chạm cho bộ lọc và thao tác.
+- **Không cần chạy migration mới.** App 2.7.0 / database 2.4.1. Xem [docs/UPGRADE-V2.7.0.md](docs/UPGRADE-V2.7.0.md).
 
 ## V2.6.0 — UI/UX Motion & Visual Polish
 
@@ -114,7 +123,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.6.0 đều được đánh dấu ✅.
+- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.7.0 đều được đánh dấu ✅.
 
 **Phạm vi offline V2.4.0:** cho phép tạo/sửa/xóa lịch trình, dự toán, chi tiêu, người tham gia, media và sửa chuyến hiện tại; optimistic UI + queue tự đồng bộ. Phân quyền, lời mời, snapshot/chốt dự toán, xóa chuyến và Master Admin vẫn yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -355,7 +364,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap hiện đã hoàn thành đến V2.6.0 – UI/UX Motion & Visual Polish; phiên bản tiếp theo là V2.7.0 – Mobile Navigation & Interaction Polish.
+- Roadmap hiện đã hoàn thành đến V2.7.0 – Mobile Navigation & Interaction Polish. Đề xuất V2.8.0 – Bookings & Travel Documents để Boss chọn, chưa triển khai.
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
 
@@ -392,4 +401,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **2.6.0**; Database version yêu cầu: **2.4.1**; V2.6.0 không có migration mới.
+- App version: **2.7.0**; Database version yêu cầu: **2.4.1**; V2.7.0 không có migration mới.

@@ -1,5 +1,14 @@
 # Changelog
 
+## V2.7.0 — Mobile Navigation & Interaction Polish
+
+- Popup cập nhật thành bottom sheet mobile, nút lớn cạnh nhau, cuộn trong vùng nội dung và bám visual viewport; desktop giữ popup căn giữa.
+- Timeline tận dụng toàn bộ chiều ngang, giảm khoảng cách/card, thu gọn ghi chú và chỉnh giờ trong mục mở thêm; giữ các thông tin và hành động hiện có.
+- Màn hình Thêm mobile chọn nhóm rồi chọn đúng mục trong bottom sheet: người tham gia, phân quyền, mẫu, báo cáo, dữ liệu/vận hành; không bung toàn bộ danh sách lên trang chính.
+- Vuốt ngang lịch trình, khoản chi và media để hiện thao tác; giữ nút bấm thường cho bàn phím/desktop. Vuốt không tự xóa; quyền và xác nhận vẫn qua luồng cũ.
+- Lịch sử điều hướng tab; Back đóng popup trước, giữ cảnh báo bản nháp/busy và khôi phục scroll theo tab; tăng vùng chạm cho bộ lọc và thao tác.
+- **Không cần chạy migration mới.** App 2.7.0 / database 2.4.1. Xem [docs/UPGRADE-V2.7.0.md](docs/UPGRADE-V2.7.0.md).
+
 ## V2.6.0 — UI/UX Motion & Visual Polish
 
 - Chuẩn hóa typography, khoảng cách, bán kính, nút, form, card và empty/loading/error state bằng lớp `app/polish.css`; màu semantic tương thích Sáng/Tối.

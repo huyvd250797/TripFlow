@@ -22,6 +22,8 @@ const AnalyticsModule = dynamic(
   () => import("./analytics-module").then((m) => m.AnalyticsModule),
   { loading: () => <ModuleSkeleton label="Đang tải báo cáo" />, ssr: false },
 );
+import { MoreModule, useMobile } from "./ui/mobile-module";
+import { SwipeRow } from "./ui/swipe-row";
 import { AppUpdate } from "./app-update";
 import {
   Toast,
@@ -272,6 +274,7 @@ export function TripFlow() {
   );
 }
 function App() {
+  const isMobile = useMobile();
   const qc = useQueryClient();
   const [user, setUser] = useState<User | null>(null),
     [authLoading, setAuthLoading] = useState(true),
@@ -508,6 +511,25 @@ function App() {
   const selectedId = trips.some((t) => t.id === selected)
     ? selected
     : trips[0]?.id || "";
+  useEffect(() => {
+    if (!user) return;
+    history.replaceState({ ...history.state, tripflowTab: tab }, "");
+    const back = (event: PopStateEvent) => {
+      if (event.state?.tripflowDialog || !event.state?.tripflowTab) return;
+      const next = event.state.tripflowTab as string;
+      setTab(next);
+      requestAnimationFrame(() => {
+        const y = Number(
+          sessionStorage.getItem(
+            `tripflow:scroll:${user.id}:${selectedId}:${next}`,
+          ) || 0,
+        );
+        scrollAppTo(Number.isFinite(y) ? y : 0);
+      });
+    };
+    window.addEventListener("popstate", back);
+    return () => window.removeEventListener("popstate", back);
+  }, [user?.id, selectedId]);
   useEffect(() => {
     if (!user || !selectedId) return;
     const restoreKey = `${user.id}:${selectedId}`;
@@ -1590,6 +1612,15 @@ function App() {
     );
   }
   function navigate(id: string) {
+    if (id !== tab) {
+      const state = {
+        ...history.state,
+        tripflowTab: id,
+        tripflowDialog: undefined,
+      };
+      if (history.state?.tripflowDialog) history.replaceState(state, "");
+      else history.pushState(state, "");
+    }
     if (user && selectedId) {
       const restoreKey = `${user.id}:${selectedId}`;
       try {
@@ -2364,7 +2395,10 @@ function App() {
         const group = document.getElementById(
           "module-trip",
         ) as HTMLDetailsElement | null;
-        if (group) group.open = true;
+        if (group) {
+          if (isMobile) group.querySelector("summary")?.click();
+          else group.open = true;
+        }
       }, 80);
     }
     setWorkspaceSearch(false);
@@ -2705,7 +2739,10 @@ function App() {
       const group = document.getElementById(
         "module-reporting",
       ) as HTMLDetailsElement | null;
-      if (group) group.open = true;
+      if (group) {
+        if (isMobile) group.querySelector("summary")?.click();
+        else group.open = true;
+      }
       document
         .getElementById("trip-analytics")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3192,43 +3229,46 @@ function App() {
               ? `${dateLabel(localTime(progress.next.start_at, trip.timezone))} · ${localTime(progress.next.start_at, trip.timezone).slice(11)}`
               : "Thêm hoạt động và thời gian để bắt đầu."}
         </p>
-        <div className="live-snapshot">
-          <div>
-            <small>CURRENT</small>
-            <b>{current?.title || "Chưa có"}</b>
-            <span>
-              {progress.active
-                ? overdueActive
-                  ? `Đang trễ ${minutesText(progress.activeLateMinutes)}`
-                  : "Đã check-in"
-                : current
-                  ? "Theo giờ kế hoạch"
-                  : "Chưa có hoạt động hiện tại"}
-            </span>
+        <details className="live-details" open={!isMobile}>
+          <summary>Tiến độ & cảnh báo</summary>
+          <div className="live-snapshot">
+            <div>
+              <small>CURRENT</small>
+              <b>{current?.title || "Chưa có"}</b>
+              <span>
+                {progress.active
+                  ? overdueActive
+                    ? `Đang trễ ${minutesText(progress.activeLateMinutes)}`
+                    : "Đã check-in"
+                  : current
+                    ? "Theo giờ kế hoạch"
+                    : "Chưa có hoạt động hiện tại"}
+              </span>
+            </div>
+            <div>
+              <small>NEXT</small>
+              <b>{progress.next?.title || "Chưa có"}</b>
+              <span>
+                {progress.next
+                  ? progress.nextInMinutes === 0
+                    ? "Sắp bắt đầu"
+                    : `Còn ${minutesText(progress.nextInMinutes)}`
+                  : "Không còn chặng kế tiếp"}
+              </span>
+            </div>
+            <div className={lateCount ? "late" : ""}>
+              <small>LATE</small>
+              <b>{lateCount ? `${lateCount} chặng` : "Không có"}</b>
+              <span>
+                {overdueActive
+                  ? `Current trễ ${minutesText(progress.activeLateMinutes)}`
+                  : worstLate
+                    ? `Lâu nhất ${minutesText(worstLate.minutes)}`
+                    : "Đúng tiến độ"}
+              </span>
+            </div>
           </div>
-          <div>
-            <small>NEXT</small>
-            <b>{progress.next?.title || "Chưa có"}</b>
-            <span>
-              {progress.next
-                ? progress.nextInMinutes === 0
-                  ? "Sắp bắt đầu"
-                  : `Còn ${minutesText(progress.nextInMinutes)}`
-                : "Không còn chặng kế tiếp"}
-            </span>
-          </div>
-          <div className={lateCount ? "late" : ""}>
-            <small>LATE</small>
-            <b>{lateCount ? `${lateCount} chặng` : "Không có"}</b>
-            <span>
-              {overdueActive
-                ? `Current trễ ${minutesText(progress.activeLateMinutes)}`
-                : worstLate
-                  ? `Lâu nhất ${minutesText(worstLate.minutes)}`
-                  : "Đúng tiến độ"}
-            </span>
-          </div>
-        </div>
+        </details>
         <div className="live-bottom">
           <small>
             {progress.active
@@ -3460,8 +3500,12 @@ function App() {
                 <>
                   {recoveryPanel(false)}
                   {planningTemplatesPanel(false)}
-                  <ReleaseReadiness online={online} />
-                  <ProductRoadmap />
+                  <div data-module-title="Trạng thái Production">
+                    <ReleaseReadiness online={online} />
+                  </div>
+                  <div data-module-title="Roadmap ứng dụng">
+                    <ProductRoadmap />
+                  </div>
                   <section className="panel">
                     <h2>Tài khoản & dữ liệu offline</h2>
                     <p className="muted">
@@ -3628,7 +3672,11 @@ function App() {
                             const group = document.getElementById(
                               "module-trip",
                             ) as HTMLDetailsElement | null;
-                            if (group) group.open = true;
+                            if (group) {
+                              if (isMobile)
+                                group.querySelector("summary")?.click();
+                              else group.open = true;
+                            }
                           }, 80);
                         }}
                       >
@@ -3747,9 +3795,17 @@ function App() {
                                   itemOnDay(x, trip.timezone, day),
                               )
                               .map((x) => (
-                                <article
+                                <SwipeRow
                                   className={`timeline-row ${x.status}`}
                                   key={x.id}
+                                  onEdit={
+                                    writable ? () => edit("item", x) : undefined
+                                  }
+                                  onDelete={
+                                    writable
+                                      ? () => remove("item", x)
+                                      : undefined
+                                  }
                                 >
                                   <div className="timeline-time">
                                     <b>
@@ -3817,7 +3873,10 @@ function App() {
                                         : ""}
                                     </p>
                                     {x.note && (
-                                      <p className="prewrap">{x.note}</p>
+                                      <details className="inline-note">
+                                        <summary>Ghi chú</summary>
+                                        <p className="prewrap">{x.note}</p>
+                                      </details>
                                     )}
                                     {x.checked_in_at && (
                                       <small>
@@ -3853,34 +3912,37 @@ function App() {
                                       media
                                     </div>
                                     {writable && (
-                                      <div
-                                        className="planning-inline-tools"
-                                        aria-label="Chỉnh giờ nhanh"
-                                      >
-                                        <span>Chỉnh giờ</span>
-                                        <button
-                                          type="button"
-                                          disabled={!!planningBusyId}
-                                          onClick={() =>
-                                            void reschedulePlanningItem(x, {
-                                              minutes: -30,
-                                            })
-                                          }
+                                      <details className="timeline-extra">
+                                        <summary>Chỉnh giờ</summary>
+                                        <div
+                                          className="planning-inline-tools"
+                                          aria-label="Chỉnh giờ nhanh"
                                         >
-                                          −30′
-                                        </button>
-                                        <button
-                                          type="button"
-                                          disabled={!!planningBusyId}
-                                          onClick={() =>
-                                            void reschedulePlanningItem(x, {
-                                              minutes: 30,
-                                            })
-                                          }
-                                        >
-                                          +30′
-                                        </button>
-                                      </div>
+                                          <span>Chỉnh giờ</span>
+                                          <button
+                                            type="button"
+                                            disabled={!!planningBusyId}
+                                            onClick={() =>
+                                              void reschedulePlanningItem(x, {
+                                                minutes: -30,
+                                              })
+                                            }
+                                          >
+                                            −30′
+                                          </button>
+                                          <button
+                                            type="button"
+                                            disabled={!!planningBusyId}
+                                            onClick={() =>
+                                              void reschedulePlanningItem(x, {
+                                                minutes: 30,
+                                              })
+                                            }
+                                          >
+                                            +30′
+                                          </button>
+                                        </div>
+                                      </details>
                                     )}
                                     <div className="actions">
                                       {writable && (
@@ -3962,7 +4024,7 @@ function App() {
                                       </Link>
                                     </div>
                                   </section>
-                                </article>
+                                </SwipeRow>
                               ))}
                           </div>
                         </>
@@ -5215,7 +5277,18 @@ function App() {
                             b.spent_on.localeCompare(a.spent_on),
                           )
                           .map((x) => (
-                            <article className="ledger-row" key={x.id}>
+                            <SwipeRow
+                              className="ledger-row"
+                              key={x.id}
+                              onEdit={
+                                writable ? () => edit("expense", x) : undefined
+                              }
+                              onDelete={
+                                writable
+                                  ? () => remove("expense", x)
+                                  : undefined
+                              }
+                            >
                               <span
                                 className={`ledger-icon ${x.kind === "refund" ? "refund" : ""}`}
                               >
@@ -5235,7 +5308,12 @@ function App() {
                                       )?.title
                                     : "Ngoài dự toán / chưa liên kết"}
                                 </small>
-                                {x.note && <p className="prewrap">{x.note}</p>}
+                                {x.note && (
+                                  <details className="inline-note">
+                                    <summary>Ghi chú</summary>
+                                    <p className="prewrap">{x.note}</p>
+                                  </details>
+                                )}
                                 {x.receipt_url && (
                                   <Link url={x.receipt_url}>Xem chứng từ</Link>
                                 )}
@@ -5247,7 +5325,7 @@ function App() {
                                 {money(Number(x.amount))}
                               </b>
                               {rowTools("expense", x)}
-                            </article>
+                            </SwipeRow>
                           ))}
                         {!data.expenses.length && (
                           <Empty
@@ -5468,7 +5546,7 @@ function App() {
                       </div>
                       <ThemeControl />
                     </section>
-                    <details className="module-block" id="module-trip">
+                    <MoreModule className="module-block" id="module-trip">
                       <summary>
                         <span className="module-block-icon">
                           <Compass size={20} />
@@ -5815,9 +5893,9 @@ function App() {
                           </section>
                         )}
                       </div>
-                    </details>
+                    </MoreModule>
 
-                    <details className="module-block" id="module-reporting">
+                    <MoreModule className="module-block" id="module-reporting">
                       <summary>
                         <span className="module-block-icon">
                           <FileText size={20} />
@@ -5841,9 +5919,9 @@ function App() {
                           />
                         )}
                       </div>
-                    </details>
+                    </MoreModule>
 
-                    <details className="module-block" id="module-system">
+                    <MoreModule className="module-block" id="module-system">
                       <summary>
                         <span className="module-block-icon">
                           <ShieldCheck size={20} />
@@ -5857,7 +5935,9 @@ function App() {
                         <ChevronDown size={19} className="module-chevron" />
                       </summary>
                       <div className="module-block-content">
-                        <ReleaseReadiness online={online} />
+                        <div data-module-title="Trạng thái Production">
+                          <ReleaseReadiness online={online} />
+                        </div>
                         <section className="panel pwa-panel">
                           <div className="section-heading">
                             <div>
@@ -6118,7 +6198,9 @@ function App() {
                             {account?.role === "master" ? " · MASTER" : ""}
                           </p>
                         </section>
-                        <ProductRoadmap />
+                        <div data-module-title="Roadmap ứng dụng">
+                          <ProductRoadmap />
+                        </div>
                         <section className="panel">
                           <h2>Lịch sử gần đây</h2>
                           <p className="hint">
@@ -6154,7 +6236,7 @@ function App() {
                           ))}
                         </section>
                       </div>
-                    </details>
+                    </MoreModule>
                   </>
                 )}
               </>

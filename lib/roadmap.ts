@@ -247,7 +247,7 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V2.7.0",
     title: "Mobile Navigation & Interaction Polish",
-    done: false,
+    done: true,
     description:
       "Tinh gọn điều hướng mobile, giữ vị trí scroll và context khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm để TripFlow dùng nhanh như ứng dụng native.",
   },

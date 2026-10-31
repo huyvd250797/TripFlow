@@ -109,8 +109,12 @@ async function main() {
     await other.goto(`http://127.0.0.1:${port}`);
     await expect(other.getByLabel("Email", { exact: true })).toBeVisible();
     let otherNavigations = 0;
-    other.on("framenavigated", (f) => {
-      if (f === other.mainFrame()) otherNavigations++;
+    other.on("request", (request) => {
+      if (
+        request.isNavigationRequest() &&
+        request.frame() === other.mainFrame()
+      )
+        otherNavigations++;
     });
     revision = 1;
     remoteVersion = NEXT_TEST_VERSION;

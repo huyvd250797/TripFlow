@@ -90,7 +90,7 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V2.6.0 chuẩn hóa giao diện, phản hồi thao tác và chuyển động nhẹ.
+            V2.7.0 tinh gọn mobile, timeline và quản lý theo bottom sheet.
             Database tiếp tục V{DATABASE_VERSION}; giữ năm quyền độc lập và các
             guard dữ liệu hiện có.
           </p>

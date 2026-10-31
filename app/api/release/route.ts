@@ -78,7 +78,7 @@ export async function GET() {
       ...state,
       app_version: VERSION,
       database_required_version: DATABASE_VERSION,
-      ui_release: "motion-visual-polish",
+      ui_release: "mobile-navigation-interaction",
     });
   } catch (error) {
     console.error(

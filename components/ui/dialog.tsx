@@ -1,7 +1,7 @@
 "use client";
 import * as D from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useId, useRef } from "react";
+import { useId, useRef, useEffect } from "react";
 export function Dialog({
   open,
   onClose,
@@ -29,6 +29,29 @@ export function Dialog({
   const requestClose = () => {
     if (!busy) onClose();
   };
+  const closeRef = useRef(requestClose);
+  closeRef.current = requestClose;
+  useEffect(() => {
+    if (!open) return;
+    let mounted = true;
+    const marker = crypto.randomUUID();
+    const state = { ...history.state, tripflowDialog: marker };
+    history.pushState(state, "");
+    const back = () => {
+      if (history.state?.tripflowDialog === marker) return;
+      closeRef.current();
+      // A busy form or a cancelled discard confirmation keeps its history guard.
+      setTimeout(() => {
+        if (mounted) history.pushState(state, "");
+      }, 0);
+    };
+    window.addEventListener("popstate", back);
+    return () => {
+      mounted = false;
+      window.removeEventListener("popstate", back);
+      if (history.state?.tripflowDialog === marker) history.back();
+    };
+  }, [open]);
   return (
     <D.Root open={open} onOpenChange={(v) => !v && requestClose()}>
       <D.Portal>

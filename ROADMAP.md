@@ -259,9 +259,9 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Bottom sheet mobile cho Command Center/danh sách chuyến, popup xác nhận compact, spinner/busy guard, toast ba trạng thái và trả focus khi đóng.
 - Sửa database compatibility về V2.4.1 và kiểm thử đối chiếu RPC; không migration mới.
 
-## ⬜ V2.7.0 — Mobile Navigation & Interaction Polish
+## ✅ V2.7.0 — Mobile Navigation & Interaction Polish
 
 - Giữ context/scroll khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm.
 - Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
 
-**Phiên bản tiếp theo:** **V2.7.0 – Mobile Navigation & Interaction Polish**.
+**Roadmap đã hoàn thành đến V2.7.0.** Đề xuất tiếp theo để Boss chọn: V2.8.0 — Bookings & Travel Documents (đặt chỗ, mã xác nhận và giấy tờ chuyến đi). Chưa triển khai.

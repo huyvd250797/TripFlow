@@ -1,5 +1,11 @@
 # Kiểm tra TripFlow
 
+## V2.7.0 Mobile Navigation & Interaction Polish
+
+- Chạy regression thường và lifecycle update như hướng dẫn phía dưới.
+- Với server test đang mở, đặt `TRIPFLOW_MOBILE_TEST=1` khi chạy `npm run test:ui` để kiểm tra sheet quản lý, lịch sử tab/Back và swipe; không bật cùng POLISH/PERF test.
+- Xem `VALIDATION-V2.7.0.md` và `UPGRADE-V2.7.0.md`. Cần UAT cảm ứng, browser Back và bàn phím trên iPhone thật.
+
 ## V2.6.0 UI/UX Motion & Visual Polish
 
 - Kết quả/phạm vi: [VALIDATION-V2.6.0.md](VALIDATION-V2.6.0.md); cách nâng cấp: [UPGRADE-V2.6.0.md](UPGRADE-V2.6.0.md).

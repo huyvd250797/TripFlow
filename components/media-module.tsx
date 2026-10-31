@@ -1,4 +1,5 @@
 "use client";
+import { SwipeRow } from "./ui/swipe-row";
 import {
   Compass,
   Crown,
@@ -263,7 +264,8 @@ export function MediaModule({
                           const preview = mediaPreviewUrl(m);
                           const embed = mediaEmbedUrl(m);
                           return (
-                            <section
+                            <SwipeRow
+                              actions={rowTools("media", m)}
                               className={`memory-media-card ${m.is_highlight ? "highlighted" : ""}`}
                               key={m.id}
                             >
@@ -332,7 +334,7 @@ export function MediaModule({
                                 {m.note && <p className="prewrap">{m.note}</p>}
                                 <Link url={m.url}>Mở media</Link>
                               </div>
-                            </section>
+                            </SwipeRow>
                           );
                         })}
                       </div>
