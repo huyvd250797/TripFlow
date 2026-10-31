@@ -50,6 +50,48 @@ export function localTime(iso: string | null | undefined, zone: string) {
   );
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
 }
+/** A declared end wins. Refunds and media dates never extend travel duration. */
+export function tripPeriod(trip: Bundle["trip"], items: Item[]) {
+  const days = [
+    trip.start_date,
+    ...items.flatMap((item) => [
+      localTime(item.start_at, trip.timezone).slice(0, 10),
+      item.end_at
+        ? localTime(
+            new Date(Date.parse(item.end_at) - 1).toISOString(),
+            trip.timezone,
+          ).slice(0, 10)
+        : "",
+    ]),
+  ]
+    .filter(Boolean)
+    .sort();
+  const end = trip.end_date || days.at(-1) || trip.start_date;
+  const daysTotal = Math.max(
+    1,
+    Math.round(
+      (Date.parse(end + "T00:00:00Z") -
+        Date.parse(trip.start_date + "T00:00:00Z")) /
+        86400000,
+    ) + 1,
+  );
+  return {
+    start: trip.start_date,
+    end,
+    days: daysTotal,
+    inferred: !trip.end_date,
+  };
+}
+export function itemOnDay(item: Item, zone: string, day: string) {
+  const start = localTime(item.start_at, zone).slice(0, 10);
+  const end = item.end_at
+    ? localTime(
+        new Date(Date.parse(item.end_at) - 1).toISOString(),
+        zone,
+      ).slice(0, 10)
+    : start;
+  return start <= day && end >= day;
+}
 export function utcTime(s: string, zone: string) {
   const base = Date.parse(s + "Z");
   if (!Number.isFinite(base)) throw Error("Ngày giờ không hợp lệ.");
@@ -103,8 +145,12 @@ export function buildFinanceReport(bundle: Bundle): FinanceReport {
     .reduce((sum, x) => sum + Number(x.amount), 0);
   const actual = grossPayments - refunds;
   const categories = CATEGORIES.map((category) => {
-    const original = planned(originalBudgets.filter((x) => x.category === category));
-    const current = planned(bundle.budgets.filter((x) => x.category === category));
+    const original = planned(
+      originalBudgets.filter((x) => x.category === category),
+    );
+    const current = planned(
+      bundle.budgets.filter((x) => x.category === category),
+    );
     const payments = bundle.expenses
       .filter((x) => x.category === category && x.kind === "payment")
       .reduce((sum, x) => sum + Number(x.amount), 0);
@@ -139,12 +185,16 @@ export function buildFinanceReport(bundle: Bundle): FinanceReport {
     }));
   const currentBudgetMap = new Map(bundle.budgets.map((x) => [x.id, x]));
   const activities: FinanceReport["activities"] = bundle.items.map((item) => {
-    const current = planned(bundle.budgets.filter((x) => x.item_id === item.id));
+    const current = planned(
+      bundle.budgets.filter((x) => x.item_id === item.id),
+    );
     const itemBudgetIds = new Set(
       bundle.budgets.filter((x) => x.item_id === item.id).map((x) => x.id),
     );
     const itemActual = net(
-      bundle.expenses.filter((x) => x.budget_id && itemBudgetIds.has(x.budget_id)),
+      bundle.expenses.filter(
+        (x) => x.budget_id && itemBudgetIds.has(x.budget_id),
+      ),
     );
     return {
       item_id: item.id,
@@ -184,13 +234,21 @@ export function buildFinanceReport(bundle: Bundle): FinanceReport {
   const refundTotals = new Map<string, number>();
   let refundMismatch = 0;
   for (const refund of bundle.expenses.filter((x) => x.kind === "refund")) {
-    const original = refund.refund_of ? paymentsById.get(refund.refund_of) : undefined;
+    const original = refund.refund_of
+      ? paymentsById.get(refund.refund_of)
+      : undefined;
     if (!original) {
       refundMismatch += 1;
       continue;
     }
-    refundTotals.set(original.id, (refundTotals.get(original.id) || 0) + Number(refund.amount));
-    if (refund.category !== original.category || refund.budget_id !== original.budget_id)
+    refundTotals.set(
+      original.id,
+      (refundTotals.get(original.id) || 0) + Number(refund.amount),
+    );
+    if (
+      refund.category !== original.category ||
+      refund.budget_id !== original.budget_id
+    )
       refundMismatch += 1;
   }
   const refundExceeded = [...refundTotals.entries()].filter(([id, amount]) => {
@@ -269,19 +327,26 @@ export function financeJson(bundle: Bundle) {
   );
 }
 
-
 export function mediaPreviewUrl(media: Media) {
   if (media.kind !== "photo") return null;
   const value = media.url.trim();
   try {
     const url = new URL(value);
     if (/\.(avif|gif|jpe?g|png|webp)$/i.test(url.pathname)) return value;
-    if (/^(?:lh3|lh4|lh5|lh6)\.googleusercontent\.com$/i.test(url.hostname)) return value;
-    if (url.hostname === "drive.usercontent.google.com" && url.searchParams.get("id")) return value;
+    if (/^(?:lh3|lh4|lh5|lh6)\.googleusercontent\.com$/i.test(url.hostname))
+      return value;
+    if (
+      url.hostname === "drive.usercontent.google.com" &&
+      url.searchParams.get("id")
+    )
+      return value;
     if (url.hostname === "drive.google.com") {
-      const match = url.pathname.match(/\/file\/d\/([^/]+)/) || url.search.match(/[?&]id=([^&]+)/);
+      const match =
+        url.pathname.match(/\/file\/d\/([^/]+)/) ||
+        url.search.match(/[?&]id=([^&]+)/);
       const id = match?.[1];
-      if (id) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600`;
+      if (id)
+        return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600`;
     }
   } catch {
     return null;
@@ -295,13 +360,21 @@ export function mediaEmbedUrl(media: Media) {
   if (media.kind === "photo") return mediaPreviewUrl(media);
   try {
     const url = new URL(value);
-    if (media.kind === "video" && /\.(mp4|webm|mov)$/i.test(url.pathname)) return value;
+    if (media.kind === "video" && /\.(mp4|webm|mov)$/i.test(url.pathname))
+      return value;
     if (url.hostname === "drive.google.com") {
-      const fileMatch = url.pathname.match(/\/file\/d\/([^/]+)/) || url.search.match(/[?&]id=([^&]+)/);
-      const folderMatch = url.pathname.match(/\/(?:drive\/)?folders\/([^/?#]+)/);
+      const fileMatch =
+        url.pathname.match(/\/file\/d\/([^/]+)/) ||
+        url.search.match(/[?&]id=([^&]+)/);
+      const folderMatch = url.pathname.match(
+        /\/(?:drive\/)?folders\/([^/?#]+)/,
+      );
       if (media.kind === "album" && folderMatch?.[1])
         return `https://drive.google.com/embeddedfolderview?id=${encodeURIComponent(folderMatch[1])}#grid`;
-      if ((media.kind === "video" || media.kind === "document") && fileMatch?.[1])
+      if (
+        (media.kind === "video" || media.kind === "document") &&
+        fileMatch?.[1]
+      )
         return `https://drive.google.com/file/d/${encodeURIComponent(fileMatch[1])}/preview`;
     }
   } catch {
@@ -312,18 +385,23 @@ export function mediaEmbedUrl(media: Media) {
 
 function memoryDayForMedia(bundle: Bundle, media: Media) {
   if (media.taken_on) return media.taken_on;
-  const item = media.item_id ? bundle.items.find((x) => x.id === media.item_id) : undefined;
+  const item = media.item_id
+    ? bundle.items.find((x) => x.id === media.item_id)
+    : undefined;
   if (item) return localTime(item.start_at, bundle.trip.timezone).slice(0, 10);
   return localTime(media.created_at, bundle.trip.timezone).slice(0, 10);
 }
 
 export function buildTripStory(bundle: Bundle): TripStory {
-  const orderedMedia = [...bundle.media].sort((a, b) =>
-    Number(b.is_cover) - Number(a.is_cover) ||
-    Number(b.is_highlight) - Number(a.is_highlight) ||
-    Number(a.story_order || 0) - Number(b.story_order || 0) ||
-    memoryDayForMedia(bundle, a).localeCompare(memoryDayForMedia(bundle, b)) ||
-    a.created_at.localeCompare(b.created_at),
+  const orderedMedia = [...bundle.media].sort(
+    (a, b) =>
+      Number(b.is_cover) - Number(a.is_cover) ||
+      Number(b.is_highlight) - Number(a.is_highlight) ||
+      Number(a.story_order || 0) - Number(b.story_order || 0) ||
+      memoryDayForMedia(bundle, a).localeCompare(
+        memoryDayForMedia(bundle, b),
+      ) ||
+      a.created_at.localeCompare(b.created_at),
   );
   const cover =
     orderedMedia.find((x) => x.is_cover) ||
@@ -338,14 +416,20 @@ export function buildTripStory(bundle: Bundle): TripStory {
   const dayKeys = new Set<string>();
   for (const item of bundle.items)
     dayKeys.add(localTime(item.start_at, bundle.trip.timezone).slice(0, 10));
-  for (const media of orderedMedia) dayKeys.add(memoryDayForMedia(bundle, media));
+  for (const media of orderedMedia)
+    dayKeys.add(memoryDayForMedia(bundle, media));
   const days = [...dayKeys]
     .sort()
     .map((day, index) => {
       const items = bundle.items
-        .filter((x) => localTime(x.start_at, bundle.trip.timezone).slice(0, 10) === day)
+        .filter(
+          (x) =>
+            localTime(x.start_at, bundle.trip.timezone).slice(0, 10) === day,
+        )
         .sort((a, b) => a.start_at.localeCompare(b.start_at));
-      const media = orderedMedia.filter((x) => memoryDayForMedia(bundle, x) === day);
+      const media = orderedMedia.filter(
+        (x) => memoryDayForMedia(bundle, x) === day,
+      );
       return {
         day,
         title: `Ngày ${index + 1} · ${dateLabel(day)}`,
@@ -370,40 +454,42 @@ export function buildTripAnalytics(bundle: Bundle): TripAnalyticsReport {
   const done = bundle.items.filter((x) => x.status === "done").length;
   const skipped = bundle.items.filter((x) => x.status === "skipped").length;
   const active = bundle.items.filter((x) => x.status === "active").length;
-  const plannedCount = bundle.items.filter((x) => x.status === "planned").length;
+  const plannedCount = bundle.items.filter(
+    (x) => x.status === "planned",
+  ).length;
   const processed = done + skipped;
   const checked = bundle.items.filter((x) => !!x.checked_in_at);
   const delays = checked.map((x) =>
-    Math.max(0, Math.round((Date.parse(x.checked_in_at!) - Date.parse(x.start_at)) / 60000)),
+    Math.max(
+      0,
+      Math.round(
+        (Date.parse(x.checked_in_at!) - Date.parse(x.start_at)) / 60000,
+      ),
+    ),
   );
   const actualDurations = bundle.items
     .filter((x) => x.checked_in_at && x.completed_at)
     .map((x) =>
       Math.max(
         0,
-        Math.round((Date.parse(x.completed_at!) - Date.parse(x.checked_in_at!)) / 60000),
+        Math.round(
+          (Date.parse(x.completed_at!) - Date.parse(x.checked_in_at!)) / 60000,
+        ),
       ),
     );
   const plannedDuration = bundle.items.reduce(
     (sum, x) =>
-      sum + (x.end_at
-        ? Math.max(0, Math.round((Date.parse(x.end_at) - Date.parse(x.start_at)) / 60000))
+      sum +
+      (x.end_at
+        ? Math.max(
+            0,
+            Math.round((Date.parse(x.end_at) - Date.parse(x.start_at)) / 60000),
+          )
         : 0),
     0,
   );
   const actualDuration = actualDurations.reduce((sum, value) => sum + value, 0);
-  const start = Date.parse(bundle.trip.start_date + "T00:00:00Z");
-  const inferredEndDate = [
-    bundle.trip.start_date,
-    ...bundle.items.map((x) => localTime(x.start_at, bundle.trip.timezone).slice(0, 10)),
-    ...bundle.expenses.map((x) => x.spent_on),
-    ...bundle.media.map((x) => x.taken_on || "").filter(Boolean),
-  ].sort().at(-1) || bundle.trip.start_date;
-  const reportEndDate = bundle.trip.end_date || inferredEndDate;
-  const end = Date.parse(reportEndDate + "T00:00:00Z");
-  const tripDays = Number.isFinite(start) && Number.isFinite(end)
-    ? Math.max(1, Math.floor((end - start) / 86400000) + 1)
-    : 1;
+  const tripDays = tripPeriod(bundle.trip, bundle.items).days;
   const categoryRows = [...finance.categories].sort(
     (a, b) => Number(b.actual) - Number(a.actual),
   );
@@ -417,14 +503,24 @@ export function buildTripAnalytics(bundle: Bundle): TripAnalyticsReport {
   >();
   for (const item of bundle.items) {
     const day = localTime(item.start_at, bundle.trip.timezone).slice(0, 10);
-    const row = dayMap.get(day) || { item_count: 0, done: 0, skipped: 0, actual: 0 };
+    const row = dayMap.get(day) || {
+      item_count: 0,
+      done: 0,
+      skipped: 0,
+      actual: 0,
+    };
     row.item_count += 1;
     if (item.status === "done") row.done += 1;
     if (item.status === "skipped") row.skipped += 1;
     dayMap.set(day, row);
   }
   for (const row of finance.days) {
-    const value = dayMap.get(row.day) || { item_count: 0, done: 0, skipped: 0, actual: 0 };
+    const value = dayMap.get(row.day) || {
+      item_count: 0,
+      done: 0,
+      skipped: 0,
+      actual: 0,
+    };
     value.actual = Number(row.actual);
     dayMap.set(row.day, value);
   }
@@ -435,20 +531,28 @@ export function buildTripAnalytics(bundle: Bundle): TripAnalyticsReport {
   const completionRate = total ? Math.round((done / total) * 100) : 0;
   const processedRate = total ? Math.round((processed / total) * 100) : 0;
   const budgetUsage = finance.totals.current_budget
-    ? Math.round((finance.totals.net_actual / finance.totals.current_budget) * 1000) / 10
+    ? Math.round(
+        (finance.totals.net_actual / finance.totals.current_budget) * 1000,
+      ) / 10
     : null;
   const people = Math.max(1, Number(bundle.trip.people) || 1);
   const warnings: string[] = [];
   if (bundle.trip.status !== "completed")
     warnings.push("Chuyến đi chưa được chuyển sang trạng thái Đã kết thúc.");
   if (active || plannedCount)
-    warnings.push(`Còn ${active + plannedCount} hoạt động chưa được xử lý hoàn tất.`);
+    warnings.push(
+      `Còn ${active + plannedCount} hoạt động chưa được xử lý hoàn tất.`,
+    );
   if (!finance.baseline_snapshot_id)
     warnings.push("Chưa có dự toán gốc để đối chiếu sau chuyến đi.");
   if (finance.integrity.status !== "ok")
-    warnings.push(`Tài chính còn ${finance.integrity.issue_count} nhóm cảnh báo integrity cần rà soát.`);
+    warnings.push(
+      `Tài chính còn ${finance.integrity.issue_count} nhóm cảnh báo integrity cần rà soát.`,
+    );
   if (finance.totals.unlinked_actual > 0)
-    warnings.push(`Có ${money(finance.totals.unlinked_actual)} thực chi chưa liên kết dự toán.`);
+    warnings.push(
+      `Có ${money(finance.totals.unlinked_actual)} thực chi chưa liên kết dự toán.`,
+    );
 
   const highlights: string[] = [];
   highlights.push(
@@ -463,15 +567,23 @@ export function buildTripAnalytics(bundle: Bundle): TripAnalyticsReport {
         : `Thực chi vượt dự toán hiện tại ${money(Math.abs(finance.totals.current_variance))}.`,
     );
   } else if (finance.totals.net_actual > 0) {
-    highlights.push(`Đã phát sinh ${money(finance.totals.net_actual)} nhưng chưa có dự toán hiện tại.`);
+    highlights.push(
+      `Đã phát sinh ${money(finance.totals.net_actual)} nhưng chưa có dự toán hiện tại.`,
+    );
   }
   if (topCategory)
-    highlights.push(`Nhóm chi nhiều nhất: ${topCategory.category} · ${money(Number(topCategory.actual))}.`);
+    highlights.push(
+      `Nhóm chi nhiều nhất: ${topCategory.category} · ${money(Number(topCategory.actual))}.`,
+    );
   if (bundle.media.length) {
     const story = buildTripStory(bundle);
-    highlights.push(`Đã lưu ${bundle.media.length} media/tài liệu trên ${story.memory_days || 1} ngày kỷ niệm.`);
+    highlights.push(
+      `Đã lưu ${bundle.media.length} media/tài liệu trên ${story.memory_days || 1} ngày kỷ niệm.`,
+    );
     if (story.highlights.length)
-      highlights.push(`Có ${story.highlights.length} Trip Highlight được chọn để kể lại hành trình.`);
+      highlights.push(
+        `Có ${story.highlights.length} Trip Highlight được chọn để kể lại hành trình.`,
+      );
   }
 
   return {
@@ -491,7 +603,9 @@ export function buildTripAnalytics(bundle: Bundle): TripAnalyticsReport {
       checked_in: checked.length,
       late_checkins: delays.filter((x) => x > 0).length,
       average_checkin_delay_minutes: delays.length
-        ? Math.round(delays.reduce((sum, value) => sum + value, 0) / delays.length)
+        ? Math.round(
+            delays.reduce((sum, value) => sum + value, 0) / delays.length,
+          )
         : 0,
       max_checkin_delay_minutes: delays.length ? Math.max(...delays) : 0,
       planned_duration_minutes: plannedDuration,
@@ -538,8 +652,14 @@ export function postTripCsv(bundle: Bundle) {
     ["TripFlow", bundle.trip.name],
     ["BÁO CÁO TỔNG KẾT CHUYẾN ĐI", `V${VERSION}`],
     ["Điểm đến", bundle.trip.destination],
-    ["Thời gian", `${dateLabel(bundle.trip.start_date)} - ${dateLabel(bundle.trip.end_date)}`],
-    ["Trạng thái báo cáo", analytics.report_state === "post_trip" ? "Sau chuyến đi" : "Tạm thời"],
+    [
+      "Thời gian",
+      `${dateLabel(bundle.trip.start_date)} - ${dateLabel(bundle.trip.end_date)}`,
+    ],
+    [
+      "Trạng thái báo cáo",
+      analytics.report_state === "post_trip" ? "Sau chuyến đi" : "Tạm thời",
+    ],
     [],
     ["TỔNG QUAN"],
     ["Số ngày", analytics.trip_days],
@@ -549,7 +669,10 @@ export function postTripCsv(bundle: Bundle) {
     ["Bỏ qua", analytics.itinerary.skipped],
     ["Tỷ lệ hoàn thành", `${analytics.itinerary.completion_rate}%`],
     ["Check-in trễ", analytics.itinerary.late_checkins],
-    ["Trễ trung bình (phút)", analytics.itinerary.average_checkin_delay_minutes],
+    [
+      "Trễ trung bình (phút)",
+      analytics.itinerary.average_checkin_delay_minutes,
+    ],
     [],
     ["TÀI CHÍNH"],
     ["Dự toán gốc", analytics.finance.original_budget],
@@ -562,14 +685,32 @@ export function postTripCsv(bundle: Bundle) {
     [],
     ["THEO NGÀY"],
     ["Ngày", "Hoạt động", "Hoàn thành", "Bỏ qua", "Thực chi"],
-    ...analytics.days.map((x) => [dateLabel(x.day), x.item_count, x.done, x.skipped, x.actual]),
+    ...analytics.days.map((x) => [
+      dateLabel(x.day),
+      x.item_count,
+      x.done,
+      x.skipped,
+      x.actual,
+    ]),
     [],
     ["THEO NHÓM CHI PHÍ"],
     ["Nhóm", "Dự toán hiện tại", "Thực chi", "Chênh lệch"],
-    ...finance.categories.map((x) => [x.category, x.current, x.actual, x.variance]),
+    ...finance.categories.map((x) => [
+      x.category,
+      x.current,
+      x.actual,
+      x.variance,
+    ]),
     [],
     ["LỊCH TRÌNH"],
-    ["Hoạt động", "Trạng thái", "Bắt đầu", "Kết thúc", "Check-in thực tế", "Hoàn thành thực tế"],
+    [
+      "Hoạt động",
+      "Trạng thái",
+      "Bắt đầu",
+      "Kết thúc",
+      "Check-in thực tế",
+      "Hoàn thành thực tế",
+    ],
     ...bundle.items
       .toSorted((a, b) => a.start_at.localeCompare(b.start_at))
       .map((x) => [
@@ -586,12 +727,26 @@ export function postTripCsv(bundle: Bundle) {
     [],
     ["KỶ NIỆM & STORY"],
     ["Ngày", "Tiêu đề", "Loại", "Highlight", "Cover", "Caption", "Liên kết"],
-    ...buildTripStory(bundle).days.flatMap((day) => day.media.map((m) => [dateLabel(day.day), m.title, m.kind, m.is_highlight ? "Có" : "", m.is_cover ? "Có" : "", m.note, m.url])),
+    ...buildTripStory(bundle).days.flatMap((day) =>
+      day.media.map((m) => [
+        dateLabel(day.day),
+        m.title,
+        m.kind,
+        m.is_highlight ? "Có" : "",
+        m.is_cover ? "Có" : "",
+        m.note,
+        m.url,
+      ]),
+    ),
     [],
     ["CẦN RÀ SOÁT"],
-    ...(analytics.warnings.length ? analytics.warnings.map((x) => [x]) : [["Không có cảnh báo."]]),
+    ...(analytics.warnings.length
+      ? analytics.warnings.map((x) => [x])
+      : [["Không có cảnh báo."]]),
   ];
-  return "\ufeff" + rows.map((row) => row.map(safeCsvCell).join(",")).join("\r\n");
+  return (
+    "\ufeff" + rows.map((row) => row.map(safeCsvCell).join(",")).join("\r\n")
+  );
 }
 
 export function postTripJson(bundle: Bundle) {
@@ -630,18 +785,21 @@ export function postTripHtml(bundle: Bundle) {
   const categoryRows = finance.categories
     .filter((x) => Number(x.current) || Number(x.actual))
     .map(
-      (x) => `<tr><td>${htmlEscape(x.category)}</td><td>${htmlEscape(money(Number(x.current)))}</td><td>${htmlEscape(money(Number(x.actual)))}</td><td>${htmlEscape(money(Number(x.variance)))}</td></tr>`,
+      (x) =>
+        `<tr><td>${htmlEscape(x.category)}</td><td>${htmlEscape(money(Number(x.current)))}</td><td>${htmlEscape(money(Number(x.actual)))}</td><td>${htmlEscape(money(Number(x.variance)))}</td></tr>`,
     )
     .join("");
   const dayRows = analytics.days
     .map(
-      (x) => `<tr><td>${htmlEscape(dateLabel(x.day))}</td><td>${x.item_count}</td><td>${x.done}</td><td>${x.skipped}</td><td>${htmlEscape(money(x.actual))}</td></tr>`,
+      (x) =>
+        `<tr><td>${htmlEscape(dateLabel(x.day))}</td><td>${x.item_count}</td><td>${x.done}</td><td>${x.skipped}</td><td>${htmlEscape(money(x.actual))}</td></tr>`,
     )
     .join("");
   const itineraryRows = bundle.items
     .toSorted((a, b) => a.start_at.localeCompare(b.start_at))
     .map(
-      (x) => `<tr><td>${htmlEscape(x.title)}</td><td>${htmlEscape(ITEM_STATUS[x.status])}</td><td>${htmlEscape(dateLabel(localTime(x.start_at, bundle.trip.timezone)))}</td><td>${htmlEscape(localTime(x.start_at, bundle.trip.timezone).slice(11))}</td></tr>`,
+      (x) =>
+        `<tr><td>${htmlEscape(x.title)}</td><td>${htmlEscape(ITEM_STATUS[x.status])}</td><td>${htmlEscape(dateLabel(localTime(x.start_at, bundle.trip.timezone)))}</td><td>${htmlEscape(localTime(x.start_at, bundle.trip.timezone).slice(11))}</td></tr>`,
     )
     .join("");
   const storyHighlights = story.highlights
@@ -652,7 +810,10 @@ export function postTripHtml(bundle: Bundle) {
     .join("");
   const storyDays = story.days
     .filter((d) => d.media.length || d.items.length)
-    .map((d) => `<section class="memory-day"><h3>${htmlEscape(d.title)}</h3><p class="muted">${d.items.length} hoạt động · ${d.media.length} media · ${d.highlights.length} highlight</p>${d.media.length ? `<div class="memory-grid">${d.media.map((m) => `<div><b>${htmlEscape(m.title)}</b><small>${htmlEscape(m.kind)}${m.is_highlight ? " · Highlight" : ""}${m.is_cover ? " · Cover" : ""}</small>${m.note ? `<p>${htmlEscape(m.note)}</p>` : ""}</div>`).join("")}</div>` : ""}</section>`)
+    .map(
+      (d) =>
+        `<section class="memory-day"><h3>${htmlEscape(d.title)}</h3><p class="muted">${d.items.length} hoạt động · ${d.media.length} media · ${d.highlights.length} highlight</p>${d.media.length ? `<div class="memory-grid">${d.media.map((m) => `<div><b>${htmlEscape(m.title)}</b><small>${htmlEscape(m.kind)}${m.is_highlight ? " · Highlight" : ""}${m.is_cover ? " · Cover" : ""}</small>${m.note ? `<p>${htmlEscape(m.note)}</p>` : ""}</div>`).join("")}</div>` : ""}</section>`,
+    )
     .join("");
   const list = (values: string[], empty: string) =>
     values.length
@@ -666,8 +827,8 @@ export function postTripHtml(bundle: Bundle) {
 <header class="header"><div><span class="eyebrow">TRIPFLOW · POST-TRIP REPORT · V${VERSION}</span><h1>${htmlEscape(bundle.trip.name)}</h1><div class="muted">${htmlEscape(bundle.trip.destination)} · ${htmlEscape(dateLabel(bundle.trip.start_date))} – ${htmlEscape(dateLabel(bundle.trip.end_date))} · ${bundle.trip.people} người</div></div><span class="status">${analytics.report_state === "post_trip" ? "Báo cáo sau chuyến" : "Báo cáo tạm thời"}</span></header>
 <section class="grid"><div class="kpi"><span>Hoàn thành lịch trình</span><b>${analytics.itinerary.completion_rate}%</b></div><div class="kpi"><span>Thực chi ròng</span><b>${htmlEscape(money(analytics.finance.net_actual))}</b></div><div class="kpi"><span>Chi phí / người</span><b>${htmlEscape(money(analytics.finance.per_person))}</b></div><div class="kpi"><span>Media</span><b>${analytics.media.total}</b></div></section>
 <section class="section"><h2>Điểm nổi bật</h2><div class="good">${list(analytics.highlights, "Chưa có dữ liệu nổi bật.")}</div></section>
-<section class="memory-strip"><span class="eyebrow">MEMORIES · STORYTELLING</span><h2>Câu chuyện chuyến đi</h2><p class="muted">${story.memory_days} ngày có kỷ niệm · ${story.highlights.length} Trip Highlight</p>${storyHighlights ? `<div class="memory-cards">${storyHighlights}</div>` : '<p>Chưa chọn Trip Highlight.</p>'}</section>
-<section class="section"><h2>Nhật ký theo ngày</h2>${storyDays || '<p>Chưa có dữ liệu kỷ niệm theo ngày.</p>'}</section>
+<section class="memory-strip"><span class="eyebrow">MEMORIES · STORYTELLING</span><h2>Câu chuyện chuyến đi</h2><p class="muted">${story.memory_days} ngày có kỷ niệm · ${story.highlights.length} Trip Highlight</p>${storyHighlights ? `<div class="memory-cards">${storyHighlights}</div>` : "<p>Chưa chọn Trip Highlight.</p>"}</section>
+<section class="section"><h2>Nhật ký theo ngày</h2>${storyDays || "<p>Chưa có dữ liệu kỷ niệm theo ngày.</p>"}</section>
 <section class="section"><h2>Cần rà soát</h2><div class="${analytics.warnings.length ? "warn" : "good"}">${list(analytics.warnings, "Dữ liệu đã sẵn sàng để lưu trữ báo cáo.")}</div></section>
 <section class="section"><h2>Tài chính theo nhóm</h2><div class="table-wrap"><table><thead><tr><th>Nhóm</th><th>Dự toán</th><th>Thực chi</th><th>Chênh lệch</th></tr></thead><tbody>${categoryRows || '<tr><td colspan="4">Chưa có dữ liệu tài chính.</td></tr>'}</tbody></table></div></section>
 <section class="section"><h2>Tổng kết theo ngày</h2><div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Hoạt động</th><th>Hoàn thành</th><th>Bỏ qua</th><th>Thực chi</th></tr></thead><tbody>${dayRows || '<tr><td colspan="5">Chưa có dữ liệu theo ngày.</td></tr>'}</tbody></table></div></section>
@@ -689,7 +850,8 @@ export function live(items: Item[], now = new Date().toISOString()) {
       (!x.end_at || Date.parse(x.end_at) > nowMs),
   );
   const late = sorted.filter(
-    (x) => x.status === "planned" && !!x.end_at && Date.parse(x.end_at) <= nowMs,
+    (x) =>
+      x.status === "planned" && !!x.end_at && Date.parse(x.end_at) <= nowMs,
   );
   const next = sorted.find(
     (x) => x.status === "planned" && Date.parse(x.start_at) > nowMs,
@@ -700,7 +862,9 @@ export function live(items: Item[], now = new Date().toISOString()) {
     : 0;
   const lateMinutes = late.map((x) => ({
     item: x,
-    minutes: x.end_at ? Math.max(0, Math.floor((nowMs - Date.parse(x.end_at)) / 60000)) : 0,
+    minutes: x.end_at
+      ? Math.max(0, Math.floor((nowMs - Date.parse(x.end_at)) / 60000))
+      : 0,
   }));
   const nextInMinutes = next
     ? Math.max(0, Math.ceil((Date.parse(next.start_at) - nowMs) / 60000))
@@ -727,7 +891,10 @@ export function csv(bundle: Bundle) {
     ["TripFlow", bundle.trip.name],
     ["BÁO CÁO TÀI CHÍNH", `V${VERSION}`],
     ["Chỉ số", "Số tiền"],
-    ["Dự toán gốc", report.baseline_snapshot_id ? report.totals.original_budget : "Chưa chốt"],
+    [
+      "Dự toán gốc",
+      report.baseline_snapshot_id ? report.totals.original_budget : "Chưa chốt",
+    ],
     ["Dự toán hiện tại", report.totals.current_budget],
     ["Tổng chi trước hoàn", report.totals.gross_payments],
     ["Hoàn tiền", report.totals.refunds],
@@ -736,7 +903,15 @@ export function csv(bundle: Bundle) {
     ["Chênh lệch hiện tại", report.totals.current_variance],
     [],
     ["THEO NHÓM"],
-    ["Nhóm", "Dự toán gốc", "Dự toán hiện tại", "Chi", "Hoàn", "Thực chi ròng", "Chênh lệch"],
+    [
+      "Nhóm",
+      "Dự toán gốc",
+      "Dự toán hiện tại",
+      "Chi",
+      "Hoàn",
+      "Thực chi ròng",
+      "Chênh lệch",
+    ],
     ...report.categories.map((x) => [
       x.category,
       x.original,
@@ -749,11 +924,21 @@ export function csv(bundle: Bundle) {
     [],
     ["THEO NGÀY"],
     ["Ngày", "Chi", "Hoàn", "Thực chi ròng"],
-    ...report.days.map((x) => [dateLabel(x.day), x.payments, x.refunds, x.actual]),
+    ...report.days.map((x) => [
+      dateLabel(x.day),
+      x.payments,
+      x.refunds,
+      x.actual,
+    ]),
     [],
     ["THEO HOẠT ĐỘNG"],
     ["Hoạt động", "Dự toán hiện tại", "Thực chi ròng", "Chênh lệch"],
-    ...report.activities.map((x) => [x.title, x.current_budget, x.actual, x.variance]),
+    ...report.activities.map((x) => [
+      x.title,
+      x.current_budget,
+      x.actual,
+      x.variance,
+    ]),
     [],
     ["DỰ TOÁN HIỆN TẠI"],
     ["Nội dung", "Nhóm", "Số lượng", "Đơn giá", "Thành tiền"],
@@ -766,7 +951,15 @@ export function csv(bundle: Bundle) {
     ]),
     [],
     ["THỰC CHI"],
-    ["Ngày", "Nội dung", "Loại", "Nhóm", "Số tiền", "Người trả", "Khoản dự toán"],
+    [
+      "Ngày",
+      "Nội dung",
+      "Loại",
+      "Nhóm",
+      "Số tiền",
+      "Người trả",
+      "Khoản dự toán",
+    ],
     ...bundle.expenses.map((x) => [
       dateLabel(x.spent_on),
       x.title,
@@ -774,7 +967,8 @@ export function csv(bundle: Bundle) {
       x.category,
       x.amount,
       x.payer,
-      bundle.budgets.find((b) => b.id === x.budget_id)?.title || "Ngoài dự toán",
+      bundle.budgets.find((b) => b.id === x.budget_id)?.title ||
+        "Ngoài dự toán",
     ]),
   ];
   return (
@@ -784,7 +978,8 @@ export function csv(bundle: Bundle) {
         r
           .map((x) => {
             let value = String(x ?? "");
-            if (typeof x === "string" && /^[=+@\-\t\r]/.test(value)) value = "'" + value;
+            if (typeof x === "string" && /^[=+@\-\t\r]/.test(value))
+              value = "'" + value;
             return '"' + value.replaceAll('"', '""') + '"';
           })
           .join(","),
@@ -792,4 +987,3 @@ export function csv(bundle: Bundle) {
       .join("\r\n")
   );
 }
-

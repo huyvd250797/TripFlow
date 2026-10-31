@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { serverClient } from "@/lib/supabase/server";
 import { mutationSchema } from "@/lib/validation";
 import { z } from "zod";
-import { mutationRequestError, privateHeaders, readJsonText } from "@/lib/api-hardening";
+import {
+  mutationRequestError,
+  privateHeaders,
+  readJsonText,
+} from "@/lib/api-hardening";
 export const dynamic = "force-dynamic";
 const messages: Record<string, string> = {
+  PERMISSION_DENIED: "Bạn chưa được cấp quyền thực hiện thao tác này.",
+  PERMISSION_GRANT_OWNER_ONLY: "Chỉ chủ chuyến đi được cấp năm quyền đặc biệt.",
+  SELF_PERMISSION_CHANGE: "Bạn không thể tự đổi quyền của chính mình.",
   FORBIDDEN: "Bạn không có quyền truy cập chuyến đi này.",
   READ_ONLY: "Bạn chỉ có quyền xem.",
   OWNER_ONLY: "Chỉ chủ chuyến đi được thực hiện thao tác này.",
@@ -18,13 +25,15 @@ const messages: Record<string, string> = {
   INVITE_INVALID: "Lời mời đã hết hạn, bị thu hồi hoặc không tồn tại.",
   INVITE_EMAIL_MISMATCH: "Hãy đăng nhập bằng đúng email được mời.",
   INVITE_ALREADY_USED: "Lời mời này đã được sử dụng.",
-  INVITE_PENDING_EXISTS: "Email này đã có lời mời đang chờ. Hãy dùng lại hoặc thu hồi lời mời cũ.",
+  INVITE_PENDING_EXISTS:
+    "Email này đã có lời mời đang chờ. Hãy dùng lại hoặc thu hồi lời mời cũ.",
   ALREADY_MEMBER: "Tài khoản này đã có quyền trong chuyến đi.",
   ALREADY_OWNER: "Bạn đã là chủ chuyến đi.",
   INVALID_REFUND: "Không tìm thấy khoản chi gốc.",
   INVALID_TIMEZONE: "Múi giờ không hợp lệ.",
   OPERATION_REUSED: "Mã thao tác đã dùng cho nội dung khác.",
-  ACCOUNT_DEACTIVATED: "Tài khoản đã bị hủy kích hoạt. Liên hệ quản trị Master để được mở lại.",
+  ACCOUNT_DEACTIVATED:
+    "Tài khoản đã bị hủy kích hoạt. Liên hệ quản trị Master để được mở lại.",
   NOT_FOUND: "Không tìm thấy dữ liệu hoặc dữ liệu đã bị xóa.",
 };
 function reply(data: unknown, status = 200) {
@@ -41,7 +50,8 @@ async function auth() {
 }
 async function accountState(s: Awaited<ReturnType<typeof serverClient>>) {
   const { data, error } = await s.rpc("tf_account_state");
-  if (error) throw new Error("V020_ACCOUNT_MIGRATION_REQUIRED:" + error.message);
+  if (error)
+    throw new Error("V020_ACCOUNT_MIGRATION_REQUIRED:" + error.message);
   return data as {
     user_id: string;
     role: "master" | "user";
@@ -122,6 +132,7 @@ export async function GET(req: NextRequest) {
       auditResult,
       financeResult,
       collaborationResult,
+      permissionResult,
     ] = await Promise.all([
       all("itinerary_items"),
       all("budget_items"),
@@ -155,22 +166,33 @@ export async function GET(req: NextRequest) {
         .select("id")
         .eq("target_user_id", user.id)
         .limit(1),
+      s.rpc("tf_trip_permissions", { target_trip: tid }),
     ]);
+    if (permissionResult.error)
+      throw new Error(
+        "V241_MIGRATION_REQUIRED:" + permissionResult.error.message,
+      );
     if (liveEventResult.error)
-      throw new Error("V040_LIVE_MIGRATION_REQUIRED:" + liveEventResult.error.message);
+      throw new Error(
+        "V040_LIVE_MIGRATION_REQUIRED:" + liveEventResult.error.message,
+      );
     if (invResult.error || auditResult.error)
       throw invResult.error || auditResult.error;
     if (financeResult.error)
-      throw new Error("V030_FINANCE_MIGRATION_REQUIRED:" + financeResult.error.message);
+      throw new Error(
+        "V030_FINANCE_MIGRATION_REQUIRED:" + financeResult.error.message,
+      );
     if (collaborationResult.error) {
       const code = String(collaborationResult.error.code || "");
       if (code === "42P01")
         throw new Error(
-          "V050_COLLABORATION_MIGRATION_REQUIRED:" + collaborationResult.error.message,
+          "V050_COLLABORATION_MIGRATION_REQUIRED:" +
+            collaborationResult.error.message,
         );
       if (code === "42501")
         throw new Error(
-          "V050_COLLABORATION_POLICY_FIX_REQUIRED:" + collaborationResult.error.message,
+          "V050_COLLABORATION_POLICY_FIX_REQUIRED:" +
+            collaborationResult.error.message,
         );
       throw collaborationResult.error;
     }
@@ -181,6 +203,7 @@ export async function GET(req: NextRequest) {
     return reply({
       trip,
       role,
+      permissions: permissionResult.data,
       items,
       budgets,
       expenses,
@@ -196,6 +219,15 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     const message = e instanceof Error ? e.message : "database";
     console.error("TripFlow read failed", message);
+    if (message.startsWith("V241_MIGRATION_REQUIRED:"))
+      return reply(
+        {
+          error:
+            "Cần nâng cấp database V2.4.1: chạy migration 202610310001_v241_travel_reliability_permissions.sql.",
+          code: "V241_MIGRATION_REQUIRED",
+        },
+        503,
+      );
     if (message.startsWith("V020_ACCOUNT_MIGRATION_REQUIRED:"))
       return reply(
         {
@@ -291,12 +323,32 @@ export async function POST(req: NextRequest) {
             : "Không lưu được dữ liệu. Kiểm tra trường nhập và thử lại.",
           code: code || "DATABASE_ERROR",
         },
-        code === "CONFLICT" || code === "ACTIVE_CHANGED" ? 409 : 400,
+        code === "CONFLICT" || code === "ACTIVE_CHANGED"
+          ? 409
+          : [
+                "PERMISSION_DENIED",
+                "PERMISSION_GRANT_OWNER_ONLY",
+                "SELF_PERMISSION_CHANGE",
+                "FORBIDDEN",
+                "READ_ONLY",
+                "OWNER_ONLY",
+              ].includes(code || "")
+            ? 403
+            : 400,
       );
     }
     return reply({ result: data });
   } catch (e) {
     const message = e instanceof Error ? e.message : "";
+    if (message.startsWith("V241_MIGRATION_REQUIRED:"))
+      return reply(
+        {
+          error:
+            "Cần nâng cấp database V2.4.1: chạy migration 202610310001_v241_travel_reliability_permissions.sql.",
+          code: "V241_MIGRATION_REQUIRED",
+        },
+        503,
+      );
     if (message.startsWith("V020_ACCOUNT_MIGRATION_REQUIRED:"))
       return reply(
         {

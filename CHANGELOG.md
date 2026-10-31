@@ -1,5 +1,17 @@
 # Changelog
 
+## V2.4.1 — Travel Reliability Fix
+
+- Ví, báo cáo và xuất CSV phản ánh ngay thực chi/dự toán đang chờ đồng bộ offline.
+- Giữ hoạt động qua đêm ở Current và bộ lọc lịch; tính ngày chuyến thống nhất từ ngày khai báo hoặc lịch trình (bao gồm ngày kết thúc chặng qua đêm).
+- Tuyến dài được chia đoạn nối tiếp, tối đa 3 điểm trung gian mỗi đoạn để không bỏ điểm trên điện thoại.
+- Năm quyền độc lập: **Mời thành viên / Đổi quyền / Thu hồi / Xóa chuyến đi / Chốt dự toán**. Owner có toàn quyền; Editor/Viewer cũ không tự được cấp quyền đặc biệt. Chỉ Owner được cấp năm quyền này; người có Đổi quyền chỉ đổi vai trò cơ bản của thành viên khác.
+- Nút **Xóa chuyến đi** nằm trong **Thêm → Chuyến đi, thành viên & kế hoạch**, chỉ hiện khi được cấp quyền. Xóa mềm, cần online và xử lý hết queue của chuyến trước khi xóa; Owner khôi phục trong thùng rác.
+- **Sáng / Tối / Thiết bị** ở Thêm, nút đổi nhanh trên thanh trên cùng và màn hình đăng nhập. Lưu lựa chọn tại thiết bị, tự theo hệ điều hành khi chọn Thiết bị; không đảo màu ảnh.
+- **Có migration bắt buộc:** App/DB **2.4.1**. Nếu đang dùng App 2.4.0 / DB 1.4.0, chỉ chạy `supabase/migrations/202610310001_v241_travel_reliability_permissions.sql`, sau đó deploy source và cập nhật PWA `tripflow-shell-v241`. Không reset database, không chạy lại migration đầu.
+- Xem hướng dẫn từng bước tại [docs/UPGRADE-V2.4.1.md](docs/UPGRADE-V2.4.1.md).
+- Phiên bản tiếp theo: **V2.5.0 — Performance, Loading & Perceived Speed**.
+
 ## V2.4.0 – Offline & Sync Reliability Pro
 
 - Nâng offline từ queue cơ bản lên offline-first cho dữ liệu cốt lõi: Trip update, Item, Budget, Expense, Participant và Media.
@@ -198,7 +210,6 @@
 - Bump PWA shell cache sang `tripflow-shell-v110-hotfix1` để thiết bị đã cài app nhận CSS mới.
 - Không có migration database mới; app tăng PATCH lên V1.1.1, database vẫn giữ V1.0.0.
 
-
 ## 1.1.0 — Brand Refresh, Professional UI & Travel Identity
 
 - Thiết kế lại logo/app icon theo concept **Location Pin + Travel Route**, đồng bộ favicon/PWA icon 192/512.
@@ -229,7 +240,6 @@
 - Service worker cache shell nâng lên `tripflow-shell-v090`.
 - Bổ sung `docs/RELEASE-CHECKLIST.md` và quy trình upgrade/rollback RC.
 - Roadmap đánh dấu V0.9.0 ✅; phiên bản tiếp theo là V1.0.0 Stable Production Release.
-
 
 ## 0.8.0 — Trip Analytics & Post-Trip Report
 

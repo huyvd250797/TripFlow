@@ -235,6 +235,14 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Conflict 409 xử lý có chủ đích: Giữ bản trên máy hoặc Dùng bản cloud, không retry mù.
 - Database vẫn V1.4.0; không migration.
 
+## ✅ V2.4.1 — Travel Reliability Fix
+
+- Sửa ví/báo cáo offline, hoạt động qua đêm, cách tính số ngày và tuyến Maps nhiều điểm.
+- Mời / đổi quyền / thu hồi / xóa chuyến / chốt dự toán là 5 quyền độc lập.
+- Xóa chuyến theo quyền tại Thêm → Chuyến đi, thành viên & kế hoạch; xóa mềm, Owner phục hồi.
+- Sáng/Tối/Thiết bị có lưu lựa chọn; palette tối giữ nguyên màu ảnh.
+- Migration tăng dần V2.4.1 sau V1.4.0, kiểm thử RLS/RPC, idempotency và phân quyền.
+
 ## ⬜ V2.5.0 — Performance, Loading & Perceived Speed
 
 - Lazy loading/code splitting cho vùng nặng, giảm request/refetch thừa và tận dụng cache đúng ngữ cảnh.
@@ -253,5 +261,3 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
 
 **Phiên bản tiếp theo:** **V2.5.0 – Performance, Loading & Perceived Speed**.
-
-

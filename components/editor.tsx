@@ -1,7 +1,12 @@
 "use client";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Check, CalendarDays, ChevronDown, SlidersHorizontal } from "lucide-react";
+import {
+  Check,
+  CalendarDays,
+  ChevronDown,
+  SlidersHorizontal,
+} from "lucide-react";
 import { Dialog } from "./ui/dialog";
 import {
   CATEGORIES,
@@ -12,8 +17,12 @@ import {
   type Mutation,
 } from "@/lib/types";
 import { dateLabel, parseDate, localTime, utcTime } from "@/lib/domain";
-import { expenseContextWarnings, itemContextWarnings } from "@/lib/smart-defaults";
+import {
+  expenseContextWarnings,
+  itemContextWarnings,
+} from "@/lib/smart-defaults";
 import { inferExpenseCategory } from "@/lib/expense-intelligence";
+import { PERMISSION_FIELDS } from "@/lib/permissions";
 import { schemas } from "@/lib/validation";
 export type EditSpec = {
   entity: Entity;
@@ -36,7 +45,9 @@ const pair = (xs: readonly string[]): [string, string][] =>
 const formatMoneyInput = (value: unknown) => {
   const digits = String(value ?? "").replace(/\D/g, "");
   if (!digits) return "";
-  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Number(digits));
+  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(
+    Number(digits),
+  );
 };
 const parseMoneyInput = (value: unknown) => {
   const digits = String(value ?? "").replace(/\D/g, "");
@@ -75,6 +86,12 @@ export function Editor({
     receipt_url: "",
     url: "",
     role: "editor",
+    can_invite: false,
+    can_change_roles: false,
+    can_revoke_access: false,
+    can_delete_trip: false,
+    can_close_budget: false,
+
     email: "",
     budget_id: "",
     refund_of: "",
@@ -99,7 +116,8 @@ export function Editor({
       if (source[k]) initial[k] = localTime(String(source[k]), zone);
   }
   for (const k of ["unit_price", "amount"])
-    if (initial[k] !== "" && initial[k] != null) initial[k] = formatMoneyInput(initial[k]);
+    if (initial[k] !== "" && initial[k] != null)
+      initial[k] = formatMoneyInput(initial[k]);
   const {
     register,
     handleSubmit,
@@ -123,10 +141,19 @@ export function Editor({
     ["", "Không gắn hoạt động"],
     ...(bundle?.items || []).map((x) => [x.id, x.title] as [string, string]),
   ];
-  const participantNames = [...new Set((bundle?.participants || []).map((x) => x.name.trim()).filter(Boolean))];
+  const participantNames = [
+    ...new Set(
+      (bundle?.participants || []).map((x) => x.name.trim()).filter(Boolean),
+    ),
+  ];
   const legacyPayer = row?.payer ? String(row.payer).trim() : "";
   const payerOptions: [string, string][] = [
-    ["", participantNames.length ? "Chọn người thanh toán" : "Chưa có người tham gia"],
+    [
+      "",
+      participantNames.length
+        ? "Chọn người thanh toán"
+        : "Chưa có người tham gia",
+    ],
     ...participantNames.map((name) => [name, name] as [string, string]),
     ...(legacyPayer && !participantNames.includes(legacyPayer)
       ? [[legacyPayer, `${legacyPayer} (dữ liệu cũ)`] as [string, string]]
@@ -237,6 +264,12 @@ export function Editor({
       ["editor", "Được chỉnh sửa"],
       ["viewer", "Chỉ xem"],
     ]);
+  if (
+    (spec.entity === "member" || spec.entity === "invitation") &&
+    bundle?.role === "owner"
+  ) {
+    for (const [key, label] of PERMISSION_FIELDS) f(key, label, "checkbox");
+  }
   if (spec.entity === "snapshot") title("Tên lần chốt dự toán *");
   if (!["invitation", "member", "snapshot", "media"].includes(spec.entity))
     f("note", "Ghi chú", "textarea");
@@ -245,12 +278,24 @@ export function Editor({
     trip: new Set(["end_date", "timezone", "status", "note"]),
     item: new Set(["end_at", "map_url", "note"]),
     budget: new Set(["category", "item_id", "note"]),
-    expense: new Set(["kind", "refund_of", "budget_id", "category", "spent_on", "payer", "receipt_url", "note"]),
+    expense: new Set([
+      "kind",
+      "refund_of",
+      "budget_id",
+      "category",
+      "spent_on",
+      "payer",
+      "receipt_url",
+      "note",
+    ]),
   };
   const advancedSet = advancedKeys[spec.entity];
-  const advancedFields = advancedSet ? fields.filter((field) => advancedSet.has(field.key)) : [];
+  const advancedFields = advancedSet
+    ? fields.filter((field) => advancedSet.has(field.key))
+    : [];
   const hasProgressiveFields = !row && advancedFields.length > 0;
-  const isAdvancedField = (field: Field) => Boolean(hasProgressiveFields && advancedSet?.has(field.key));
+  const isAdvancedField = (field: Field) =>
+    Boolean(hasProgressiveFields && advancedSet?.has(field.key));
   const names: Record<Entity, string> = {
     trip: "chuyến đi",
     item: "hoạt động",
@@ -328,7 +373,11 @@ export function Editor({
         : bundle?.budgets.find((x) => x.id === watch("budget_id"))?.category
       : undefined;
   const categorySuggestion =
-    !row && bundle && spec.entity === "expense" && watch("kind") !== "refund" && !linkedCategory
+    !row &&
+    bundle &&
+    spec.entity === "expense" &&
+    watch("kind") !== "refund" &&
+    !linkedCategory
       ? inferExpenseCategory(String(watch("title") || ""), bundle.expenses)
       : null;
   const contextWarnings =
@@ -339,7 +388,9 @@ export function Editor({
           budget_id: String(watch("budget_id") || ""),
         })
       : !row && bundle && spec.entity === "item" && watch("start_at")
-        ? itemContextWarnings(bundle, { start_local: String(watch("start_at")) })
+        ? itemContextWarnings(bundle, {
+            start_local: String(watch("start_at")),
+          })
         : [];
   return (
     <Dialog
@@ -349,29 +400,48 @@ export function Editor({
     >
       <form onSubmit={submit} className="editor-form">
         <div className="dialog-body form-grid">
+          {(spec.entity === "member" || spec.entity === "invitation") && (
+            <p className="hint full">
+              Vai trò quyết định quyền sửa dữ liệu. Năm quyền đặc biệt được cấp
+              riêng; chỉ chủ chuyến được cấp hoặc thay đổi các quyền này.
+            </p>
+          )}
           {!row && spec.smartHints && spec.smartHints.length > 0 && (
             <div className="smart-default-banner full">
-              <span><Check size={16} /> Smart Defaults</span>
+              <span>
+                <Check size={16} /> Smart Defaults
+              </span>
               <p>{spec.smartHints.join(" · ")}</p>
-              <small>Đây là gợi ý theo dữ liệu gần nhất; bạn vẫn có thể sửa trước khi lưu.</small>
+              <small>
+                Đây là gợi ý theo dữ liệu gần nhất; bạn vẫn có thể sửa trước khi
+                lưu.
+              </small>
             </div>
           )}
-          {categorySuggestion && categorySuggestion !== "Khác" && categorySuggestion !== String(watch("category") || "") && (
-            <div className="expense-category-suggestion full">
-              <div>
-                <span>Gợi ý nhóm chi</span>
-                <b>{categorySuggestion}</b>
-                <small>Dựa trên nội dung khoản chi và lịch sử gần nhất.</small>
+          {categorySuggestion &&
+            categorySuggestion !== "Khác" &&
+            categorySuggestion !== String(watch("category") || "") && (
+              <div className="expense-category-suggestion full">
+                <div>
+                  <span>Gợi ý nhóm chi</span>
+                  <b>{categorySuggestion}</b>
+                  <small>
+                    Dựa trên nội dung khoản chi và lịch sử gần nhất.
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={() =>
+                    setValue("category", categorySuggestion, {
+                      shouldDirty: true,
+                    })
+                  }
+                >
+                  Dùng gợi ý
+                </button>
               </div>
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={() => setValue("category", categorySuggestion, { shouldDirty: true })}
-              >
-                Dùng gợi ý
-              </button>
-            </div>
-          )}
+            )}
           {contextWarnings.length > 0 && (
             <div className="context-warning-banner full">
               {contextWarnings.map((warning) => (
@@ -382,8 +452,13 @@ export function Editor({
           {hasProgressiveFields && (
             <div className="smart-form-control full">
               <div>
-                <span><SlidersHorizontal size={15} /> Form thông minh</span>
-                <small>TripFlow đã điền các giá trị theo ngữ cảnh. Chỉ mở phần chi tiết khi cần thay đổi.</small>
+                <span>
+                  <SlidersHorizontal size={15} /> Form thông minh
+                </span>
+                <small>
+                  TripFlow đã điền các giá trị theo ngữ cảnh. Chỉ mở phần chi
+                  tiết khi cần thay đổi.
+                </small>
               </div>
               <button
                 type="button"
@@ -391,148 +466,162 @@ export function Editor({
                 aria-expanded={advancedOpen}
                 onClick={() => setAdvancedOpen((value) => !value)}
               >
-                {advancedOpen ? "Ẩn chi tiết" : `Thêm chi tiết (${advancedFields.length})`}
+                {advancedOpen
+                  ? "Ẩn chi tiết"
+                  : `Thêm chi tiết (${advancedFields.length})`}
                 <ChevronDown size={16} aria-hidden="true" />
               </button>
             </div>
           )}
           {fields.map((field) => {
             if (isAdvancedField(field) && !advancedOpen) {
-              return <input key={field.key} type="hidden" {...register(field.key)} />;
+              return (
+                <input key={field.key} type="hidden" {...register(field.key)} />
+              );
             }
             return (
-            <div
-              className={`field ${["textarea", "url"].includes(field.kind || "") ? "full" : ""} ${isAdvancedField(field) ? "smart-advanced-field" : ""}`}
-              key={field.key}
-            >
-              {field.kind !== "checkbox" && <label htmlFor={"tf-field-" + field.key}>{field.label}</label>}
-              {field.kind === "select" ? (
-                <select
-                  id={"tf-field-" + field.key}
-                  aria-label={field.label}
-                  {...register(field.key)}
-                  {...(field.key === "category" && linkedCategory
-                    ? { value: linkedCategory, disabled: true }
-                    : {})}
-                >
-                  {field.options?.map(([v, l]) => (
-                    <option value={v} key={v}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
-              ) : field.kind === "textarea" ? (
-                <textarea
-                  id={"tf-field-" + field.key}
-                  {...register(field.key)}
-                  rows={3}
-                  maxLength={5000}
-                />
-              ) : field.kind === "checkbox" ? (
-                <label className="check-field" htmlFor={"tf-field-" + field.key}>
-                  <input
+              <div
+                className={`field ${["textarea", "url"].includes(field.kind || "") ? "full" : ""} ${isAdvancedField(field) ? "smart-advanced-field" : ""}`}
+                key={field.key}
+              >
+                {field.kind !== "checkbox" && (
+                  <label htmlFor={"tf-field-" + field.key}>{field.label}</label>
+                )}
+                {field.kind === "select" ? (
+                  <select
                     id={"tf-field-" + field.key}
-                    type="checkbox"
+                    aria-label={field.label}
                     {...register(field.key)}
+                    {...(field.key === "category" && linkedCategory
+                      ? { value: linkedCategory, disabled: true }
+                      : {})}
+                  >
+                    {field.options?.map(([v, l]) => (
+                      <option value={v} key={v}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                ) : field.kind === "textarea" ? (
+                  <textarea
+                    id={"tf-field-" + field.key}
+                    {...register(field.key)}
+                    rows={3}
+                    maxLength={5000}
                   />
-                  <span>{field.label}</span>
-                </label>
-              ) : field.kind === "day" ? (
-                <div className="date-field">
+                ) : field.kind === "checkbox" ? (
+                  <label
+                    className="check-field"
+                    htmlFor={"tf-field-" + field.key}
+                  >
+                    <input
+                      id={"tf-field-" + field.key}
+                      type="checkbox"
+                      {...register(field.key)}
+                    />
+                    <span>{field.label}</span>
+                  </label>
+                ) : field.kind === "day" ? (
+                  <div className="date-field">
+                    <input
+                      id={"tf-field-" + field.key}
+                      {...register(field.key)}
+                      placeholder="DD/MM/YYYY"
+                      required={field.required}
+                      inputMode="numeric"
+                      maxLength={10}
+                    />
+                    <label className="calendar-label" title="Chọn từ lịch">
+                      <CalendarDays size={20} />
+                      <input
+                        type="date"
+                        aria-label={`Chọn ${field.label}`}
+                        onChange={(e) =>
+                          e.target.value &&
+                          setValue(field.key, dateLabel(e.target.value), {
+                            shouldDirty: true,
+                          })
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="current-time-btn"
+                      title="Lấy ngày hiện tại"
+                      aria-label={`Lấy ngày hiện tại cho ${field.label}`}
+                      onClick={() => setCurrentValue(field)}
+                    >
+                      <Check size={18} />
+                    </button>
+                  </div>
+                ) : field.kind === "datetime-local" ? (
+                  <div className="date-field datetime-field">
+                    <input
+                      id={"tf-field-" + field.key}
+                      {...register(field.key)}
+                      type="datetime-local"
+                      required={field.required}
+                    />
+                    <button
+                      type="button"
+                      className="current-time-btn"
+                      title="Lấy ngày giờ hiện tại"
+                      aria-label={`Lấy ngày giờ hiện tại cho ${field.label}`}
+                      onClick={() => setCurrentValue(field)}
+                    >
+                      <Check size={18} />
+                    </button>
+                  </div>
+                ) : field.kind === "money" ? (
                   <input
                     id={"tf-field-" + field.key}
                     {...register(field.key)}
-                    placeholder="DD/MM/YYYY"
+                    type="text"
                     required={field.required}
                     inputMode="numeric"
-                    maxLength={10}
+                    placeholder="0"
+                    onInput={(event) => {
+                      const input = event.currentTarget;
+                      const formatted = formatMoneyInput(input.value);
+                      input.value = formatted;
+                      setValue(field.key, formatted, { shouldDirty: true });
+                    }}
                   />
-                  <label className="calendar-label" title="Chọn từ lịch">
-                    <CalendarDays size={20} />
-                    <input
-                      type="date"
-                      aria-label={`Chọn ${field.label}`}
-                      onChange={(e) =>
-                        e.target.value &&
-                        setValue(field.key, dateLabel(e.target.value), {
-                          shouldDirty: true,
-                        })
-                      }
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="current-time-btn"
-                    title="Lấy ngày hiện tại"
-                    aria-label={`Lấy ngày hiện tại cho ${field.label}`}
-                    onClick={() => setCurrentValue(field)}
-                  >
-                    <Check size={18} />
-                  </button>
-                </div>
-              ) : field.kind === "datetime-local" ? (
-                <div className="date-field datetime-field">
+                ) : (
                   <input
                     id={"tf-field-" + field.key}
                     {...register(field.key)}
-                    type="datetime-local"
+                    type={field.kind || "text"}
                     required={field.required}
+                    min={
+                      field.min || (field.key === "amount" ? "1" : undefined)
+                    }
+                    max={
+                      field.max ||
+                      (field.key === "amount" ? "1000000000000" : undefined)
+                    }
+                    step={
+                      field.step || (field.key === "amount" ? "1" : undefined)
+                    }
+                    maxLength={
+                      field.kind === "url"
+                        ? 3000
+                        : field.key === "name"
+                          ? 160
+                          : 200
+                    }
+                    inputMode={field.kind === "number" ? "decimal" : undefined}
                   />
-                  <button
-                    type="button"
-                    className="current-time-btn"
-                    title="Lấy ngày giờ hiện tại"
-                    aria-label={`Lấy ngày giờ hiện tại cho ${field.label}`}
-                    onClick={() => setCurrentValue(field)}
-                  >
-                    <Check size={18} />
-                  </button>
-                </div>
-              ) : field.kind === "money" ? (
-                <input
-                  id={"tf-field-" + field.key}
-                  {...register(field.key)}
-                  type="text"
-                  required={field.required}
-                  inputMode="numeric"
-                  placeholder="0"
-                  onInput={(event) => {
-                    const input = event.currentTarget;
-                    const formatted = formatMoneyInput(input.value);
-                    input.value = formatted;
-                    setValue(field.key, formatted, { shouldDirty: true });
-                  }}
-                />
-              ) : (
-                <input
-                  id={"tf-field-" + field.key}
-                  {...register(field.key)}
-                  type={field.kind || "text"}
-                  required={field.required}
-                  min={field.min || (field.key === "amount" ? "1" : undefined)}
-                  max={
-                    field.max ||
-                    (field.key === "amount" ? "1000000000000" : undefined)
-                  }
-                  step={
-                    field.step || (field.key === "amount" ? "1" : undefined)
-                  }
-                  maxLength={
-                    field.kind === "url"
-                      ? 3000
-                      : field.key === "name"
-                        ? 160
-                        : 200
-                  }
-                  inputMode={field.kind === "number" ? "decimal" : undefined}
-                />
-              )}
-            </div>
+                )}
+              </div>
             );
           })}
           {spec.entity === "item" && (
             <p className="hint full">
-              Giờ tại {zone}. Google Maps: chọn địa điểm → Chia sẻ → Sao chép đường liên kết rồi dán trực tiếp link maps.app.goo.gl vào đây; TripFlow V1.8.4 giữ nguyên link bạn dán và chỉ đọc tọa độ ngầm khi cần. Ngày/giờ kết thúc có thể để trống.
+              Giờ tại {zone}. Google Maps: chọn địa điểm → Chia sẻ → Sao chép
+              đường liên kết rồi dán trực tiếp link maps.app.goo.gl vào đây;
+              TripFlow V1.8.4 giữ nguyên link bạn dán và chỉ đọc tọa độ ngầm khi
+              cần. Ngày/giờ kết thúc có thể để trống.
             </p>
           )}
           {spec.entity === "expense" && linkedCategory && (

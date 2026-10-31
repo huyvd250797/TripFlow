@@ -84,36 +84,69 @@ test("CSV neutralizes formula injection", () => {
     trip: { name: "=BAD()" },
     budgets: [],
     expenses: [],
+    snapshots: [],
+    items: [],
   } as unknown as Bundle;
   assert.match(csv(data), /"'=BAD\(\)"/);
 });
 
 test("finance report preserves original baseline and groups by day/activity", () => {
   const bundle = {
-    trip: { id: "t", name: "Đà Lạt", destination: "", start_date: "2026-09-25", end_date: "2026-09-27", timezone: "Asia/Ho_Chi_Minh" },
+    trip: {
+      id: "t",
+      name: "Đà Lạt",
+      destination: "",
+      start_date: "2026-09-25",
+      end_date: "2026-09-27",
+      timezone: "Asia/Ho_Chi_Minh",
+    },
     items: [{ id: "i1", title: "Khách sạn" }],
     budgets: [
       { id: "b1", amount: 1200000, category: "Lưu trú", item_id: "i1" },
     ],
     expenses: [
-      { id: "e1", amount: 900000, kind: "payment", category: "Lưu trú", budget_id: "b1", refund_of: null, spent_on: "2026-09-25" },
-      { id: "e2", amount: 100000, kind: "refund", category: "Lưu trú", budget_id: "b1", refund_of: "e1", spent_on: "2026-09-26" },
+      {
+        id: "e1",
+        amount: 900000,
+        kind: "payment",
+        category: "Lưu trú",
+        budget_id: "b1",
+        refund_of: null,
+        spent_on: "2026-09-25",
+      },
+      {
+        id: "e2",
+        amount: 100000,
+        kind: "refund",
+        category: "Lưu trú",
+        budget_id: "b1",
+        refund_of: "e1",
+        spent_on: "2026-09-26",
+      },
     ],
     snapshots: [
-      { id: "s1", snapshot_no: 1, snapshot_kind: "baseline", created_at: "2026-09-24T00:00:00Z", data: [{ id: "b1", amount: 1000000, category: "Lưu trú" }] },
+      {
+        id: "s1",
+        snapshot_no: 1,
+        snapshot_kind: "baseline",
+        created_at: "2026-09-24T00:00:00Z",
+        data: [{ id: "b1", amount: 1000000, category: "Lưu trú" }],
+      },
     ],
   } as unknown as Bundle;
   const report = buildFinanceReport(bundle);
   assert.equal(report.totals.original_budget, 1000000);
   assert.equal(report.totals.current_budget, 1200000);
   assert.equal(report.totals.net_actual, 800000);
-  assert.equal(report.categories.find((x) => x.category === "Lưu trú")?.variance, 400000);
+  assert.equal(
+    report.categories.find((x) => x.category === "Lưu trú")?.variance,
+    400000,
+  );
   assert.equal(report.days.length, 2);
   assert.equal(report.activities[0].actual, 800000);
   assert.equal(report.integrity.status, "ok");
   assert.match(financeJson(bundle), /"original_budget": 1000000/);
 });
-
 
 test("live trip derives Current/Next/Late and delay minutes", () => {
   const r = live(
@@ -146,7 +179,6 @@ test("live trip derives Current/Next/Late and delay minutes", () => {
   assert.equal(r.next?.id, "next");
   assert.equal(r.nextInMinutes, 60);
 });
-
 
 test("trip analytics summarizes itinerary, finance, media and post-trip exports", () => {
   const bundle = {
@@ -185,10 +217,25 @@ test("trip analytics summarizes itinerary, finance, media and post-trip exports"
       { id: "b1", amount: 1000000, category: "Lưu trú", item_id: "i1" },
     ],
     expenses: [
-      { id: "e1", title: "KS", amount: 800000, kind: "payment", category: "Lưu trú", budget_id: "b1", refund_of: null, spent_on: "2026-09-25" },
+      {
+        id: "e1",
+        title: "KS",
+        amount: 800000,
+        kind: "payment",
+        category: "Lưu trú",
+        budget_id: "b1",
+        refund_of: null,
+        spent_on: "2026-09-25",
+      },
     ],
     snapshots: [
-      { id: "s1", snapshot_no: 1, snapshot_kind: "baseline", created_at: "2026-09-24T00:00:00Z", data: [{ id: "b1", amount: 1000000, category: "Lưu trú" }] },
+      {
+        id: "s1",
+        snapshot_no: 1,
+        snapshot_kind: "baseline",
+        created_at: "2026-09-24T00:00:00Z",
+        data: [{ id: "b1", amount: 1000000, category: "Lưu trú" }],
+      },
     ],
     media: [{ id: "m1", kind: "album", item_id: "i1" }],
     participants: [],
@@ -214,18 +261,64 @@ test("trip analytics summarizes itinerary, finance, media and post-trip exports"
   assert.doesNotMatch(html, /Nhận phòng <script>/);
 });
 
-
 test("V1.3 trip story groups memories, cover and highlights", () => {
   const bundle = {
-    trip: { id: "t", name: "Đà Lạt", destination: "Đà Lạt", start_date: "2026-09-25", end_date: "2026-09-27", timezone: "Asia/Ho_Chi_Minh", people: 2, status: "completed" },
+    trip: {
+      id: "t",
+      name: "Đà Lạt",
+      destination: "Đà Lạt",
+      start_date: "2026-09-25",
+      end_date: "2026-09-27",
+      timezone: "Asia/Ho_Chi_Minh",
+      people: 2,
+      status: "completed",
+    },
     items: [
-      { id: "i1", title: "Hồ Xuân Hương", location: "Đà Lạt", start_at: "2026-09-25T02:00:00Z", end_at: "2026-09-25T03:00:00Z", status: "done" },
+      {
+        id: "i1",
+        title: "Hồ Xuân Hương",
+        location: "Đà Lạt",
+        start_at: "2026-09-25T02:00:00Z",
+        end_at: "2026-09-25T03:00:00Z",
+        status: "done",
+      },
     ],
     media: [
-      { id: "m1", title: "Bình minh", kind: "photo", url: "https://example.com/a.jpg", item_id: "i1", note: "Khoảnh khắc đầu ngày", created_at: "2026-09-25T03:00:00Z", taken_on: "2026-09-25", is_highlight: true, is_cover: true, story_order: 2 },
-      { id: "m2", title: "Album", kind: "album", url: "https://drive.google.com/drive/folders/x", item_id: "i1", note: "", created_at: "2026-09-25T04:00:00Z", taken_on: null, is_highlight: false, is_cover: false, story_order: 3 },
+      {
+        id: "m1",
+        title: "Bình minh",
+        kind: "photo",
+        url: "https://example.com/a.jpg",
+        item_id: "i1",
+        note: "Khoảnh khắc đầu ngày",
+        created_at: "2026-09-25T03:00:00Z",
+        taken_on: "2026-09-25",
+        is_highlight: true,
+        is_cover: true,
+        story_order: 2,
+      },
+      {
+        id: "m2",
+        title: "Album",
+        kind: "album",
+        url: "https://drive.google.com/drive/folders/x",
+        item_id: "i1",
+        note: "",
+        created_at: "2026-09-25T04:00:00Z",
+        taken_on: null,
+        is_highlight: false,
+        is_cover: false,
+        story_order: 3,
+      },
     ],
-    budgets: [], expenses: [], snapshots: [], participants: [], members: [], invitations: [], audits: [], role: "owner",
+    budgets: [],
+    expenses: [],
+    snapshots: [],
+    participants: [],
+    members: [],
+    invitations: [],
+    audits: [],
+    role: "owner",
   } as unknown as Bundle;
   const story = buildTripStory(bundle);
   assert.equal(story.cover?.id, "m1");
@@ -234,11 +327,17 @@ test("V1.3 trip story groups memories, cover and highlights", () => {
   assert.equal(story.days[0].media.length, 2);
   assert.equal(mediaPreviewUrl(bundle.media[0]), "https://example.com/a.jpg");
   assert.equal(
-    mediaPreviewUrl({ ...bundle.media[0], url: "https://drive.google.com/file/d/abc123/view" }),
+    mediaPreviewUrl({
+      ...bundle.media[0],
+      url: "https://drive.google.com/file/d/abc123/view",
+    }),
     "https://drive.google.com/thumbnail?id=abc123&sz=w1600",
   );
   assert.equal(
-    mediaEmbedUrl({ ...bundle.media[1], url: "https://drive.google.com/drive/folders/folder123" }),
+    mediaEmbedUrl({
+      ...bundle.media[1],
+      url: "https://drive.google.com/drive/folders/folder123",
+    }),
     "https://drive.google.com/embeddedfolderview?id=folder123#grid",
   );
   assert.match(postTripJson(bundle), /"story"/);

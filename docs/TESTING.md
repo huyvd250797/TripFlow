@@ -72,7 +72,6 @@ Dùng project staging và dữ liệu thử riêng:
 - Data Integrity phải cảnh báo khi chưa có baseline và phát hiện dữ liệu refund/link/snapshot không nhất quán.
 - Export CSV phải tiếp tục chống formula injection; export JSON phải chứa report và dữ liệu nguồn.
 
-
 ## Live Trip & Realtime V0.4.0
 
 - [ ] Chạy migration V0.4.0 sau V0.3.0; API bundle trả `live_events`.
@@ -84,7 +83,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Hoàn thành, bỏ qua, đặt lại tạo event tương ứng và hiển thị đúng theo timezone chuyến đi.
 - [ ] Activity `active` quá `end_at` hiển thị số phút/giờ trễ; activity planned đã qua giờ xuất hiện trong LATE.
 - [ ] Offline check-in đi vào queue; khi có mạng, mutation sync một lần và history được tạo sau khi server xác nhận.
-
 
 ## Collaboration & Permission Control V0.5.0
 
@@ -107,7 +105,6 @@ Dùng project staging và dữ liệu thử riêng:
 - Deploy worker mới: worker cũ tiếp tục điều khiển phiên hiện tại, app hiện Cập nhật TripFlow; chỉ `SKIP_WAITING` sau khi người dùng bấm nút rồi reload qua `controllerchange`.
 - Cache Storage không chứa `/api/*` hoặc `/auth/*`; dữ liệu riêng tư offline nằm trong IndexedDB theo user.
 - Persistent Storage API: nếu browser từ chối thì app vẫn hoạt động, chỉ hiển thị cache ở chế độ tiêu chuẩn.
-
 
 ## Backup, Recovery & Operations V0.7.0
 
@@ -134,7 +131,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] CSV/JSON/HTML export tải được; CSV chống formula injection và HTML escape nội dung người dùng.
 - [ ] V0.8.0 không yêu cầu migration mới; database V0.7.0 hoạt động trực tiếp.
 
-
 ## Release Candidate & Hardening V0.9.0
 
 - [ ] Chạy migration `202609280004_v090_release_candidate_hardening.sql`.
@@ -147,7 +143,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] CSP không chặn Supabase Auth/Realtime trên domain production.
 - [ ] Chạy đầy đủ `docs/RELEASE-CHECKLIST.md` trên Safari iOS, Chrome Android và desktop.
 
-
 ## Stable Production V1.0.0
 
 - [ ] Chạy migration `202609280005_v100_stable_production_release.sql` sau V0.9.0.
@@ -157,7 +152,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Roadmap hiển thị V1.0.0 ✅ và trạng thái `ROADMAP 1.0 HOÀN TẤT`, không crash vì thiếu phiên bản tiếp theo.
 - [ ] Service worker đang dùng `tripflow-shell-v100`; cập nhật từ V0.9.0 không cache API/Auth và không mất queue IndexedDB.
 - [ ] Hoàn tất `docs/RELEASE-CHECKLIST.md` trên staging và smoke test lại production sau deploy.
-
 
 ## Brand Refresh V1.1.0
 
@@ -180,7 +174,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Phím `/` mở search trên desktop nhưng không chặn khi đang gõ trong input/textarea/select.
 - [ ] Topbar search và dialog không làm bể mobile layout đã fix ở V1.1.1.
 - [ ] Production readiness hiển thị App 1.2.0 / DB 1.0.0 / stable.
-
 
 ## Media, Memories & Storytelling V1.3.0
 
@@ -209,7 +202,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Viewer không thể lưu template từ chuyến chỉ xem.
 - [ ] Production readiness hiển thị App 1.4.0 / DB 1.4.0 / stable.
 
-
 ## Quick Entry & Command Center V1.5.0
 
 - [ ] `Ctrl/Cmd + K` mở Command Center; `/` mở Search.
@@ -219,13 +211,11 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Floating button không che bottom navigation ở 320/390 px.
 - [ ] App 1.5.0 chạy với Database 1.4.0; không yêu cầu migration giả.
 
-
 ## Deploy typecheck regression V1.5.1
 
 - [ ] `repeatLastExpense` hoạt động an toàn khi Bundle chưa tải.
 - [ ] `tests/domain.test.ts` import và gọi `dateLabel` hợp lệ.
 - [ ] `npm run build` qua type-check trên Node 24.x.
-
 
 ## Smart Defaults V1.6.0
 
@@ -234,7 +224,6 @@ Dùng project staging và dữ liệu thử riêng:
 - Unit: activity mới trùng lịch phát cảnh báo.
 - UI/PWA: bottom nav fixed ở standalone và Quick dock collapsed vẫn để lộ mũi tên.
 - UI: Module Hub trong Thêm đóng/mở được và Analytics tự mở block khi điều hướng từ dashboard.
-
 
 ## Planning Board & Timeline Pro V1.7.0
 
@@ -266,7 +255,6 @@ Dùng project staging và dữ liệu thử riêng:
 - Drive folder/album dùng embedded folder view khi được phép.
 - iOS keyboard: dialog bám visual viewport offset/height và footer vẫn thao tác được.
 
-
 ## V1.8.2 Google Maps Share & isolated image zoom
 
 - [ ] Dán link lấy trực tiếp từ Google Maps → Chia sẻ → Sao chép đường liên kết (`maps.app.goo.gl`) và lưu activity.
@@ -281,7 +269,6 @@ Dùng project staging và dữ liệu thử riêng:
 - `Location` vẫn phải được parse khi upstream/proxy trả status không phải 3xx.
 - Test link mẫu ySoEVvZNbrSWqu168 phải cho 12.2200647,109.2036555 trong test mô phỏng redirect.
 - Kiểm tra `debug=1` chỉ trả trace kỹ thuật, không trả body HTML.
-
 
 ## V1.8.4 Google Maps coordinate integrity
 
@@ -299,7 +286,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Nhập `Grab sân bay`, `Buffet hải sản`, `Khách sạn` hiển thị gợi ý category phù hợp; không tự áp dụng nếu user chưa bấm **Dùng gợi ý**.
 - [ ] Mobile 320/390 px: 5 tab Finance cuộn ngang, Travel Wallet và shortcut cards không tràn màn hình.
 - [ ] Regression: short link Google Maps V1.8.4 vẫn giữ nguyên khi save/edit và Map không đọc nhầm tọa độ.
-
 
 ## V2.0.0 Pro Travel Operating System
 
@@ -331,7 +317,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Nút X của Quick dock nằm trên nút ⚡ và bấm được trên desktop/mobile/PWA.
 - [ ] App version 2.2.0, DB 1.4.0, service worker `tripflow-shell-v220`.
 
-
 ## V2.2.1 Travel Wallet Compact CTA Fix
 
 - [ ] Mobile 320/375/390/430 px: nút **Ghi chi tiêu** nằm gọn ở góc phải phần header Ví chuyến đi, không chiếm full width.
@@ -350,8 +335,6 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Trước chuyến và sau chuyến đổi context đúng, không render dashboard đang đi.
 - [ ] App version 2.3.0, DB 1.4.0, service worker `tripflow-shell-v230`.
 
-
-
 ## V2.4.0 Offline & Sync Reliability Pro
 
 - [ ] `tests/offline-reliability.test.ts`: queue core entities, compaction create→update, create→delete, optimistic cache, overlay pending-only và retry backoff.
@@ -366,3 +349,11 @@ Dùng project staging và dữ liệu thử riêng:
 - [ ] Chọn **Giữ bản trên máy**: lấy version cloud mới nhất, tạo operationId mới và sync lại thay đổi local.
 - [ ] Offline hỗ trợ Item/Budget/Expense/Participant/Media create-update-delete, Item status và Trip update; Invitation/Member/Snapshot vẫn chặn offline.
 - [ ] App version 2.4.0, DB 1.4.0, service worker `tripflow-shell-v240`.
+
+## V2.4.1 Travel Reliability Fix
+
+- `npm test`: bao gồm regression ví offline, số ngày, qua đêm, tuyến và integration PostgreSQL qua PGlite với toàn bộ migrations.
+- `npm run typecheck` và `npm run build`.
+- `npm run test:ui`: chạy app local với `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`, publishable key test, rồi chạy test ở terminal khác. `UI_BASE_URL` mặc định http://127.0.0.1:3000; tùy chọn `CHROMIUM_PATH` cho Chromium có sẵn. Cài browser bằng `npx playwright install chromium` nếu cần. Test dùng Supabase Auth/HTTP giả lập + PostgreSQL PGlite, không truy cập dữ liệu production; bypass CSP chỉ trong browser test vì transport localhost được giả lập.
+- UI: năm checkbox cấp quyền, lưu quyền, ẩn/hiện xóa với Viewer, ví offline rồi đồng bộ, Sáng/Tối/Thiết bị và lưu lựa chọn, 40 tổ hợp màn hình/kích thước/theme.
+- UAT thật: iPhone Safari/PWA, cold-start offline, lời mời đúng email, quyền bị thu hồi khi mở form, xóa mềm/khôi phục và mở từng đoạn Maps.

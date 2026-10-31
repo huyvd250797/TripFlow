@@ -1,5 +1,5 @@
-export const VERSION = "2.4.0";
-export const DATABASE_VERSION = "1.4.0";
+export const VERSION = "2.4.1";
+export const DATABASE_VERSION = "2.4.1";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -107,19 +107,28 @@ export type Media = Row & {
   story_order?: number;
 };
 export type Participant = Row & { name: string; note: string };
-export type Member = Row & {
-  user_id: string;
-  email: string;
-  role: "editor" | "viewer";
+export type TripPermissions = {
+  can_invite: boolean;
+  can_change_roles: boolean;
+  can_revoke_access: boolean;
+  can_delete_trip: boolean;
+  can_close_budget: boolean;
 };
-export type Invitation = Row & {
-  email: string;
-  role: "editor" | "viewer";
-  token: string;
-  expires_at: string;
-  used_at: string | null;
-  revoked_at: string | null;
-};
+export type Member = Row &
+  Partial<TripPermissions> & {
+    user_id: string;
+    email: string;
+    role: "editor" | "viewer";
+  };
+export type Invitation = Row &
+  Partial<TripPermissions> & {
+    email: string;
+    role: "editor" | "viewer";
+    token: string;
+    expires_at: string;
+    used_at: string | null;
+    revoked_at: string | null;
+  };
 export type Snapshot = {
   id: string;
   trip_id: string;
@@ -139,7 +148,8 @@ export type ItineraryEvent = {
   item_id: string;
   operation_id: string;
   actor_id: string | null;
-  event_type: "check_in" | "complete" | "auto_complete" | "skip" | "reset" | "status";
+  event_type:
+    "check_in" | "complete" | "auto_complete" | "skip" | "reset" | "status";
   from_status: keyof typeof ITEM_STATUS | null;
   to_status: keyof typeof ITEM_STATUS;
   occurred_at: string;
@@ -253,7 +263,6 @@ export type TripAnalyticsReport = {
   warnings: string[];
 };
 
-
 export type TripMemoryDay = {
   day: string;
   title: string;
@@ -281,6 +290,7 @@ export type Audit = {
 export type Bundle = {
   trip: Trip;
   role: "owner" | "editor" | "viewer";
+  permissions?: TripPermissions;
   items: Item[];
   budgets: Budget[];
   expenses: Expense[];
@@ -302,7 +312,6 @@ export type Mutation = {
   version?: number;
   data?: Record<string, unknown>;
 };
-
 
 export type TripTemplate = {
   id: string;
@@ -352,7 +361,6 @@ export type QueuedMutation = {
   lastAttemptAt?: string;
   nextAttemptAt?: string;
 };
-
 
 export type RecoveryBackup = {
   id: string;

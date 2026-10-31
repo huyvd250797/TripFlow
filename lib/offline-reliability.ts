@@ -169,7 +169,9 @@ export function compactQueueRows(
     ...(attempted
       ? {
           lastAttemptAt: nowIso,
-          nextAttemptAt: new Date(Date.parse(nowIso) + retryDelayMs(1)).toISOString(),
+          nextAttemptAt: new Date(
+            Date.parse(nowIso) + retryDelayMs(1),
+          ).toISOString(),
         }
       : {}),
   };
@@ -255,7 +257,9 @@ function optimisticExpense(mutation: Mutation, nowIso: string): Expense | null {
 function optimisticMedia(mutation: Mutation, nowIso: string): Media | null {
   if (!mutation.id || mutation.action !== "create") return null;
   const data = mutation.data || {};
-  const kind = ["album", "photo", "video", "document"].includes(String(data.kind))
+  const kind = ["album", "photo", "video", "document"].includes(
+    String(data.kind),
+  )
     ? (String(data.kind) as Media["kind"])
     : "album";
   return {
@@ -301,6 +305,10 @@ export function applyOptimisticMutation(
     participants: [...bundle.participants],
   };
   const data = mutation.data || {};
+  // Never combine a cloud aggregate with locally modified rows. Rebuild reports from
+  // the visible arrays until a fresh server bundle replaces the optimistic cache.
+  if (["expense", "budget", "item", "trip"].includes(mutation.entity))
+    next.finance_report = undefined;
 
   if (mutation.entity === "trip" && mutation.action === "update") {
     next.trip = bumped(next.trip, data as Partial<typeof next.trip>, nowIso);
@@ -310,7 +318,8 @@ export function applyOptimisticMutation(
   if (mutation.entity === "item") {
     if (mutation.action === "create") {
       const row = optimisticItem(mutation, nowIso);
-      if (row && !next.items.some((item) => item.id === row.id)) next.items.push(row);
+      if (row && !next.items.some((item) => item.id === row.id))
+        next.items.push(row);
     } else if (mutation.action === "update" && mutation.id) {
       next.items = next.items.map((item) =>
         item.id === mutation.id
@@ -429,7 +438,9 @@ export function applyOptimisticMutation(
           : expense,
       );
     } else if (mutation.action === "delete" && mutation.id) {
-      next.expenses = next.expenses.filter((expense) => expense.id !== mutation.id);
+      next.expenses = next.expenses.filter(
+        (expense) => expense.id !== mutation.id,
+      );
     }
     return next;
   }
@@ -437,7 +448,8 @@ export function applyOptimisticMutation(
   if (mutation.entity === "media") {
     if (mutation.action === "create") {
       const row = optimisticMedia(mutation, nowIso);
-      if (row && !next.media.some((media) => media.id === row.id)) next.media.push(row);
+      if (row && !next.media.some((media) => media.id === row.id))
+        next.media.push(row);
     } else if (mutation.action === "update" && mutation.id) {
       next.media = next.media.map((media) =>
         media.id === mutation.id
@@ -469,7 +481,9 @@ export function applyOptimisticMutation(
           : person,
       );
     } else if (mutation.action === "delete" && mutation.id) {
-      next.participants = next.participants.filter((person) => person.id !== mutation.id);
+      next.participants = next.participants.filter(
+        (person) => person.id !== mutation.id,
+      );
     }
   }
   return next;
@@ -488,7 +502,8 @@ export function overlayQueuedMutations(
     )
     .sort(compareQueuedMutations)
     .reduce(
-      (current, row) => applyOptimisticMutation(current, row.mutation, row.updatedAt || nowIso),
+      (current, row) =>
+        applyOptimisticMutation(current, row.mutation, row.updatedAt || nowIso),
       bundle,
     );
 }
@@ -532,10 +547,14 @@ export function currentVersionForMutation(bundle: Bundle, mutation: Mutation) {
   if (mutation.entity === "trip") return bundle.trip.version;
   const id = mutation.id;
   if (!id) return undefined;
-  if (mutation.entity === "item") return bundle.items.find((x) => x.id === id)?.version;
-  if (mutation.entity === "budget") return bundle.budgets.find((x) => x.id === id)?.version;
-  if (mutation.entity === "expense") return bundle.expenses.find((x) => x.id === id)?.version;
-  if (mutation.entity === "media") return bundle.media.find((x) => x.id === id)?.version;
+  if (mutation.entity === "item")
+    return bundle.items.find((x) => x.id === id)?.version;
+  if (mutation.entity === "budget")
+    return bundle.budgets.find((x) => x.id === id)?.version;
+  if (mutation.entity === "expense")
+    return bundle.expenses.find((x) => x.id === id)?.version;
+  if (mutation.entity === "media")
+    return bundle.media.find((x) => x.id === id)?.version;
   if (mutation.entity === "participant")
     return bundle.participants.find((x) => x.id === id)?.version;
   return undefined;

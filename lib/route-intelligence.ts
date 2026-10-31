@@ -25,12 +25,18 @@ export type RouteDayAnalysis = {
   totalTravelMinutes: number;
   warnings: string[];
   directionsUrl: string;
+  directionsSegments: { url: string; fromIndex: number; toIndex: number }[];
 };
 
 const coordOk = (lat: number, lng: number) =>
-  Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  Number.isFinite(lat) &&
+  Number.isFinite(lng) &&
+  Math.abs(lat) <= 90 &&
+  Math.abs(lng) <= 180;
 
-export function extractMapCoordinate(input?: string | null): RouteCoordinate | null {
+export function extractMapCoordinate(
+  input?: string | null,
+): RouteCoordinate | null {
   if (!input) return null;
   const raw = input.trim();
   if (!raw) return null;
@@ -67,14 +73,18 @@ export function extractMapCoordinate(input?: string | null): RouteCoordinate | n
   // Google place URLs can contain both a viewport center (@lat,lng) and the
   // actual place coordinate (!3dlat!4dlng). Always prefer the place coordinate.
   for (const value of variants) {
-    const place = value.match(/!3d(-?\d{1,2}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/i);
+    const place = value.match(
+      /!3d(-?\d{1,2}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/i,
+    );
     if (place) {
       const coordinate = read(place[1], place[2]);
       if (coordinate) return coordinate;
     }
 
     // Some Google payloads encode longitude before latitude as !2d{lng}!3d{lat}.
-    const reversed = value.match(/!2d(-?\d{1,3}(?:\.\d+)?)!3d(-?\d{1,2}(?:\.\d+)?)/i);
+    const reversed = value.match(
+      /!2d(-?\d{1,3}(?:\.\d+)?)!3d(-?\d{1,2}(?:\.\d+)?)/i,
+    );
     if (reversed) {
       const coordinate = read(reversed[2], reversed[1]);
       if (coordinate) return coordinate;
@@ -82,7 +92,9 @@ export function extractMapCoordinate(input?: string | null): RouteCoordinate | n
   }
 
   for (const value of variants) {
-    const query = value.match(/[?&](?:query|q|destination|origin|ll|center)=(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)(?:&|$)/i);
+    const query = value.match(
+      /[?&](?:query|q|destination|origin|ll|center)=(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)(?:&|$)/i,
+    );
     if (query) {
       const coordinate = read(query[1], query[2]);
       if (coordinate) return coordinate;
@@ -90,7 +102,9 @@ export function extractMapCoordinate(input?: string | null): RouteCoordinate | n
   }
 
   for (const value of variants) {
-    const viewport = value.match(/@(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)(?:,|\/|$)/);
+    const viewport = value.match(
+      /@(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)(?:,|\/|$)/,
+    );
     if (viewport) {
       const coordinate = read(viewport[1], viewport[2]);
       if (coordinate) return coordinate;
@@ -132,7 +146,10 @@ export function estimateRouteLeg(a: RouteCoordinate, b: RouteCoordinate) {
     speedKmh = 24;
     mode = "ride";
   }
-  const travelMinutes = Math.max(3, Math.ceil((distanceKm / speedKmh) * 60 + (mode === "walk" ? 0 : 5)));
+  const travelMinutes = Math.max(
+    3,
+    Math.ceil((distanceKm / speedKmh) * 60 + (mode === "walk" ? 0 : 5)),
+  );
   return { distanceKm, travelMinutes, mode };
 }
 
@@ -147,19 +164,40 @@ function placeToken(item: Item) {
   return item.location.trim() || item.title.trim();
 }
 
+/** At most 3 waypoints works in mobile browsers too. Segments overlap at endpoints. */
+export function buildDirectionsSegments(items: Item[]) {
+  const segments: { url: string; fromIndex: number; toIndex: number }[] = [];
+  for (let start = 0; start < items.length - 1;) {
+    let end = Math.min(start + 4, items.length - 1);
+    const make = (last: number) => {
+      const tokens = items.slice(start, last + 1).map(placeToken);
+      const params = new URLSearchParams({
+        api: "1",
+        origin: tokens[0],
+        destination: tokens.at(-1)!,
+        travelmode: "driving",
+      });
+      if (tokens.length > 2)
+        params.set("waypoints", tokens.slice(1, -1).join("|"));
+      return `https://www.google.com/maps/dir/?${params.toString()}`;
+    };
+    while (end > start + 1 && make(end).length > 2048) end -= 1;
+    segments.push({ url: make(end), fromIndex: start + 1, toIndex: end + 1 });
+    start = end;
+  }
+  return segments;
+}
 export function buildDirectionsUrl(items: Item[]) {
-  if (items.length < 2) return "";
-  const tokens = items.map(placeToken).filter(Boolean);
-  if (tokens.length < 2) return "";
-  const origin = tokens[0];
-  const destination = tokens[tokens.length - 1];
-  const waypoints = tokens.slice(1, -1).slice(0, 8);
-  const params = new URLSearchParams({ api: "1", origin, destination, travelmode: "driving" });
-  if (waypoints.length) params.set("waypoints", waypoints.join("|"));
-  return `https://www.google.com/maps/dir/?${params.toString()}`;
+  // Legacy single-link callers must not receive an incomplete route.
+  const segments = buildDirectionsSegments(items);
+  return segments.length === 1 ? segments[0].url : "";
 }
 
-export function analyzeRouteDay(items: Item[], zone: string, day: string): RouteDayAnalysis {
+export function analyzeRouteDay(
+  items: Item[],
+  zone: string,
+  day: string,
+): RouteDayAnalysis {
   const rows = items
     .filter((item) => localTime(item.start_at, zone).slice(0, 10) === day)
     .slice()
@@ -171,7 +209,10 @@ export function analyzeRouteDay(items: Item[], zone: string, day: string): Route
     const to = rows[i + 1];
     const fromCoord = extractMapCoordinate(from.map_url);
     const toCoord = extractMapCoordinate(to.map_url);
-    const availableMinutes = minutesBetween(from.end_at || from.start_at, to.start_at);
+    const availableMinutes = minutesBetween(
+      from.end_at || from.start_at,
+      to.start_at,
+    );
     if (!fromCoord || !toCoord) {
       legs.push({
         from,
@@ -207,23 +248,31 @@ export function analyzeRouteDay(items: Item[], zone: string, day: string): Route
       label,
     });
   }
-  const mappedItems = rows.filter((item) => extractMapCoordinate(item.map_url)).length;
+  const mappedItems = rows.filter((item) =>
+    extractMapCoordinate(item.map_url),
+  ).length;
   return {
     day,
     items: rows,
     legs,
     mappedItems,
     totalDistanceKm: legs.reduce((sum, leg) => sum + (leg.distanceKm || 0), 0),
-    totalTravelMinutes: legs.reduce((sum, leg) => sum + (leg.travelMinutes || 0), 0),
+    totalTravelMinutes: legs.reduce(
+      (sum, leg) => sum + (leg.travelMinutes || 0),
+      0,
+    ),
     warnings,
     directionsUrl: buildDirectionsUrl(rows),
+    directionsSegments: buildDirectionsSegments(rows),
   };
 }
 
 export function mapPointLayout(items: Item[]) {
   const points = items
     .map((item) => ({ item, coord: extractMapCoordinate(item.map_url) }))
-    .filter((row): row is { item: Item; coord: RouteCoordinate } => !!row.coord);
+    .filter(
+      (row): row is { item: Item; coord: RouteCoordinate } => !!row.coord,
+    );
   if (!points.length) return [];
   const lats = points.map((x) => x.coord.lat);
   const lngs = points.map((x) => x.coord.lng);

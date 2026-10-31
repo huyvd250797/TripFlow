@@ -224,6 +224,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Offline-first cho dữ liệu cốt lõi: cache + optimistic UI, queue tự gộp thao tác để giảm request, idempotency chống ghi trùng, retry exponential backoff, tự phục hồi trạng thái sending sau khi app bị đóng và xử lý conflict theo lựa chọn Giữ bản trên máy / Dùng bản cloud.",
   },
   {
+    version: "V2.4.1",
+    title: "Travel Reliability Fix",
+    done: true,
+    description:
+      "Ví offline đồng nhất; Current qua đêm, số ngày dùng chung và tuyến đủ điểm. Năm quyền độc lập được kiểm tra ở database, xóa chuyến đúng quyền trong module Chuyến đi; giao diện Sáng/Tối/Theo thiết bị. Migration DB V2.4.1.",
+  },
+  {
     version: "V2.5.0",
     title: "Performance, Loading & Perceived Speed",
     done: false,

@@ -1,6 +1,6 @@
 {
   "name": "tripflow-cloud",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,7 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:ui": "node --import tsx tests/ui.ts",
+    "test:ui": "node --import tsx tests/reliability-ui.ts",
     "format": "prettier --write app components lib tests docs README.md next.config.ts tsconfig.json package.json vercel.json .github"
   },
   "engines": {

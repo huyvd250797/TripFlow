@@ -103,6 +103,18 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202609290001_v140_smart_planning_templates_reuse.sql",
+      "utf8",
+    ),
+  );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/202610310001_v241_travel_reliability_permissions.sql",
+      "utf8",
+    ),
+  );
   await asUser(owner);
   const trip = await mutation("trip", "create", {
     name: "Test cloud",
@@ -205,7 +217,10 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   assert.equal(Number(baseline.total_amount), 1000000);
   await db.exec("set role postgres;");
   await assert.rejects(
-    db.query("update public.budget_snapshots set title='Không được sửa' where id=$1", [baseline.id]),
+    db.query(
+      "update public.budget_snapshots set title='Không được sửa' where id=$1",
+      [baseline.id],
+    ),
     /SNAPSHOT_IMMUTABLE/,
   );
   await asUser(owner);
@@ -271,13 +286,19 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   assert.equal(liveEvents.filter((x) => x.operation_id === liveOp).length, 2);
   assert.equal(
     liveEvents.some(
-      (x) => x.item_id === item.id && x.event_type === "auto_complete" && x.to_status === "done",
+      (x) =>
+        x.item_id === item.id &&
+        x.event_type === "auto_complete" &&
+        x.to_status === "done",
     ),
     true,
   );
   assert.equal(
     liveEvents.some(
-      (x) => x.item_id === item2.id && x.event_type === "check_in" && x.to_status === "active",
+      (x) =>
+        x.item_id === item2.id &&
+        x.event_type === "check_in" &&
+        x.to_status === "active",
     ),
     true,
   );
@@ -325,7 +346,12 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     note: "Đổi ảnh bìa",
   });
   assert.equal(media2.is_cover, true);
-  assert.equal((await rows("media_links")).filter((x) => x.is_cover && x.deleted_at === null).length, 1);
+  assert.equal(
+    (await rows("media_links")).filter(
+      (x) => x.is_cover && x.deleted_at === null,
+    ).length,
+    1,
+  );
   const inv = await mutation("invitation", "create", {
     email: editor + "@test.local",
     role: "editor",
@@ -349,13 +375,15 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
   await mutation("invitation", "accept", { token: inv.token });
   assert.equal((await rows("trips")).length, 1);
   assert.equal(
-    (await rows("trip_access_events")).some((x) => x.target_user_id === editor && x.event_type === "granted"),
+    (await rows("trip_access_events")).some(
+      (x) => x.target_user_id === editor && x.event_type === "granted",
+    ),
     true,
   );
   await mutation("participant", "create", { name: "Bé Bún", note: "" });
   await assert.rejects(
     mutation("invitation", "create", { email: "a@test.local", role: "viewer" }),
-    /OWNER_ONLY/,
+    /PERMISSION_DENIED/,
   );
   await asUser(owner);
   const inv2 = await mutation("invitation", "create", {
@@ -419,18 +447,26 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     ),
     /INVALID_LINK/,
   );
-  let member = (await rows("trip_members")).find(
-    (m) => m.user_id === editor,
-  )!;
+  let member = (await rows("trip_members")).find((m) => m.user_id === editor)!;
   member = await mutation("member", "update", { role: "viewer" }, member);
+  await asUser(editor);
   assert.equal(
-    (await rows("trip_access_events")).some((x) => x.target_user_id === editor && x.event_type === "role_changed" && x.role === "viewer"),
+    (await rows("trip_access_events")).some(
+      (x) =>
+        x.target_user_id === editor &&
+        x.event_type === "role_changed" &&
+        x.role === "viewer",
+    ),
     true,
   );
+  await asUser(owner);
   member = await mutation("member", "update", { role: "editor" }, member);
   await mutation("member", "delete", {}, member);
+  await asUser(editor);
   assert.equal(
-    (await rows("trip_access_events")).some((x) => x.target_user_id === editor && x.event_type === "revoked"),
+    (await rows("trip_access_events")).some(
+      (x) => x.target_user_id === editor && x.event_type === "revoked",
+    ),
     true,
   );
   await asUser(editor);
@@ -470,7 +506,9 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     /ACCOUNT_DEACTIVATED/,
   );
   await asUser(owner);
-  await db.query("select public.tf_admin_set_user_status($1,'active')", [viewer]);
+  await db.query("select public.tf_admin_set_user_status($1,'active')", [
+    viewer,
+  ]);
 
   // V0.7.0 app-level backup + recycle-bin recovery. Restore is always a new trip.
   const backup = (
@@ -488,9 +526,19 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     )
   ).rows[0].result;
   assert.equal(overview.backups.length, 1);
-  assert.ok(overview.tombstones.some((x: any) => x.entity === "item" && x.id === item.id));
-  await db.query("select public.tf_restore_deleted($1,'item',$2)", [tripId, item.id]);
-  assert.equal((await rows("itinerary_items")).find((x) => x.id === item.id)?.deleted_at, null);
+  assert.ok(
+    overview.tombstones.some(
+      (x: any) => x.entity === "item" && x.id === item.id,
+    ),
+  );
+  await db.query("select public.tf_restore_deleted($1,'item',$2)", [
+    tripId,
+    item.id,
+  ]);
+  assert.equal(
+    (await rows("itinerary_items")).find((x) => x.id === item.id)?.deleted_at,
+    null,
+  );
   const restored = (
     await db.query<{ result: Record<string, any> }>(
       "select public.tf_restore_trip_backup($1,null) as result",
@@ -498,9 +546,17 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
     )
   ).rows[0].result;
   assert.notEqual(restored.trip_id, tripId);
-  assert.equal((await rows("trips")).some((x) => x.id === restored.trip_id), true);
-  const restoredMedia = (await rows("media_links")).filter((x) => x.trip_id === restored.trip_id);
-  assert.equal(restoredMedia.some((x) => x.is_highlight === true), true);
+  assert.equal(
+    (await rows("trips")).some((x) => x.id === restored.trip_id),
+    true,
+  );
+  const restoredMedia = (await rows("media_links")).filter(
+    (x) => x.trip_id === restored.trip_id,
+  );
+  assert.equal(
+    restoredMedia.some((x) => x.is_highlight === true),
+    true,
+  );
   assert.equal(restoredMedia.filter((x) => x.is_cover === true).length, 1);
 
   // V1.0.0 production-readiness must confirm the stable marker and critical guards.
@@ -509,12 +565,15 @@ test("PostgreSQL schema, RLS, CRUD, refunds, idempotency and atomic check-in", a
       "select public.tf_release_readiness() as result",
     )
   ).rows[0].result;
-  assert.equal(readiness.app_version, "1.3.0");
-  assert.equal(readiness.database_version, "1.3.0");
+  assert.equal(readiness.app_version, "2.4.1");
+  assert.equal(readiness.database_version, "2.4.1");
   assert.equal(readiness.channel, "stable");
   assert.equal(readiness.ready, true);
   assert.equal(Array.isArray(readiness.checks), true);
-  assert.equal(readiness.checks.every((x: any) => x.ok === true), true);
+  assert.equal(
+    readiness.checks.every((x: any) => x.ok === true),
+    true,
+  );
 
   await db.close();
 });

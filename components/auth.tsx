@@ -1,12 +1,7 @@
 "use client";
+import { ThemeControl } from "./theme-control";
 import { useEffect, useState } from "react";
-import {
-  ArrowRight,
-  LockKeyhole,
-  Map,
-  Wallet,
-  Mail,
-} from "lucide-react";
+import { ArrowRight, LockKeyhole, Map, Wallet, Mail } from "lucide-react";
 import { browserClient, configured } from "@/lib/supabase/client";
 import { BrandMark, BrandName } from "./brand";
 import { VERSION } from "@/lib/types";
@@ -123,6 +118,9 @@ export function Auth({
         <small>TRIPFLOW · TRAVEL EDITION · {VERSION}</small>
       </aside>
       <main className="auth-main">
+        <div className="auth-theme-control">
+          <ThemeControl />
+        </div>
         <div className="auth-card">
           <div className="mobile-auth-brand" aria-label="TripFlow">
             <BrandMark /> <BrandName />

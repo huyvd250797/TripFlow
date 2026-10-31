@@ -1,5 +1,5 @@
 import type { Bundle, Item } from "./types";
-import { localTime } from "./domain";
+import { localTime, tripPeriod, itemOnDay } from "./domain";
 
 export type DailyPhase = "pretrip" | "live" | "posttrip" | "cancelled";
 
@@ -37,7 +37,8 @@ function dayDistance(fromDay: string, toDay: string) {
 
 function netAmount(rows: Bundle["expenses"]) {
   return rows.reduce(
-    (sum, row) => sum + (row.kind === "refund" ? -1 : 1) * Number(row.amount || 0),
+    (sum, row) =>
+      sum + (row.kind === "refund" ? -1 : 1) * Number(row.amount || 0),
     0,
   );
 }
@@ -48,8 +49,7 @@ export function buildDailyCommandCenter(
 ): DailyCommandCenter {
   const { trip } = bundle;
   const today = localTime(now, trip.timezone).slice(0, 10);
-  const tripEnd = trip.end_date || trip.start_date;
-  const tripDays = Math.max(1, dayDistance(trip.start_date, tripEnd) + 1);
+  const tripDays = tripPeriod(trip, bundle.items).days;
   const dayNumber = Math.min(
     tripDays,
     Math.max(1, dayDistance(trip.start_date, today) + 1),
@@ -66,12 +66,15 @@ export function buildDailyCommandCenter(
           : "pretrip";
 
   const todayItems = bundle.items
-    .filter((item) => localTime(item.start_at, trip.timezone).slice(0, 10) === today)
+    .filter(
+      (item) =>
+        item.status === "active" || itemOnDay(item, trip.timezone, today),
+    )
     .sort((a, b) => Date.parse(a.start_at) - Date.parse(b.start_at));
 
   const nowMs = Date.parse(now);
   const current =
-    todayItems.find((item) => item.status === "active") ||
+    bundle.items.find((item) => item.status === "active") ||
     todayItems.find(
       (item) =>
         item.status === "planned" &&
@@ -80,9 +83,12 @@ export function buildDailyCommandCenter(
     ) ||
     null;
   const next =
-    todayItems.find(
-      (item) => item.status === "planned" && Date.parse(item.start_at) > nowMs,
-    ) || null;
+    [...bundle.items]
+      .sort((a, b) => Date.parse(a.start_at) - Date.parse(b.start_at))
+      .find(
+        (item) =>
+          item.status === "planned" && Date.parse(item.start_at) > nowMs,
+      ) || null;
 
   const lateItems = todayItems.filter(
     (item) =>
@@ -95,12 +101,22 @@ export function buildDailyCommandCenter(
     (item) => item.status === "planned" || item.status === "active",
   ).length;
 
-  const todayIds = new Set(todayItems.map((item) => item.id));
+  const todayIds = new Set(
+    todayItems
+      .filter(
+        (item) =>
+          localTime(item.start_at, trip.timezone).slice(0, 10) === today,
+      )
+      .map((item) => item.id),
+  );
   const todayBudget = bundle.budgets
     .filter((budget) => !!budget.item_id && todayIds.has(budget.item_id))
     .reduce((sum, budget) => sum + Number(budget.amount || 0), 0);
-  const todayActual = netAmount(bundle.expenses.filter((expense) => expense.spent_on === today));
-  const todayRemainingBudget = todayBudget > 0 ? todayBudget - todayActual : null;
+  const todayActual = netAmount(
+    bundle.expenses.filter((expense) => expense.spent_on === today),
+  );
+  const todayRemainingBudget =
+    todayBudget > 0 ? todayBudget - todayActual : null;
 
   const attention: DailyAttention[] = [];
   for (const item of lateItems.slice(0, 2)) {

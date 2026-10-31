@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 import { DATABASE_VERSION, VERSION } from "@/lib/types";
 
 type ServerCheck = { key: string; label: string; ok: boolean };
@@ -23,9 +28,18 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
   const clientChecks = useMemo(
     () => [
       { label: "Kết nối máy chủ", ok: online },
-      { label: "Secure context", ok: typeof window !== "undefined" && window.isSecureContext },
-      { label: "IndexedDB offline", ok: typeof window !== "undefined" && "indexedDB" in window },
-      { label: "Service Worker", ok: typeof navigator !== "undefined" && "serviceWorker" in navigator },
+      {
+        label: "Secure context",
+        ok: typeof window !== "undefined" && window.isSecureContext,
+      },
+      {
+        label: "IndexedDB offline",
+        ok: typeof window !== "undefined" && "indexedDB" in window,
+      },
+      {
+        label: "Service Worker",
+        ok: typeof navigator !== "undefined" && "serviceWorker" in navigator,
+      },
     ],
     [online],
   );
@@ -40,11 +54,18 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
     try {
       const res = await fetch("/api/release", { cache: "no-store" });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Không kiểm tra được trạng thái Production.");
+      if (!res.ok)
+        throw new Error(
+          body.error || "Không kiểm tra được trạng thái Production.",
+        );
       setState(body as ReleaseState);
     } catch (e) {
       setState(null);
-      setError(e instanceof Error ? e.message : "Không kiểm tra được trạng thái Production.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Không kiểm tra được trạng thái Production.",
+      );
     } finally {
       setLoading(false);
     }
@@ -57,9 +78,9 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
   const clientReady = clientChecks.every((x) => x.ok);
   const ready = Boolean(
     state?.ready &&
-      state.app_version === VERSION &&
-      state.database_version === DATABASE_VERSION &&
-      clientReady,
+    state.app_version === VERSION &&
+    state.database_version === DATABASE_VERSION &&
+    clientReady,
   );
 
   return (
@@ -69,7 +90,10 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V2.4.0 tăng độ tin cậy offline/sync bằng optimistic cache, queue compaction, idempotency, retry backoff, crash recovery và conflict resolution; Trip Daily Command Center V2.3.0, Smart Forms V2.2.x, Quick Entry V2.1.0 và Google Maps V1.8.4 tiếp tục được giữ nguyên; vẫn dùng database V{DATABASE_VERSION}. Ứng dụng xác minh RLS, dữ liệu tài chính, Live Trip, cộng tác và backup/restore trước khi vận hành.
+            V2.4.1 sửa ví offline, hoạt động qua đêm, số ngày và tuyến nhiều
+            điểm; bổ sung năm quyền độc lập và giao diện sáng/tối. Database yêu
+            cầu V{DATABASE_VERSION}. Hệ thống kiểm tra RLS, tài chính, Live
+            Trip, phân quyền và backup/restore.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>
@@ -83,7 +107,11 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <small>Database {state?.database_version || "chưa xác minh"}</small>
           {(state?.checks || []).map((item) => (
             <div className="release-check" key={item.key}>
-              {item.ok ? <CheckCircle2 size={17} /> : <AlertTriangle size={17} />}
+              {item.ok ? (
+                <CheckCircle2 size={17} />
+              ) : (
+                <AlertTriangle size={17} />
+              )}
               <span>{item.label}</span>
             </div>
           ))}
@@ -94,7 +122,11 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <small>Kiểm tra nhanh trên trình duyệt đang mở</small>
           {clientChecks.map((item) => (
             <div className="release-check" key={item.label}>
-              {item.ok ? <CheckCircle2 size={17} /> : <AlertTriangle size={17} />}
+              {item.ok ? (
+                <CheckCircle2 size={17} />
+              ) : (
+                <AlertTriangle size={17} />
+              )}
               <span>{item.label}</span>
             </div>
           ))}
@@ -109,11 +141,19 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
       )}
 
       <div className="actions">
-        <button className="btn secondary" disabled={loading || !online} onClick={() => void check()}>
+        <button
+          className="btn secondary"
+          disabled={loading || !online}
+          onClick={() => void check()}
+        >
           <RefreshCw size={17} className={loading ? "spin" : ""} />
           {loading ? "Đang kiểm tra…" : "Kiểm tra lại"}
         </button>
-        <span className="release-version"><ShieldCheck size={16} /> App {VERSION} · DB {state?.database_version || DATABASE_VERSION} · {state?.channel || "stable"}</span>
+        <span className="release-version">
+          <ShieldCheck size={16} /> App {VERSION} · DB{" "}
+          {state?.database_version || DATABASE_VERSION} ·{" "}
+          {state?.channel || "stable"}
+        </span>
       </div>
     </section>
   );

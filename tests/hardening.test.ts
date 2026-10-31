@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { VERSION } from "../lib/types";
 import { NextRequest } from "next/server";
-import { mutationRequestError, privateHeaders, readJsonText } from "../lib/api-hardening";
+import {
+  mutationRequestError,
+  privateHeaders,
+  readJsonText,
+} from "../lib/api-hardening";
 
 test("V1.3 mutation request guard rejects cross-site and wrong content type", async () => {
   const crossSite = new NextRequest("https://tripflow.test/api/tripflow", {
@@ -29,7 +34,10 @@ test("V1.3 mutation request guard rejects cross-site and wrong content type", as
 test("V1.3 mutation request guard enforces byte limit and private headers", async () => {
   const req = new NextRequest("https://tripflow.test/api/tripflow", {
     method: "POST",
-    headers: { origin: "https://tripflow.test", "content-type": "application/json" },
+    headers: {
+      origin: "https://tripflow.test",
+      "content-type": "application/json",
+    },
     body: JSON.stringify({ note: "đ".repeat(20) }),
   });
   assert.equal(mutationRequestError(req, 100), null);
@@ -37,6 +45,6 @@ test("V1.3 mutation request guard enforces byte limit and private headers", asyn
 
   const headers = privateHeaders();
   assert.match(headers["Cache-Control"], /no-store/);
-  assert.equal(headers["X-TripFlow-Version"], "1.3.0");
+  assert.equal(headers["X-TripFlow-Version"], VERSION);
   assert.ok(headers["X-Request-Id"].length > 10);
 });

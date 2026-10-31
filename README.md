@@ -1,4 +1,4 @@
-# TripFlow 2.4.0 · Offline & Sync Reliability Pro
+# TripFlow 2.4.1 · Travel Reliability Fix
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -6,7 +6,17 @@ Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu ti
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
 
+## V2.4.1 — Travel Reliability Fix
 
+- Ví, báo cáo và xuất CSV phản ánh ngay thực chi/dự toán đang chờ đồng bộ offline.
+- Giữ hoạt động qua đêm ở Current và bộ lọc lịch; tính ngày chuyến thống nhất từ ngày khai báo hoặc lịch trình (bao gồm ngày kết thúc chặng qua đêm).
+- Tuyến dài được chia đoạn nối tiếp, tối đa 3 điểm trung gian mỗi đoạn để không bỏ điểm trên điện thoại.
+- Năm quyền độc lập: **Mời thành viên / Đổi quyền / Thu hồi / Xóa chuyến đi / Chốt dự toán**. Owner có toàn quyền; Editor/Viewer cũ không tự được cấp quyền đặc biệt. Chỉ Owner được cấp năm quyền này; người có Đổi quyền chỉ đổi vai trò cơ bản của thành viên khác.
+- Nút **Xóa chuyến đi** nằm trong **Thêm → Chuyến đi, thành viên & kế hoạch**, chỉ hiện khi được cấp quyền. Xóa mềm, cần online và xử lý hết queue của chuyến trước khi xóa; Owner khôi phục trong thùng rác.
+- **Sáng / Tối / Thiết bị** ở Thêm, nút đổi nhanh trên thanh trên cùng và màn hình đăng nhập. Lưu lựa chọn tại thiết bị, tự theo hệ điều hành khi chọn Thiết bị; không đảo màu ảnh.
+- **Có migration bắt buộc:** App/DB **2.4.1**. Nếu đang dùng App 2.4.0 / DB 1.4.0, chỉ chạy `supabase/migrations/202610310001_v241_travel_reliability_permissions.sql`, sau đó deploy source và cập nhật PWA `tripflow-shell-v241`. Không reset database, không chạy lại migration đầu.
+- Xem hướng dẫn từng bước tại [docs/UPGRADE-V2.4.1.md](docs/UPGRADE-V2.4.1.md).
+- Phiên bản tiếp theo: **V2.5.0 — Performance, Loading & Perceived Speed**.
 
 ## V2.4.0 nổi bật
 
@@ -83,7 +93,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.4.0 đều được đánh dấu ✅.
+- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.4.1 đều được đánh dấu ✅.
 
 **Phạm vi offline V2.4.0:** cho phép tạo/sửa/xóa lịch trình, dự toán, chi tiêu, người tham gia, media và sửa chuyến hiện tại; optimistic UI + queue tự đồng bộ. Phân quyền, lời mời, snapshot/chốt dự toán, xóa chuyến và Master Admin vẫn yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -102,14 +112,14 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609280005_v100_stable_production_release.sql` — Stable Production marker + production-readiness V1.0.0.
    - `supabase/migrations/202609280006_v130_media_memories_storytelling.sql` — metadata Media/Storytelling + Realtime/restore compatibility + Database marker V1.3.0.
    - `supabase/migrations/202609290001_v140_smart_planning_templates_reuse.sql` — Planning Templates/Reuse + optional end date/time + Database marker V1.4.0.
-   **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0, V2.0.0, V2.2.0, V2.2.1, V2.3.0 và V2.4.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.3.0, chỉ chạy migration V1.4.0 mới rồi deploy source. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
+   - `supabase/migrations/202610310001_v241_travel_reliability_permissions.sql` — V2.4.1: năm quyền độc lập, RPC/RLS và schema marker mới.
+     **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0, V2.0.0, V2.2.0, V2.2.1, V2.3.0 và V2.4.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.4.0 (App V2.4.0), chỉ chạy migration V2.4.1 mới rồi deploy source. Nếu DB V1.3.0, chạy V1.4.0 rồi V2.4.1. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
 5. Giữ RLS bật. Không mở schema `private` trong Data API. Không cấp quyền ghi trực tiếp cho bảng; mutation chạy qua hàm `tf_mutate` đã kiểm tra người dùng/quyền.
 6. Auth: bật đăng nhập Email/Password và **Confirm email**. Đặt mật khẩu tối thiểu 8 ký tự. Cấu hình SMTP của bạn cho email dùng thật; kiểm tra giới hạn gửi của dịch vụ trước khi mời nhóm sử dụng.
 
 Migration này dành cho project mới; không chạy vào database có ứng dụng khác vì có lệnh thu hồi quyền các bảng public. Các lần nâng cấp sau phải thêm migration mới, không sửa/chạy lại migration đầu trên production.
-
 
 ## 1.1. Tạo tài khoản Master
 
@@ -158,7 +168,6 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - Realtime subscribe `trips`, `itinerary_items`, `itinerary_events`, `expenses`; app vẫn refetch 30 giây khi Realtime chậm hoặc không khả dụng.
 - Check-in timestamp lấy từ database `now()`, không lấy đồng hồ điện thoại làm nguồn sự thật. GPS chỉ mở khi người dùng yêu cầu và không tự xác nhận check-in.
 
-
 ## 1.6. Backup, Recovery & Operations V0.7.0
 
 - **Thêm → Backup & Recovery** dành cho Owner: tạo snapshot, tải recovery JSON, restore thành chuyến mới và khôi phục dữ liệu soft-delete.
@@ -177,7 +186,6 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - Chrome/Edge Android có thể nhận prompt cài PWA; Safari iOS hiển thị hướng dẫn **Chia sẻ → Thêm vào Màn hình chính**.
 - Nút **Bảo vệ cache offline** gọi Persistent Storage API khi trình duyệt hỗ trợ. Đây chỉ giúp giảm khả năng browser dọn cache; Supabase vẫn là nguồn dữ liệu chính thức.
 
-
 ## 1.7. Trip Analytics & Post-Trip Report V0.8.0
 
 - **Thêm → Tổng kết chuyến đi** tổng hợp trực tiếp từ bundle hiện tại; không tạo thêm bảng tổng để tránh “hai nguồn sự thật”.
@@ -187,7 +195,6 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - Export V0.8.0: CSV tổng kết, JSON đầy đủ và bản in HTML tự chứa. CSV tiếp tục trung hòa formula injection.
 - V0.8.0 **không có migration database**. Nguồn dữ liệu vẫn là bảng/RPC hiện có; Analytics được tính lại khi mở hoặc export.
 
-
 ## 1.8. Release Candidate & Hardening V0.9.0
 
 - Chạy migration `202609280004_v090_release_candidate_hardening.sql` trước khi deploy source V0.9.0.
@@ -195,7 +202,6 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - API mutation yêu cầu request same-origin, `application/json` và giới hạn payload; response private không cache và có request-id phục vụ truy vết lỗi.
 - CSP/CORP và security headers được bật trong `next.config.ts`.
 - Trước V1.0.0 phải chạy checklist tại `docs/RELEASE-CHECKLIST.md`, kiểm thử thiết bị thật và đóng lỗi Critical/High.
-
 
 ## 1.9. Stable Production Release V1.0.0
 
@@ -205,7 +211,6 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 - Service worker dùng cache `tripflow-shell-v100`; API private tiếp tục `no-store`, same-origin/content-type/payload guard và request-id.
 - Trước deploy production thực tế, hoàn tất `docs/RELEASE-CHECKLIST.md`; sau deploy dùng `docs/PRODUCTION-RUNBOOK.md` để smoke test, backup và rollback.
 - Nếu source V1.0.0 chạy trên database V0.9.0, app sẽ báo rõ migration V1.0.0 còn thiếu thay vì coi RC là production-ready.
-
 
 ## 2. Deploy lên Vercel
 
@@ -322,7 +327,6 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Vercel deploy CLI: https://vercel.com/docs/cli/deploying-from-cli
 - Vercel environment variables: https://vercel.com/docs/environment-variables
 
-
 ## 1.10. Brand Refresh V1.1.0
 
 - Không có migration database mới. Giữ database ở marker Stable V1.0.0.
@@ -330,8 +334,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap hiện đã hoàn thành đến V2.4.0 – Offline & Sync Reliability Pro; phiên bản tiếp theo là V2.5.0 – Performance, Loading & Perceived Speed.
-
+- Roadmap hiện đã hoàn thành đến V2.4.1 – Travel Reliability Fix; phiên bản tiếp theo là V2.5.0 – Performance, Loading & Perceived Speed.
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
 
@@ -342,7 +345,6 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Service worker cache shell: `tripflow-shell-v120`.
 - Roadmap đánh dấu V1.2.0 ✅; phiên bản tiếp theo là **V1.3.0 – Media, Memories & Storytelling**.
 
-
 ## 1.12. Media, Memories & Storytelling V1.3.0
 
 - Media được nhóm thành Travel Journal theo ngày kỷ niệm/hoạt động.
@@ -350,7 +352,6 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Caption dùng trường ghi chú hiện có; `story_order` điều khiển thứ tự kể chuyện.
 - Post-Trip Report/CSV/JSON chứa phần Memories để lưu trữ hoặc chia sẻ sau chuyến.
 - Database version yêu cầu: **1.3.0**.
-
 
 ## 1.13. Smart Planning Templates & Reuse V1.4.0
 
@@ -363,7 +364,6 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Tab **Thực chi** có nút **Ghi chi tiêu** riêng để nhất quán với tab **Dự toán**.
 - Database version yêu cầu: **1.4.0**.
 
-
 ## 1.14. Quick Entry & Command Center V1.5.0
 
 - Mở Command Center bằng nút ⚡ nổi hoặc `Ctrl/Cmd + K`; `/` vẫn mở Search.
@@ -371,4 +371,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **2.4.0**; Database version yêu cầu: **1.4.0**; V2.4.0 không có migration database.
+- App version: **2.4.1**; Database version yêu cầu: **2.4.1**; cần migration V2.4.1 sau V1.4.0.

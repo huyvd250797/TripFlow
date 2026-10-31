@@ -18,14 +18,21 @@ const ref = z.union([z.uuid(), z.literal(""), z.null()]).optional();
 const day = z.iso.date();
 const optionalDay = z.union([z.literal(""), day, z.null()]).optional();
 const nullableDay = z.preprocess(
-  (value) => value === "" || value == null ? null : value,
+  (value) => (value === "" || value == null ? null : value),
   z.union([day, z.null()]),
 );
 const nullableDateTime = z.preprocess(
-  (value) => value === "" || value == null ? null : value,
+  (value) => (value === "" || value == null ? null : value),
   z.union([z.iso.datetime(), z.null()]),
 );
 const amount = z.coerce.number().int().min(1).max(1e12);
+const permissionFields = {
+  can_invite: z.boolean().optional(),
+  can_change_roles: z.boolean().optional(),
+  can_revoke_access: z.boolean().optional(),
+  can_delete_trip: z.boolean().optional(),
+  can_close_budget: z.boolean().optional(),
+};
 export const schemas = {
   trip: z
     .object({
@@ -57,7 +64,10 @@ export const schemas = {
       map_url: link,
       note,
     })
-    .refine((x) => !x.end_at || x.end_at > x.start_at, "Giờ kết thúc phải sau giờ bắt đầu."),
+    .refine(
+      (x) => !x.end_at || x.end_at > x.start_at,
+      "Giờ kết thúc phải sau giờ bắt đầu.",
+    ),
   budget: z
     .object({
       title: text,
@@ -103,10 +113,11 @@ export const schemas = {
   }),
   participant: z.object({ name: text.max(160), note }),
   invitation: z.object({
+    ...permissionFields,
     email: z.email().max(254),
     role: z.enum(["editor", "viewer"]),
   }),
-  member: z.object({ role: z.enum(["editor", "viewer"]) }),
+  member: z.object({ ...permissionFields, role: z.enum(["editor", "viewer"]) }),
   snapshot: z.object({ title: text }),
 };
 export const mutationSchema = z
