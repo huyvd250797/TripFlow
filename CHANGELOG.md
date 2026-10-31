@@ -1,5 +1,15 @@
 # Changelog
 
+## V2.6.0 — UI/UX Motion & Visual Polish
+
+- Chuẩn hóa typography, khoảng cách, bán kính, nút, form, card và empty/loading/error state bằng lớp `app/polish.css`; màu semantic tương thích Sáng/Tối.
+- Chuyển tab fade 120 ms, popup 180 ms, bottom sheet trên mobile cho Command Center và danh sách chuyến; hover/press ngắn, không trì hoãn tác vụ. Tôn trọng `prefers-reduced-motion`.
+- Chỉ báo đang lưu/đăng nhập/cập nhật, `aria-busy`, khóa đóng popup khi đang ghi; đóng form trả focus về nút mở hoặc điều hướng đang chọn.
+- Thông báo thành công/thông tin/cần chú ý có icon và nhãn; tự ẩn sau 6 giây, tạm dừng khi hover/focus, có nút đóng. Lỗi lưu giữ dữ liệu để thử lại.
+- Sửa `DATABASE_VERSION` của source V2.5.0 từ `2.5.0` về schema thực tế **2.4.1**; thêm kiểm thử đối chiếu capability database.
+- **Không cần chạy migration mới.** App **2.6.0**, database **2.4.1**. Hướng dẫn: [docs/UPGRADE-V2.6.0.md](docs/UPGRADE-V2.6.0.md).
+- Tiếp theo: **V2.7.0 — Mobile Navigation & Interaction Polish**.
+
 ## V2.5.0 — Performance, Loading & Perceived Speed
 
 - Tải riêng Editor, viewer ảnh, quản trị, roadmap, readiness, Media và Analytics khi mở; có skeleton theo khu vực.

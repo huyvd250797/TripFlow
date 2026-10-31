@@ -1,5 +1,9 @@
 /** Real service-worker update lifecycle against a production build; simulated deployment metadata. */
 import next from "next";
+import { VERSION } from "../lib/types";
+const NEXT_TEST_VERSION = VERSION.split(".")
+  .map((part, i) => (i === 2 ? Number(part) + 1 : part))
+  .join(".");
 import { createServer } from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
 import { chromium, expect } from "@playwright/test";
@@ -8,7 +12,7 @@ async function main() {
   await app.prepare();
   const handle = app.getRequestHandler();
   let revision = 0,
-    remoteVersion = "2.5.0",
+    remoteVersion = VERSION,
     navigationAfterApply = false;
   const server = createServer(async (req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
@@ -29,8 +33,8 @@ async function main() {
       });
       res.end(
         source.replace(
-          '"2.5.0"',
-          JSON.stringify(revision ? "2.5.1" : "2.5.0"),
+          JSON.stringify(VERSION),
+          JSON.stringify(revision ? NEXT_TEST_VERSION : VERSION),
         ) + `\n// deploy ${revision}`,
       );
       return;
@@ -40,7 +44,7 @@ async function main() {
       url.pathname === "/" &&
       req.headers["sec-fetch-mode"] === "navigate"
     )
-      remoteVersion = "2.5.0";
+      remoteVersion = VERSION;
     await handle(req, res);
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -109,7 +113,7 @@ async function main() {
       if (f === other.mainFrame()) otherNavigations++;
     });
     revision = 1;
-    remoteVersion = "2.5.1";
+    remoteVersion = NEXT_TEST_VERSION;
     await page.evaluate(async () => {
       const reg = await navigator.serviceWorker.getRegistration();
       await reg?.update();
@@ -170,7 +174,7 @@ async function main() {
     expect(failures).toEqual([]);
     await other.close();
     console.log(
-      "PASS V2.5 update: first install safe, waiting-worker popup, unsaved draft blocks update, one-click activation+normal reload, offline queue/theme/view preserved, other tab not reloaded.",
+      "PASS app update: first install safe, waiting-worker popup, unsaved draft blocks update, one-click activation+normal reload, offline queue/theme/view preserved, other tab not reloaded.",
     );
   } finally {
     await context.close();

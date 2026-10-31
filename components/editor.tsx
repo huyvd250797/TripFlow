@@ -1,4 +1,5 @@
 "use client";
+import { BusyIndicator } from "./ui/feedback";
 import { useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -406,9 +407,10 @@ export function Editor({
     <Dialog
       open
       onClose={close}
+      busy={busy}
       title={`${row ? "Chỉnh sửa" : "Thêm"} ${names[spec.entity]}`}
     >
-      <form onSubmit={submit} className="editor-form">
+      <form onSubmit={submit} className="editor-form" aria-busy={busy}>
         <div className="dialog-body form-grid">
           {(spec.entity === "member" || spec.entity === "invitation") && (
             <p className="hint full">
@@ -666,8 +668,8 @@ export function Editor({
           >
             Hủy
           </button>
-          <button className="btn primary" disabled={busy}>
-            <Check size={18} />
+          <button className="btn primary" disabled={busy} aria-busy={busy}>
+            {busy ? <BusyIndicator /> : <Check size={18} />}
             {busy ? "Đang lưu…" : "Lưu thay đổi"}
           </button>
         </footer>

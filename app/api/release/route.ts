@@ -67,7 +67,7 @@ export async function GET() {
       return reply(
         {
           error:
-            "Database chưa đạt schema V2.4.1. Hãy chạy migration 202610310001_v241_travel_reliability_permissions.sql trước khi dùng V2.4.1.",
+            "Database chưa đạt schema V2.4.1. Hãy chạy migration 202610310001_v241_travel_reliability_permissions.sql trước khi dùng app hiện tại.",
           code: "V241_MIGRATION_REQUIRED",
           currentDatabaseVersion: state?.database_version || null,
         },
@@ -78,7 +78,7 @@ export async function GET() {
       ...state,
       app_version: VERSION,
       database_required_version: DATABASE_VERSION,
-      ui_release: "performance-loading-app-update",
+      ui_release: "motion-visual-polish",
     });
   } catch (error) {
     console.error(

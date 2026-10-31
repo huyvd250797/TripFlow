@@ -196,6 +196,7 @@ export function AppUpdate() {
           open
           title="TripFlow có phiên bản mới"
           className="app-update-dialog"
+          busy={busy}
           onClose={() => {
             if (!busy) {
               dismissed.current = latest || "waiting-worker";
@@ -243,6 +244,7 @@ export function AppUpdate() {
             <button
               className="btn primary"
               disabled={busy || !!reason}
+              aria-busy={busy}
               onClick={() => void apply()}
             >
               <RefreshCw size={17} className={busy ? "spin" : ""} />

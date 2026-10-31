@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./theme.css";
+import "./polish.css";
 export const metadata: Metadata = {
   title: "TripFlow · Plan. Go. Remember.",
   description:

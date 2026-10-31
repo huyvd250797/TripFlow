@@ -240,7 +240,7 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V2.6.0",
     title: "UI/UX Motion & Visual Polish",
-    done: false,
+    done: true,
     description:
       "Chuẩn hóa motion/animation nhẹ cho modal, bottom sheet, tab, card và trạng thái lưu; thống nhất spacing, typography, button, empty/error/success state, ưu tiên mượt nhưng không gây chậm hoặc rối mắt.",
   },

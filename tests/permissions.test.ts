@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
 import { readFile, readdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import { DATABASE_VERSION } from "../lib/types";
 
 test("V2.4.1 migration, independent permissions and server enforcement", async (t) => {
   const db = new PGlite();
@@ -396,6 +397,11 @@ test("V2.4.1 migration, independent permissions and server enforcement", async (
           await db.query<any>("select public.tf_release_readiness() r")
         ).rows[0].r;
         assert.equal(ready.database_version, "2.4.1");
+        assert.equal(
+          ready.database_version,
+          DATABASE_VERSION,
+          "App database requirement must match the installed migration capability",
+        );
         assert.equal(ready.ready, true);
       },
     );

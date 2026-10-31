@@ -4,6 +4,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { readFile, mkdir, readdir } from "node:fs/promises";
+import { VERSION } from "../lib/types";
 import { mutationSchema } from "../lib/validation";
 async function main() {
   const db = new PGlite();
@@ -197,7 +198,7 @@ async function main() {
   await page.route("**/api/release", async (route) => {
     await route.fulfill({
       json: {
-        app_version: "2.4.1",
+        app_version: VERSION,
         channel: "stable",
         database_version: "2.4.1",
         checked_at: new Date().toISOString(),
@@ -225,6 +226,8 @@ async function main() {
       },
     });
   });
+  let postDelay = 0,
+    failNextPost = false;
   let reads = { list: 0, bundle: 0 };
   await page.route("**/api/tripflow*", async (route) => {
     if (process.env.TRIPFLOW_PERF_TEST) {
@@ -238,6 +241,14 @@ async function main() {
     try {
       let body: Record<string, unknown>;
       if (route.request().method() === "POST") {
+        if (postDelay)
+          await new Promise((resolve) => setTimeout(resolve, postDelay));
+        if (failNextPost) {
+          failNextPost = false;
+          throw new Error(
+            "Không lưu được khoản chi thử nghiệm. Vui lòng thử lại.",
+          );
+        }
         const req = mutationSchema.parse(route.request().postDataJSON());
         body = {
           result: (
@@ -363,6 +374,163 @@ async function main() {
             bundleReads: reads.bundle,
             fixtureLatencyPerApiMs: 120,
           }),
+      );
+      return;
+    }
+    if (process.env.TRIPFLOW_POLISH_TEST) {
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await nav("Chi phí");
+      await expect(
+        page.locator('.screen-content[data-screen="money"]'),
+      ).toBeVisible();
+      await expect(
+        page.locator('.bottom-nav [aria-current="page"]'),
+      ).toHaveText("Chi phí");
+      const openExpense = page
+        .getByRole("button", { name: "Ghi chi tiêu", exact: true })
+        .first();
+      await openExpense.click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      expect(
+        await dialog.evaluate((el) => getComputedStyle(el).animationName),
+      ).toBe("tf-dialog-enter");
+      await page.getByLabel("Số tiền VNĐ *", { exact: true }).fill("75000");
+      await page
+        .getByLabel("Nội dung chi *", { exact: true })
+        .fill("Motion pending fixture");
+      await page.screenshot({
+        path: "test-results/v260-dark-mobile-editor.png",
+        fullPage: true,
+      });
+      failNextPost = true;
+      postDelay = 700;
+      await dialog
+        .getByRole("button", { name: "Lưu thay đổi", exact: true })
+        .click();
+      await expect(dialog).toHaveAttribute("aria-busy", "true");
+      await expect(
+        dialog.getByRole("button", { name: "Đóng", exact: true }),
+      ).toBeDisabled();
+      await expect(dialog.locator(".tf-busy-icon")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole("alert")).toContainText(
+        "Không lưu được khoản chi thử nghiệm",
+      );
+      await expect(
+        page.getByLabel("Nội dung chi *", { exact: true }),
+      ).toHaveValue("Motion pending fixture");
+      postDelay = 0;
+      await dialog
+        .getByRole("button", { name: "Lưu thay đổi", exact: true })
+        .click();
+      await expect(dialog).toHaveCount(0);
+      await expect(openExpense).toBeFocused();
+      await expect(page.locator(".tf-toast.success")).toContainText(
+        "Đã lưu trên hệ thống",
+      );
+      await page.locator(".tf-toast").hover();
+      await new Promise((resolve) => setTimeout(resolve, 6200));
+      await expect(page.locator(".tf-toast")).toBeVisible();
+      await page
+        .getByRole("button", { name: "Đóng thông báo", exact: true })
+        .click();
+      await expect(page.locator(".tf-toast")).toHaveCount(0);
+      await page
+        .getByRole("button", { name: "Tải lại dữ liệu", exact: true })
+        .click();
+      await expect(page.locator(".tf-toast.info")).toContainText(
+        "Đang cập nhật dữ liệu",
+      );
+      await page
+        .getByRole("button", { name: "Đóng thông báo", exact: true })
+        .click();
+      await page.evaluate(() => {
+        document.documentElement.dataset.pwa = "standalone";
+      });
+      const quick = page.getByRole("button", {
+        name: "Mở TripFlow Command Center",
+        exact: true,
+      });
+      await quick.click();
+      await expect(dialog).toHaveClass(/dialog-sheet/);
+      await expect
+        .poll(async () => {
+          const box = await dialog.boundingBox();
+          return box ? Math.round(box.y + box.height) : 0;
+        })
+        .toBe(844);
+      expect(
+        await dialog.evaluate((el) => getComputedStyle(el).animationName),
+      ).toBe("tf-sheet-enter");
+      await page.screenshot({
+        path: "test-results/v260-dark-mobile-sheet.png",
+        fullPage: true,
+      });
+      await dialog.getByRole("button", { name: "Đóng", exact: true }).click();
+      await expect(quick).toBeFocused();
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await quick.click();
+      expect(
+        await dialog.evaluate((el) => getComputedStyle(el).animationName),
+      ).toBe("none");
+      await page.keyboard.press("Escape");
+      await expect(dialog).toHaveCount(0);
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await page.evaluate(() => {
+        delete document.documentElement.dataset.pwa;
+      });
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await quick.click();
+      await expect
+        .poll(async () => {
+          const box = await dialog.boundingBox();
+          return box ? Math.round(box.x + box.width / 2) : 0;
+        })
+        .toBe(720);
+      await expect
+        .poll(async () => {
+          const box = await dialog.boundingBox();
+          return box ? Math.round(box.y + box.height / 2) : 0;
+        })
+        .toBe(500);
+      await page.screenshot({
+        path: "test-results/v260-dark-desktop-dialog.png",
+        fullPage: true,
+      });
+      await page.keyboard.press("Escape");
+      await nav("Thêm");
+      await page.getByRole("button", { name: "Sáng", exact: true }).click();
+      await nav("Tổng quan");
+      await page.screenshot({
+        path: "test-results/v260-light-desktop-home.png",
+        fullPage: true,
+      });
+      await nav("Chi phí");
+      await openExpense.click();
+      const contrast = await dialog
+        .getByRole("button", { name: "Lưu thay đổi", exact: true })
+        .evaluate((el) => {
+          const style = getComputedStyle(el);
+          const [a, b] = [style.color, style.backgroundColor].map((color) => {
+            const rgb = color
+              .match(/[\d.]+/g)!
+              .slice(0, 3)
+              .map(Number)
+              .map((n) => n / 255)
+              .map((n) =>
+                n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4,
+              );
+            return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+          });
+          return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+        });
+      expect(contrast).toBeGreaterThanOrEqual(4.5);
+      await page.keyboard.press("Escape");
+      expect(errors).toEqual([]);
+      console.log(
+        "PASS V2.6 polish: normal/reduced motion, mobile PWA sheet, centered desktop dialog, pending close guard, inline error+retry preserves draft, keyboard focus return, success/info toast+pause+dismiss, primary contrast, no JS errors.",
       );
       return;
     }
@@ -530,7 +698,7 @@ async function main() {
     await expect(page.locator(".error")).toHaveCount(0);
     expect(errors).toEqual([]);
     console.log(
-      "PASS V2.5.0 regression: five permission fields, owner grant persisted, viewer action visibility, offline Wallet+sync, theme persistence/system switching, 40 responsive views, delete-trip navigation/cache cleanup, no JS errors.",
+      "PASS V2.6.0 regression: five permission fields, owner grant persisted, viewer action visibility, offline Wallet+sync, theme persistence/system switching, 40 responsive views, delete-trip navigation/cache cleanup, no JS errors.",
     );
   } finally {
     await context.close();

@@ -1,5 +1,12 @@
 # Kiểm tra TripFlow
 
+## V2.6.0 UI/UX Motion & Visual Polish
+
+- Kết quả/phạm vi: [VALIDATION-V2.6.0.md](VALIDATION-V2.6.0.md); cách nâng cấp: [UPGRADE-V2.6.0.md](UPGRADE-V2.6.0.md).
+- Chạy regression thông thường và thêm `TRIPFLOW_POLISH_TEST=1` khi chạy `npm run test:ui` để kiểm tra motion/feedback. Cùng server test, cùng Auth mock/PGlite, không dùng production.
+- Kiểm tra bằng chuột và bàn phím, Sáng/Tối, giảm chuyển động bật/tắt; form lỗi phải giữ dữ liệu, focus trả đúng sau khi đóng, busy không đóng nhầm, mobile sheet cuộn được tới cuối.
+- Chạy lại `npm run test:update:ui` sau build production để giữ luồng cập nhật một chạm hoạt động.
+
 ## V2.5.0 Performance, Loading & Perceived Speed
 
 Kết quả và giới hạn kiểm tra: [VALIDATION-V2.5.0.md](VALIDATION-V2.5.0.md).

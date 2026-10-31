@@ -1,4 +1,5 @@
 "use client";
+import { BusyIndicator } from "./ui/feedback";
 import { setUpdateBlocker } from "@/lib/update-safety";
 import { ThemeControl } from "./theme-control";
 import { useEffect, useState } from "react";
@@ -188,6 +189,7 @@ export function Auth({
                   )
                 }
                 onSubmit={submit}
+                aria-busy={busy}
               >
                 {mode !== "change" && (
                   <label className="field">
@@ -228,7 +230,11 @@ export function Auth({
                     {message}
                   </p>
                 )}
-                <button className="btn primary wide" disabled={busy}>
+                <button
+                  className="btn primary wide"
+                  disabled={busy}
+                  aria-busy={busy}
+                >
                   {busy
                     ? "Đang xử lý…"
                     : mode === "login"
@@ -238,7 +244,7 @@ export function Auth({
                         : mode === "reset"
                           ? "Gửi email khôi phục"
                           : "Lưu mật khẩu mới"}
-                  <ArrowRight size={18} />
+                  {busy ? <BusyIndicator /> : <ArrowRight size={18} />}
                 </button>
               </form>
               <div className="auth-links">

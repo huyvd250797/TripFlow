@@ -1,0 +1,602 @@
+/* V2.6 design foundations. Imported after legacy styles and the theme palette. */
+:root {
+  --tf-space-1: 4px;
+  --tf-space-2: 8px;
+  --tf-space-3: 12px;
+  --tf-space-4: 16px;
+  --tf-space-5: 20px;
+  --tf-space-6: 24px;
+  --tf-radius-control: 12px;
+  --tf-radius-card: 20px;
+  --tf-radius-dialog: 24px;
+  --tf-motion-fast: 120ms;
+  --tf-motion-normal: 180ms;
+  --tf-ease: cubic-bezier(0.2, 0.7, 0.25, 1);
+  --tf-success: #176b57;
+  --tf-success-soft: #edf8f2;
+  --tf-warning: #805715;
+  --tf-warning-soft: #fff7e8;
+  --tf-error: #aa3839;
+  --tf-error-soft: #fff1f0;
+  --tf-focus: #0b6873;
+}
+html[data-theme="dark"] {
+  --tf-success: #94e4be;
+  --tf-success-soft: #153a32;
+  --tf-warning: #f1ce91;
+  --tf-warning-soft: #352d21;
+  --tf-error: #ffb4ad;
+  --tf-error-soft: #3c252d;
+  --tf-focus: #7dddd1;
+}
+body {
+  line-height: 1.55;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.page-heading h1 {
+  font-size: clamp(26px, 2.6vw, 36px);
+}
+.panel > h2,
+.section-heading h2 {
+  font-size: clamp(18px, 1.7vw, 22px);
+}
+.page-heading p,
+.panel > p,
+.hint {
+  line-height: 1.6;
+}
+.page-heading {
+  gap: var(--tf-space-4);
+  margin-bottom: var(--tf-space-6);
+}
+.section-heading {
+  gap: var(--tf-space-3);
+}
+.panel,
+.stop-panel {
+  border-radius: var(--tf-radius-card);
+}
+.panel {
+  box-shadow: var(--tf-shadow-sm);
+}
+.actions,
+.row-tools {
+  gap: var(--tf-space-2);
+}
+.screen-content {
+  min-width: 0;
+  animation: tf-screen-enter var(--tf-motion-fast) ease-out;
+}
+.screen-content > * {
+  min-width: 0;
+}
+
+/* One control language for touch, mouse and keyboard. No layout-sized animations. */
+.btn,
+.icon-btn,
+.text-btn,
+.theme-options button,
+.planning-view-switch button,
+.day-tabs button,
+.finance-tabs button,
+.route-map-days button,
+.sidebar nav button,
+.bottom-nav > button,
+.trip-select {
+  transition:
+    background-color var(--tf-motion-fast),
+    color var(--tf-motion-fast),
+    border-color var(--tf-motion-fast),
+    box-shadow var(--tf-motion-normal),
+    transform var(--tf-motion-fast) var(--tf-ease);
+  touch-action: manipulation;
+}
+.btn {
+  min-height: 44px;
+  border-radius: var(--tf-radius-control);
+  padding: 10px 16px;
+  gap: var(--tf-space-2);
+  line-height: 1.35;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.btn svg,
+.icon-btn svg {
+  flex-shrink: 0;
+}
+.btn.primary {
+  background: #0b6873;
+  color: #fff;
+  box-shadow: 0 3px 9px #0b68731a;
+}
+.btn.secondary {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--line);
+  box-shadow: none;
+}
+.btn.danger-btn,
+html[data-theme="dark"] .btn.danger-btn {
+  background: var(--tf-error-soft);
+  color: var(--tf-error);
+  border-color: color-mix(in srgb, var(--tf-error) 30%, var(--line));
+}
+.btn:disabled,
+.icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+.btn[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.85;
+}
+.icon-btn {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: var(--tf-radius-control);
+}
+:is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--tf-focus);
+  outline-offset: 3px;
+}
+.btn:not(:disabled):active,
+.icon-btn:not(:disabled):active,
+.bottom-nav > button:active,
+.day-tabs button:active {
+  transform: scale(0.98);
+}
+.sidebar nav button.active,
+.bottom-nav > button.active {
+  font-weight: 750;
+}
+.bottom-nav > button {
+  position: relative;
+}
+.bottom-nav > button.active::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: calc(50% - 8px);
+  width: 16px;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--primary);
+}
+.bottom-nav > button.active > svg {
+  animation: tf-nav-select var(--tf-motion-normal) var(--tf-ease);
+}
+.field > span,
+.field > label {
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+.field input,
+.field select,
+.field textarea {
+  border-radius: var(--tf-radius-control);
+  border: 1px solid var(--line);
+  min-height: 44px;
+  padding: 11px 12px;
+  color: var(--text);
+  background: var(--panel);
+  transition:
+    border-color var(--tf-motion-fast),
+    box-shadow var(--tf-motion-fast);
+}
+.field textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 13%, transparent);
+}
+input[type="checkbox"] {
+  accent-color: var(--primary);
+}
+.form-grid {
+  gap: var(--tf-space-5);
+  align-content: start;
+}
+
+/* Predictable dialogs: scale is independent of the transform that centers them. */
+.dialog-overlay {
+  animation: tf-overlay-enter var(--tf-motion-normal) ease-out;
+}
+.dialog-content {
+  border-color: var(--line);
+  border-radius: var(--tf-radius-dialog);
+  background: var(--panel);
+  animation: tf-dialog-enter var(--tf-motion-normal) var(--tf-ease);
+}
+.dialog-header {
+  padding: 20px 24px;
+  gap: 12px;
+  border-color: var(--line);
+  background: var(--panel);
+}
+.dialog-header h2 {
+  font-size: 22px;
+  line-height: 1.3;
+}
+.dialog-header .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--primary);
+}
+.dialog-body {
+  padding: var(--tf-space-6);
+}
+.dialog-footer {
+  padding: 16px 24px;
+  background: var(--panel);
+  border-color: var(--line);
+  gap: 10px;
+}
+.dialog-content.dialog-compact {
+  width: calc(100% - 32px);
+  max-width: 460px;
+  height: auto;
+  max-height: calc(var(--tf-viewport-height, 100dvh) - 32px);
+  left: 50%;
+  top: calc(
+    var(--tf-viewport-top, 0px) + var(--tf-viewport-height, 100dvh) / 2
+  );
+  transform: translate(-50%, -50%);
+  border-radius: var(--tf-radius-dialog);
+}
+.dialog-compact .dialog-body {
+  flex: 0 1 auto;
+}
+.dialog-danger .dialog-header .eyebrow {
+  color: var(--tf-error);
+}
+.dialog-danger .dialog-footer .btn.primary,
+html[data-theme="dark"] .dialog-danger .dialog-footer .btn.primary {
+  background: #aa3839;
+  color: #fff;
+}
+.dialog-content[data-state="closed"],
+.dialog-overlay[data-state="closed"] {
+  animation: tf-overlay-exit var(--tf-motion-fast) ease-in;
+}
+.module-block[open] > .module-block-content {
+  animation: tf-screen-enter var(--tf-motion-fast) ease-out;
+}
+
+/* Consistent empty, loading and inline feedback states. */
+.empty {
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+.empty h3 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text);
+}
+.empty p {
+  margin: 0;
+  max-width: 400px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.empty .btn {
+  margin-top: 8px;
+}
+.module-skeleton {
+  border-radius: var(--tf-radius-card);
+  padding: var(--tf-space-6);
+  min-height: 210px;
+}
+.module-skeleton i {
+  animation-duration: 1.8s;
+}
+.error,
+.notice {
+  border-radius: var(--tf-radius-control);
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.error,
+html[data-theme="dark"] .error {
+  border: 1px solid color-mix(in srgb, var(--tf-error) 28%, transparent);
+  background: var(--tf-error-soft);
+  color: var(--tf-error);
+}
+.notice {
+  background: var(--surface-soft);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.notice.warning,
+html[data-theme="dark"] .notice.warning {
+  background: var(--tf-warning-soft);
+  color: var(--tf-warning);
+  border-color: color-mix(in srgb, var(--tf-warning) 28%, transparent);
+}
+.error button {
+  margin-left: 12px;
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  font-weight: 650;
+}
+.error[role="alert"] {
+  animation: tf-screen-enter var(--tf-motion-fast) ease-out;
+}
+.tf-busy-icon {
+  animation: tf-busy-turn 0.85s linear infinite;
+}
+.tf-toast-region {
+  position: fixed;
+  z-index: 120;
+  right: 24px;
+  bottom: 24px;
+  max-width: min(440px, calc(100vw - 32px));
+}
+.tf-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--tf-shadow-md);
+  animation: tf-toast-enter var(--tf-motion-normal) var(--tf-ease);
+}
+.tf-toast > svg {
+  flex-shrink: 0;
+  color: var(--tf-success);
+  margin-top: 3px;
+}
+.tf-toast.info > svg {
+  color: var(--primary);
+}
+.tf-toast.warning > svg {
+  color: var(--tf-warning);
+}
+.tf-toast > div {
+  min-width: 0;
+  flex: 1;
+}
+.tf-toast strong {
+  display: block;
+  font-size: 13px;
+}
+.tf-toast p {
+  margin: 3px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.tf-toast .icon-btn {
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
+  margin: -4px -4px 0 0;
+}
+@keyframes tf-screen-enter {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tf-overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tf-overlay-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes tf-dialog-enter {
+  from {
+    opacity: 0;
+    scale: 0.985;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes tf-sheet-enter {
+  from {
+    opacity: 0.5;
+    translate: 0 16px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes tf-nav-select {
+  from {
+    translate: 0 2px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+@keyframes tf-toast-enter {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes tf-busy-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn.primary:not(:disabled):hover {
+    background: #08545f;
+    box-shadow: 0 5px 14px #0b687326;
+    transform: translateY(-1px);
+  }
+  .btn.secondary:not(:disabled):hover,
+  .icon-btn:not(:disabled):hover {
+    background: var(--surface-soft);
+    border-color: var(--primary);
+  }
+  .dialog-danger .dialog-footer .btn.primary:not(:disabled):hover {
+    background: #8f2b30;
+  }
+  .planning-card:hover,
+  .route-place-card:hover {
+    border-color: var(--primary);
+    box-shadow: var(--tf-shadow-sm);
+  }
+}
+@media (max-width: 760px) {
+  .page-heading {
+    margin-bottom: 20px;
+  }
+  .panel {
+    border-radius: 18px;
+  }
+  .dialog-header {
+    padding: 16px 18px;
+  }
+  .dialog-header h2 {
+    font-size: 20px;
+  }
+  .dialog-body {
+    padding: 20px 18px;
+  }
+  .dialog-footer {
+    padding: 12px 18px max(12px, env(safe-area-inset-bottom));
+  }
+  .dialog-content:not(.dialog-compact):not(.app-update-dialog):not(
+      .dialog-sheet
+    ) {
+    border-radius: 0;
+  }
+  .dialog-content.dialog-sheet {
+    left: 0;
+    top: auto;
+    bottom: max(
+      0px,
+      calc(
+        100dvh - var(--tf-viewport-top, 0px) - var(--tf-viewport-height, 100dvh)
+      )
+    );
+    transform: none;
+    width: 100%;
+    height: auto;
+    max-height: calc(var(--tf-viewport-height, 100dvh) - 16px);
+    border-radius: 24px 24px 0 0;
+    padding-top: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: tf-sheet-enter var(--tf-motion-normal) var(--tf-ease);
+  }
+  .dialog-sheet .dialog-body {
+    flex: 0 1 auto;
+  }
+  .dialog-sheet .dialog-header {
+    position: relative;
+    padding-top: 25px;
+  }
+  .dialog-sheet .dialog-header::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: calc(50% - 18px);
+    width: 36px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--line);
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 16px;
+  }
+  .tf-toast-region {
+    bottom: calc(86px + env(safe-area-inset-bottom));
+    right: 16px;
+    left: 16px;
+    max-width: none;
+  }
+  .tf-toast {
+    padding: 14px;
+    gap: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:not(:disabled):active,
+  .icon-btn:not(:disabled):active,
+  .bottom-nav > button:active,
+  .day-tabs button:active,
+  .text-btn:active,
+  .btn.primary:not(:disabled):hover {
+    transform: none;
+  }
+}
+@media print {
+  .tf-toast-region {
+    display: none;
+  }
+}

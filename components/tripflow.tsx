@@ -23,6 +23,12 @@ const AnalyticsModule = dynamic(
   { loading: () => <ModuleSkeleton label="Đang tải báo cáo" />, ssr: false },
 );
 import { AppUpdate } from "./app-update";
+import {
+  Toast,
+  BusyIndicator,
+  type ToastMessage,
+  type ToastTone,
+} from "./ui/feedback";
 import { ModuleSkeleton } from "./loading/module-skeleton";
 import {
   beginAppWrite,
@@ -305,7 +311,7 @@ function App() {
     [templateStartDate, setTemplateStartDate] = useState(""),
     [templateDestination, setTemplateDestination] = useState(""),
     [searchTerm, setSearchTerm] = useState(""),
-    [toast, setToast] = useState(""),
+    [toast, setToast] = useState<ToastMessage | null>(null),
     [error, setError] = useState(""),
     [working, setWorking] = useState(false),
     [online, setOnline] = useState(true),
@@ -313,6 +319,7 @@ function App() {
   const [confirm, setConfirm] = useState<{
       title: string;
       text: string;
+      danger?: boolean;
       action: () => Promise<void>;
     } | null>(null),
     [inviteToken, setInviteToken] = useState(""),
@@ -343,13 +350,10 @@ function App() {
     until: number;
   } | null>(null);
 
-  const notify = useCallback((s: string) => setToast(s), []);
-  useEffect(() => {
-    if (toast) {
-      const id = setTimeout(() => setToast(""), 4500);
-      return () => clearTimeout(id);
-    }
-  }, [toast]);
+  const notify = useCallback((message: string, tone: ToastTone = "success") => {
+    setToast({ id: crypto.randomUUID(), message, tone });
+  }, []);
+  const dismissToast = useCallback(() => setToast(null), []);
   const loadAuth = useCallback(async () => {
     if (!configured()) {
       setAuthLoading(false);
@@ -1015,6 +1019,7 @@ function App() {
                 : event.event_type === "role_changed"
                   ? `Quyền của bạn vừa đổi thành ${event.role === "editor" ? "Chỉnh sửa" : "Chỉ xem"}.`
                   : "Bạn vừa được cấp quyền chuyến đi.",
+              event.event_type === "revoked" ? "warning" : "info",
             );
           }
         },
@@ -1149,10 +1154,14 @@ function App() {
           else if (sent && issues)
             notify(
               `Đã đồng bộ ${sent} thao tác; còn ${issues} thao tác cần kiểm tra.`,
+              "warning",
             );
           else if (issues)
-            notify(`${issues} thao tác cần xử lý trước khi đồng bộ tiếp.`);
-          else notify("Không có thao tác mới cần đồng bộ.");
+            notify(
+              `${issues} thao tác cần xử lý trước khi đồng bộ tiếp.`,
+              "warning",
+            );
+          else notify("Không có thao tác mới cần đồng bộ.", "info");
         }
       } finally {
         await refreshQueue();
@@ -1500,6 +1509,7 @@ function App() {
     setConfirm({
       title: entity === "member" ? "Thu hồi quyền" : "Xác nhận xóa",
       text: message,
+      danger: true,
       action: async () => save(request),
     });
   }
@@ -1607,6 +1617,7 @@ function App() {
         pwaState.ios
           ? "Trên iPhone/iPad: mở Chia sẻ → Thêm vào Màn hình chính."
           : "Trình duyệt chưa cung cấp nút cài. Hãy dùng menu Cài đặt/Install app của trình duyệt.",
+        "info",
       );
       return;
     }
@@ -1623,7 +1634,7 @@ function App() {
 
   async function protectOfflineStorage() {
     if (!navigator.storage?.persist) {
-      notify("Trình duyệt này không hỗ trợ yêu cầu lưu trữ bền vững.");
+      notify("Trình duyệt này không hỗ trợ yêu cầu lưu trữ bền vững.", "info");
       return;
     }
     const granted = await navigator.storage.persist();
@@ -1632,6 +1643,7 @@ function App() {
       granted
         ? "Đã ưu tiên giữ cache TripFlow trên thiết bị."
         : "Trình duyệt chưa cấp lưu trữ bền vững; dữ liệu server vẫn an toàn và cache có thể được dọn khi thiếu bộ nhớ.",
+      granted ? "success" : "info",
     );
   }
   async function saveCurrentAsTemplate() {
@@ -3268,6 +3280,7 @@ function App() {
           {tabs.map(({ id, label, Icon }) => (
             <button
               className={tab === id ? "active" : ""}
+              aria-current={tab === id ? "page" : undefined}
               onClick={() => navigate(id)}
               key={id}
             >
@@ -3340,13 +3353,21 @@ function App() {
             <button
               className="icon-btn"
               aria-label="Tải lại dữ liệu"
+              aria-busy={tripsQ.isFetching || bq.isFetching || syncing}
               onClick={() => {
                 void qc.invalidateQueries();
                 if (online) void syncPending(false);
-                notify("Đang cập nhật dữ liệu…");
+                notify("Đang cập nhật dữ liệu…", "info");
               }}
             >
-              <RefreshCw size={19} />
+              <RefreshCw
+                size={19}
+                className={
+                  tripsQ.isFetching || bq.isFetching || syncing
+                    ? "tf-busy-icon"
+                    : undefined
+                }
+              />
             </button>
             <button className="trip-select" onClick={() => setTripPicker(true)}>
               <Compass size={18} />
@@ -3429,1345 +3450,1396 @@ function App() {
               </button>
             </section>
           )}
-          {tab === "admin" && account?.role === "master" ? (
-            <MasterAdmin currentUserId={user.id} notify={notify} />
-          ) : tripsQ.isPending || (selectedId && bq.isPending) ? (
-            <div className="skeleton">
-              <div />
-              <div />
-              <div />
-            </div>
-          ) : !trip ? (
-            tab === "more" ? (
-              <>
-                {recoveryPanel(false)}
-                {planningTemplatesPanel(false)}
-                <ReleaseReadiness online={online} />
-                <ProductRoadmap />
-                <section className="panel">
-                  <h2>Tài khoản & dữ liệu offline</h2>
-                  <p className="muted">
-                    {user.email} · TripFlow {VERSION}
-                    {account?.role === "master" ? " · MASTER" : ""}
-                  </p>
-                  <div className="actions">
-                    {account?.role === "master" && (
-                      <button
-                        className="btn secondary"
-                        onClick={() => navigate("admin")}
-                      >
-                        <ShieldCheck size={17} /> Quản trị Master
+          <div key={tab} className="screen-content" data-screen={tab}>
+            {tab === "admin" && account?.role === "master" ? (
+              <MasterAdmin currentUserId={user.id} notify={notify} />
+            ) : tripsQ.isPending || (selectedId && bq.isPending) ? (
+              <ModuleSkeleton label="Đang tải chuyến đi" />
+            ) : !trip ? (
+              tab === "more" ? (
+                <>
+                  {recoveryPanel(false)}
+                  {planningTemplatesPanel(false)}
+                  <ReleaseReadiness online={online} />
+                  <ProductRoadmap />
+                  <section className="panel">
+                    <h2>Tài khoản & dữ liệu offline</h2>
+                    <p className="muted">
+                      {user.email} · TripFlow {VERSION}
+                      {account?.role === "master" ? " · MASTER" : ""}
+                    </p>
+                    <div className="actions">
+                      {account?.role === "master" && (
+                        <button
+                          className="btn secondary"
+                          onClick={() => navigate("admin")}
+                        >
+                          <ShieldCheck size={17} /> Quản trị Master
+                        </button>
+                      )}
+                      <button className="btn secondary" onClick={logout}>
+                        <LogOut size={17} /> Đăng xuất
                       </button>
-                    )}
-                    <button className="btn secondary" onClick={logout}>
-                      <LogOut size={17} /> Đăng xuất
+                    </div>
+                  </section>
+                </>
+              ) : (
+                <>
+                  <div className="page-heading">
+                    <div>
+                      <span className="eyebrow">CHUYẾN ĐI CỦA BẠN</span>
+                      <h1>Đi đâu tiếp theo?</h1>
+                    </div>
+                    <button
+                      className="btn primary"
+                      onClick={() => edit("trip")}
+                    >
+                      <Plus size={18} />
+                      Tạo chuyến đi
                     </button>
                   </div>
-                </section>
-              </>
+                  <section className="panel welcome">
+                    <Compass size={58} />
+                    <h2>
+                      Một kế hoạch nhỏ.
+                      <br />
+                      Một hành trình đáng nhớ.
+                    </h2>
+                    <p>
+                      Tạo chuyến đi đầu tiên, thêm những nơi muốn đến
+                      <br className="desktop-only" /> và chủ động ngân sách của
+                      bạn.
+                    </p>
+                    <button
+                      className="btn primary"
+                      onClick={() => edit("trip")}
+                    >
+                      <Plus size={18} />
+                      Tạo chuyến đi đầu tiên
+                    </button>
+                  </section>
+                  <button className="text-btn" onClick={logout}>
+                    <LogOut size={16} />
+                    Đăng xuất {user.email}
+                  </button>
+                </>
+              )
             ) : (
               <>
                 <div className="page-heading">
                   <div>
-                    <span className="eyebrow">CHUYẾN ĐI CỦA BẠN</span>
-                    <h1>Đi đâu tiếp theo?</h1>
+                    <span className="eyebrow">
+                      {tab === "home"
+                        ? "CHUYẾN ĐI CỦA BẠN"
+                        : tab === "route"
+                          ? "TỪNG CHẶNG CỦA HÀNH TRÌNH"
+                          : tab === "money"
+                            ? "CHỦ ĐỘNG NGÂN SÁCH"
+                            : tab === "media"
+                              ? "GIỮ LẠI KỶ NIỆM"
+                              : "KHÔNG GIAN CỦA BẠN"}
+                    </span>
+                    <h1>
+                      {tab === "home"
+                        ? trip.name
+                        : tab === "route"
+                          ? "Lịch trình"
+                          : tab === "money"
+                            ? "Chi phí chuyến đi"
+                            : tab === "media"
+                              ? "Album & media"
+                              : "Thành viên & cài đặt"}
+                    </h1>
                   </div>
-                  <button className="btn primary" onClick={() => edit("trip")}>
-                    <Plus size={18} />
-                    Tạo chuyến đi
-                  </button>
-                </div>
-                <section className="panel welcome">
-                  <Compass size={58} />
-                  <h2>
-                    Một kế hoạch nhỏ.
-                    <br />
-                    Một hành trình đáng nhớ.
-                  </h2>
-                  <p>
-                    Tạo chuyến đi đầu tiên, thêm những nơi muốn đến
-                    <br className="desktop-only" /> và chủ động ngân sách của
-                    bạn.
-                  </p>
-                  <button className="btn primary" onClick={() => edit("trip")}>
-                    <Plus size={18} />
-                    Tạo chuyến đi đầu tiên
-                  </button>
-                </section>
-                <button className="text-btn" onClick={logout}>
-                  <LogOut size={16} />
-                  Đăng xuất {user.email}
-                </button>
-              </>
-            )
-          ) : (
-            <>
-              <div className="page-heading">
-                <div>
-                  <span className="eyebrow">
-                    {tab === "home"
-                      ? "CHUYẾN ĐI CỦA BẠN"
-                      : tab === "route"
-                        ? "TỪNG CHẶNG CỦA HÀNH TRÌNH"
-                        : tab === "money"
-                          ? "CHỦ ĐỘNG NGÂN SÁCH"
-                          : tab === "media"
-                            ? "GIỮ LẠI KỶ NIỆM"
-                            : "KHÔNG GIAN CỦA BẠN"}
-                  </span>
-                  <h1>
-                    {tab === "home"
-                      ? trip.name
-                      : tab === "route"
-                        ? "Lịch trình"
-                        : tab === "money"
-                          ? "Chi phí chuyến đi"
-                          : tab === "media"
-                            ? "Album & media"
-                            : "Thành viên & cài đặt"}
-                  </h1>
-                </div>
-                {writable && ["route", "money", "media"].includes(tab) && (
-                  <button
-                    className="btn primary"
-                    onClick={() =>
-                      edit(
-                        tab === "route"
-                          ? "item"
-                          : tab === "media"
-                            ? "media"
-                            : "expense",
-                      )
-                    }
-                  >
-                    <Plus size={18} />
-                    {tab === "route"
-                      ? "Thêm hoạt động"
-                      : tab === "media"
-                        ? "Gắn liên kết"
-                        : "Ghi chi tiêu"}
-                  </button>
-                )}
-              </div>
-              {tab === "home" && data && totals && progress && daily && (
-                <>
-                  <div className="trip-meta compact">
-                    <span>
-                      <MapPin size={15} />
-                      {trip.destination}
-                    </span>
-                    <span>
-                      <CalendarDays size={15} />
-                      {dateLabel(trip.start_date)} –{" "}
-                      {`${dateLabel(tripPeriod(trip, data.items).end)}${trip.end_date ? "" : " (dự kiến)"}`}
-                    </span>
-                    <span>
-                      <Users size={15} />
-                      {trip.people} người
-                    </span>
-                    <span className="pill">{TRIP_STATUS[trip.status]}</span>
-                  </div>
-
-                  {contextualOverview()}
-
-                  <section
-                    className="overview-compact-summary"
-                    aria-label="Tình trạng chuyến đi"
-                  >
-                    <button onClick={() => navigate("route")}>
-                      <Route size={18} />
-                      <span>
-                        <b>
-                          {progress.done}/{data.items.length}
-                        </b>
-                        <small>Hoạt động</small>
-                      </span>
-                    </button>
-                    <button onClick={() => navigate("money")}>
-                      <Wallet size={18} />
-                      <span>
-                        <b>{money(totals.actual)}</b>
-                        <small>Đã chi</small>
-                      </span>
-                    </button>
-                    <button onClick={() => navigate("media")}>
-                      <Images size={18} />
-                      <span>
-                        <b>{data.media.length}</b>
-                        <small>Media</small>
-                      </span>
-                    </button>
+                  {writable && ["route", "money", "media"].includes(tab) && (
                     <button
-                      onClick={() => {
-                        navigate("more");
-                        setTimeout(() => {
-                          const group = document.getElementById(
-                            "module-trip",
-                          ) as HTMLDetailsElement | null;
-                          if (group) group.open = true;
-                        }, 80);
-                      }}
+                      className="btn primary"
+                      onClick={() =>
+                        edit(
+                          tab === "route"
+                            ? "item"
+                            : tab === "media"
+                              ? "media"
+                              : "expense",
+                        )
+                      }
                     >
-                      <Users size={18} />
-                      <span>
-                        <b>{data.participants.length || trip.people}</b>
-                        <small>Người đi</small>
-                      </span>
+                      <Plus size={18} />
+                      {tab === "route"
+                        ? "Thêm hoạt động"
+                        : tab === "media"
+                          ? "Gắn liên kết"
+                          : "Ghi chi tiêu"}
                     </button>
-                  </section>
-
-                  {trip.note && (
-                    <details className="trip-note-compact">
-                      <summary>Ghi chú chuyến đi</summary>
-                      <p className="prewrap">{trip.note}</p>
-                    </details>
                   )}
-                </>
-              )}
-              {tab === "route" && data && progress && (
-                <>
-                  {liveCard()}
-                  <div className="section-heading roadmap-heading">
-                    <div>
-                      <h2>Roadmap chuyến đi</h2>
-                      <p className="muted">
-                        {progress.done}/{data.items.length} hoàn thành ·{" "}
-                        {progress.processed} đã xử lý · {trip.timezone}
-                      </p>
+                </div>
+                {tab === "home" && data && totals && progress && daily && (
+                  <>
+                    <div className="trip-meta compact">
+                      <span>
+                        <MapPin size={15} />
+                        {trip.destination}
+                      </span>
+                      <span>
+                        <CalendarDays size={15} />
+                        {dateLabel(trip.start_date)} –{" "}
+                        {`${dateLabel(tripPeriod(trip, data.items).end)}${trip.end_date ? "" : " (dự kiến)"}`}
+                      </span>
+                      <span>
+                        <Users size={15} />
+                        {trip.people} người
+                      </span>
+                      <span className="pill">{TRIP_STATUS[trip.status]}</span>
                     </div>
-                    <div className="planning-heading-actions">
-                      <div
-                        className="planning-view-switch"
-                        aria-label="Kiểu hiển thị kế hoạch"
-                      >
-                        <button
-                          type="button"
-                          className={
-                            planningView === "timeline" ? "active" : ""
-                          }
-                          onClick={() => changePlanningView("timeline")}
-                        >
-                          <Route size={16} /> Timeline
-                        </button>
-                        <button
-                          type="button"
-                          className={planningView === "board" ? "active" : ""}
-                          onClick={() => changePlanningView("board")}
-                        >
-                          <LayoutDashboard size={16} /> Board
-                        </button>
-                        <button
-                          type="button"
-                          className={planningView === "map" ? "active" : ""}
-                          onClick={() => changePlanningView("map")}
-                        >
-                          <MapPin size={16} /> Bản đồ
-                        </button>
-                      </div>
+
+                    {contextualOverview()}
+
+                    <section
+                      className="overview-compact-summary"
+                      aria-label="Tình trạng chuyến đi"
+                    >
+                      <button onClick={() => navigate("route")}>
+                        <Route size={18} />
+                        <span>
+                          <b>
+                            {progress.done}/{data.items.length}
+                          </b>
+                          <small>Hoạt động</small>
+                        </span>
+                      </button>
+                      <button onClick={() => navigate("money")}>
+                        <Wallet size={18} />
+                        <span>
+                          <b>{money(totals.actual)}</b>
+                          <small>Đã chi</small>
+                        </span>
+                      </button>
+                      <button onClick={() => navigate("media")}>
+                        <Images size={18} />
+                        <span>
+                          <b>{data.media.length}</b>
+                          <small>Media</small>
+                        </span>
+                      </button>
                       <button
-                        className="btn secondary planning-gps-btn"
                         onClick={() => {
-                          if (!navigator.geolocation) {
-                            notify("Thiết bị không hỗ trợ định vị.");
-                            return;
-                          }
-                          notify("Đang lấy vị trí…");
-                          navigator.geolocation.getCurrentPosition(
-                            (pos) => {
-                              setShareLink(
-                                `https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`,
-                              );
-                            },
-                            () =>
-                              notify(
-                                "Không lấy được GPS. Hãy kiểm tra quyền vị trí.",
-                              ),
-                            { timeout: 15000, enableHighAccuracy: true },
-                          );
+                          navigate("more");
+                          setTimeout(() => {
+                            const group = document.getElementById(
+                              "module-trip",
+                            ) as HTMLDetailsElement | null;
+                            if (group) group.open = true;
+                          }, 80);
                         }}
                       >
-                        <MapPin size={16} />
-                        GPS của tôi
+                        <Users size={18} />
+                        <span>
+                          <b>{data.participants.length || trip.people}</b>
+                          <small>Người đi</small>
+                        </span>
                       </button>
-                    </div>
-                  </div>
-                  {planningView !== "map" &&
-                    (planningView === "timeline" ? (
-                      <>
-                        <div className="day-tabs">
+                    </section>
+
+                    {trip.note && (
+                      <details className="trip-note-compact">
+                        <summary>Ghi chú chuyến đi</summary>
+                        <p className="prewrap">{trip.note}</p>
+                      </details>
+                    )}
+                  </>
+                )}
+                {tab === "route" && data && progress && (
+                  <>
+                    {liveCard()}
+                    <div className="section-heading roadmap-heading">
+                      <div>
+                        <h2>Roadmap chuyến đi</h2>
+                        <p className="muted">
+                          {progress.done}/{data.items.length} hoàn thành ·{" "}
+                          {progress.processed} đã xử lý · {trip.timezone}
+                        </p>
+                      </div>
+                      <div className="planning-heading-actions">
+                        <div
+                          className="planning-view-switch"
+                          aria-label="Kiểu hiển thị kế hoạch"
+                        >
                           <button
-                            className={day === "all" ? "active" : ""}
-                            onClick={() => setDay("all")}
+                            type="button"
+                            className={
+                              planningView === "timeline" ? "active" : ""
+                            }
+                            onClick={() => changePlanningView("timeline")}
                           >
-                            Tất cả
+                            <Route size={16} /> Timeline
                           </button>
-                          {boardDays.map((d) => (
-                            <button
-                              key={d}
-                              className={day === d ? "active" : ""}
-                              onClick={() => setDay(d)}
-                            >
-                              {dateLabel(d)}
-                            </button>
-                          ))}
+                          <button
+                            type="button"
+                            className={planningView === "board" ? "active" : ""}
+                            onClick={() => changePlanningView("board")}
+                          >
+                            <LayoutDashboard size={16} /> Board
+                          </button>
+                          <button
+                            type="button"
+                            className={planningView === "map" ? "active" : ""}
+                            onClick={() => changePlanningView("map")}
+                          >
+                            <MapPin size={16} /> Bản đồ
+                          </button>
                         </div>
-                        <div className="timeline">
-                          {progress.sorted
-                            .filter(
-                              (x) =>
-                                day === "all" ||
-                                itemOnDay(x, trip.timezone, day),
-                            )
-                            .map((x) => (
-                              <article
-                                className={`timeline-row ${x.status}`}
-                                key={x.id}
+                        <button
+                          className="btn secondary planning-gps-btn"
+                          onClick={() => {
+                            if (!navigator.geolocation) {
+                              notify(
+                                "Thiết bị không hỗ trợ định vị.",
+                                "warning",
+                              );
+                              return;
+                            }
+                            notify("Đang lấy vị trí…", "info");
+                            navigator.geolocation.getCurrentPosition(
+                              (pos) => {
+                                setShareLink(
+                                  `https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`,
+                                );
+                              },
+                              () =>
+                                notify(
+                                  "Không lấy được GPS. Hãy kiểm tra quyền vị trí.",
+                                  "warning",
+                                ),
+                              { timeout: 15000, enableHighAccuracy: true },
+                            );
+                          }}
+                        >
+                          <MapPin size={16} />
+                          GPS của tôi
+                        </button>
+                      </div>
+                    </div>
+                    {planningView !== "map" &&
+                      (planningView === "timeline" ? (
+                        <>
+                          <div className="day-tabs">
+                            <button
+                              className={day === "all" ? "active" : ""}
+                              onClick={() => setDay("all")}
+                            >
+                              Tất cả
+                            </button>
+                            {boardDays.map((d) => (
+                              <button
+                                key={d}
+                                className={day === d ? "active" : ""}
+                                onClick={() => setDay(d)}
                               >
-                                <div className="timeline-time">
-                                  <b>
-                                    {localTime(x.start_at, trip.timezone).slice(
-                                      11,
-                                    )}
-                                  </b>
-                                  <small>
-                                    {dateLabel(
-                                      localTime(x.start_at, trip.timezone),
-                                    )}
-                                  </small>
-                                </div>
-                                <div className="timeline-dot">
-                                  {x.status === "done" ? (
-                                    <Check size={15} />
-                                  ) : (
-                                    <MapPin size={14} />
-                                  )}
-                                </div>
-                                <section className="stop-panel">
-                                  <div className="section-heading">
-                                    <span
-                                      className={`pill ${x.status === "active" ? "green" : ""}`}
-                                    >
-                                      {ITEM_STATUS[x.status]}
-                                      {x.status === "active" &&
-                                      progress.activeLateMinutes > 0
-                                        ? ` · Trễ ${minutesText(progress.activeLateMinutes)}`
-                                        : progress.late.some(
-                                              (s) => s.id === x.id,
-                                            )
-                                          ? " · Qua giờ"
-                                          : ""}
-                                    </span>
-                                    {rowTools("item", x)}
-                                  </div>
-                                  <h3>{x.title}</h3>
-                                  <p className="location">
-                                    <MapPin size={15} />
-                                    {x.location || "Chưa có địa điểm"}
-                                  </p>
-                                  <p className="muted">
-                                    {localTime(x.start_at, trip.timezone).slice(
-                                      11,
-                                    )}
-                                    {x.end_at
-                                      ? ` – ${localTime(x.end_at, trip.timezone).slice(11)}`
-                                      : ""}
-                                    {x.end_at &&
-                                    localTime(x.start_at, trip.timezone).slice(
-                                      0,
-                                      10,
-                                    ) !==
-                                      localTime(x.end_at, trip.timezone).slice(
-                                        0,
-                                        10,
-                                      )
-                                      ? " · " +
-                                        dateLabel(
-                                          localTime(x.end_at, trip.timezone),
-                                        )
-                                      : ""}
-                                  </p>
-                                  {x.note && (
-                                    <p className="prewrap">{x.note}</p>
-                                  )}
-                                  {x.checked_in_at && (
-                                    <small>
-                                      Check-in{" "}
-                                      {dateLabel(
-                                        localTime(
-                                          x.checked_in_at,
-                                          trip.timezone,
-                                        ),
-                                      )}{" "}
-                                      lúc{" "}
+                                {dateLabel(d)}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="timeline">
+                            {progress.sorted
+                              .filter(
+                                (x) =>
+                                  day === "all" ||
+                                  itemOnDay(x, trip.timezone, day),
+                              )
+                              .map((x) => (
+                                <article
+                                  className={`timeline-row ${x.status}`}
+                                  key={x.id}
+                                >
+                                  <div className="timeline-time">
+                                    <b>
                                       {localTime(
-                                        x.checked_in_at,
+                                        x.start_at,
                                         trip.timezone,
                                       ).slice(11)}
+                                    </b>
+                                    <small>
+                                      {dateLabel(
+                                        localTime(x.start_at, trip.timezone),
+                                      )}
                                     </small>
-                                  )}
-                                  <div className="stop-summary">
-                                    Dự toán{" "}
-                                    {money(
-                                      planned(
-                                        data.budgets.filter(
-                                          (b) => b.item_id === x.id,
-                                        ),
-                                      ),
-                                    )}{" "}
-                                    ·{" "}
-                                    {
-                                      data.media.filter(
-                                        (m) => m.item_id === x.id,
-                                      ).length
-                                    }{" "}
-                                    media
                                   </div>
-                                  {writable && (
-                                    <div
-                                      className="planning-inline-tools"
-                                      aria-label="Chỉnh giờ nhanh"
-                                    >
-                                      <span>Chỉnh giờ</span>
-                                      <button
-                                        type="button"
-                                        disabled={!!planningBusyId}
-                                        onClick={() =>
-                                          void reschedulePlanningItem(x, {
-                                            minutes: -30,
-                                          })
-                                        }
+                                  <div className="timeline-dot">
+                                    {x.status === "done" ? (
+                                      <Check size={15} />
+                                    ) : (
+                                      <MapPin size={14} />
+                                    )}
+                                  </div>
+                                  <section className="stop-panel">
+                                    <div className="section-heading">
+                                      <span
+                                        className={`pill ${x.status === "active" ? "green" : ""}`}
                                       >
-                                        −30′
-                                      </button>
-                                      <button
-                                        type="button"
-                                        disabled={!!planningBusyId}
-                                        onClick={() =>
-                                          void reschedulePlanningItem(x, {
-                                            minutes: 30,
-                                          })
-                                        }
-                                      >
-                                        +30′
-                                      </button>
+                                        {ITEM_STATUS[x.status]}
+                                        {x.status === "active" &&
+                                        progress.activeLateMinutes > 0
+                                          ? ` · Trễ ${minutesText(progress.activeLateMinutes)}`
+                                          : progress.late.some(
+                                                (s) => s.id === x.id,
+                                              )
+                                            ? " · Qua giờ"
+                                            : ""}
+                                      </span>
+                                      {rowTools("item", x)}
                                     </div>
-                                  )}
-                                  <div className="actions">
+                                    <h3>{x.title}</h3>
+                                    <p className="location">
+                                      <MapPin size={15} />
+                                      {x.location || "Chưa có địa điểm"}
+                                    </p>
+                                    <p className="muted">
+                                      {localTime(
+                                        x.start_at,
+                                        trip.timezone,
+                                      ).slice(11)}
+                                      {x.end_at
+                                        ? ` – ${localTime(x.end_at, trip.timezone).slice(11)}`
+                                        : ""}
+                                      {x.end_at &&
+                                      localTime(
+                                        x.start_at,
+                                        trip.timezone,
+                                      ).slice(0, 10) !==
+                                        localTime(
+                                          x.end_at,
+                                          trip.timezone,
+                                        ).slice(0, 10)
+                                        ? " · " +
+                                          dateLabel(
+                                            localTime(x.end_at, trip.timezone),
+                                          )
+                                        : ""}
+                                    </p>
+                                    {x.note && (
+                                      <p className="prewrap">{x.note}</p>
+                                    )}
+                                    {x.checked_in_at && (
+                                      <small>
+                                        Check-in{" "}
+                                        {dateLabel(
+                                          localTime(
+                                            x.checked_in_at,
+                                            trip.timezone,
+                                          ),
+                                        )}{" "}
+                                        lúc{" "}
+                                        {localTime(
+                                          x.checked_in_at,
+                                          trip.timezone,
+                                        ).slice(11)}
+                                      </small>
+                                    )}
+                                    <div className="stop-summary">
+                                      Dự toán{" "}
+                                      {money(
+                                        planned(
+                                          data.budgets.filter(
+                                            (b) => b.item_id === x.id,
+                                          ),
+                                        ),
+                                      )}{" "}
+                                      ·{" "}
+                                      {
+                                        data.media.filter(
+                                          (m) => m.item_id === x.id,
+                                        ).length
+                                      }{" "}
+                                      media
+                                    </div>
                                     {writable && (
-                                      <>
-                                        {x.status === "planned" && (
-                                          <>
-                                            <button
-                                              className="btn primary"
-                                              onClick={() =>
-                                                status(x, "active")
-                                              }
-                                            >
-                                              <MapPin size={16} />
-                                              Tôi đã đến
-                                            </button>
-                                            <button
-                                              className="text-btn"
-                                              onClick={() =>
-                                                status(x, "skipped")
-                                              }
-                                            >
-                                              Bỏ qua
-                                            </button>
-                                          </>
-                                        )}
-                                        {x.status === "active" && (
-                                          <button
-                                            className="btn primary"
-                                            onClick={() => status(x, "done")}
-                                          >
-                                            <Check size={16} />
-                                            Hoàn thành
-                                          </button>
-                                        )}
-                                        {["done", "skipped"].includes(
-                                          x.status,
-                                        ) && (
-                                          <button
-                                            className="text-btn"
-                                            onClick={() => status(x, "planned")}
-                                          >
-                                            Đặt lại
-                                          </button>
-                                        )}
+                                      <div
+                                        className="planning-inline-tools"
+                                        aria-label="Chỉnh giờ nhanh"
+                                      >
+                                        <span>Chỉnh giờ</span>
                                         <button
-                                          className="icon-btn"
-                                          title="Sao chép hoạt động"
-                                          aria-label="Sao chép hoạt động"
+                                          type="button"
+                                          disabled={!!planningBusyId}
                                           onClick={() =>
-                                            setSpec({
-                                              entity: "item",
-                                              defaults: {
-                                                title: x.title + " (bản sao)",
-                                                location: x.location,
-                                                start_at: x.start_at,
-                                                end_at: x.end_at,
-                                                map_url: x.map_url,
-                                                note: x.note,
-                                              },
+                                            void reschedulePlanningItem(x, {
+                                              minutes: -30,
                                             })
                                           }
                                         >
-                                          <Copy size={16} />
+                                          −30′
                                         </button>
-                                      </>
+                                        <button
+                                          type="button"
+                                          disabled={!!planningBusyId}
+                                          onClick={() =>
+                                            void reschedulePlanningItem(x, {
+                                              minutes: 30,
+                                            })
+                                          }
+                                        >
+                                          +30′
+                                        </button>
+                                      </div>
                                     )}
+                                    <div className="actions">
+                                      {writable && (
+                                        <>
+                                          {x.status === "planned" && (
+                                            <>
+                                              <button
+                                                className="btn primary"
+                                                onClick={() =>
+                                                  status(x, "active")
+                                                }
+                                              >
+                                                <MapPin size={16} />
+                                                Tôi đã đến
+                                              </button>
+                                              <button
+                                                className="text-btn"
+                                                onClick={() =>
+                                                  status(x, "skipped")
+                                                }
+                                              >
+                                                Bỏ qua
+                                              </button>
+                                            </>
+                                          )}
+                                          {x.status === "active" && (
+                                            <button
+                                              className="btn primary"
+                                              onClick={() => status(x, "done")}
+                                            >
+                                              <Check size={16} />
+                                              Hoàn thành
+                                            </button>
+                                          )}
+                                          {["done", "skipped"].includes(
+                                            x.status,
+                                          ) && (
+                                            <button
+                                              className="text-btn"
+                                              onClick={() =>
+                                                status(x, "planned")
+                                              }
+                                            >
+                                              Đặt lại
+                                            </button>
+                                          )}
+                                          <button
+                                            className="icon-btn"
+                                            title="Sao chép hoạt động"
+                                            aria-label="Sao chép hoạt động"
+                                            onClick={() =>
+                                              setSpec({
+                                                entity: "item",
+                                                defaults: {
+                                                  title: x.title + " (bản sao)",
+                                                  location: x.location,
+                                                  start_at: x.start_at,
+                                                  end_at: x.end_at,
+                                                  map_url: x.map_url,
+                                                  note: x.note,
+                                                },
+                                              })
+                                            }
+                                          >
+                                            <Copy size={16} />
+                                          </button>
+                                        </>
+                                      )}
+                                      <Link
+                                        url={
+                                          x.map_url ||
+                                          "https://www.google.com/maps/search/?api=1&query=" +
+                                            encodeURIComponent(
+                                              x.location || trip.destination,
+                                            )
+                                        }
+                                      >
+                                        Bản đồ
+                                      </Link>
+                                    </div>
+                                  </section>
+                                </article>
+                              ))}
+                          </div>
+                        </>
+                      ) : (
+                        <section
+                          className="planning-board-shell"
+                          aria-label="Planning Board"
+                        >
+                          <div className="planning-board-intro">
+                            <div>
+                              <span className="eyebrow">PLANNING BOARD</span>
+                              <h3>Kéo hoạt động sang ngày khác</h3>
+                              <p>
+                                Desktop có thể kéo thả. Trên mobile chọn ngày
+                                trực tiếp; dùng ±30 phút để chỉnh giờ mà không
+                                cần mở form.
+                              </p>
+                            </div>
+                            {writable && (
+                              <button
+                                className="btn secondary"
+                                onClick={() => edit("item")}
+                              >
+                                <Plus size={16} /> Thêm hoạt động
+                              </button>
+                            )}
+                          </div>
+                          <div className="planning-board">
+                            {boardDays.map((boardDay) => {
+                              const boardItems = progress.sorted.filter(
+                                (item) =>
+                                  itemOnDay(item, trip.timezone, boardDay),
+                              );
+                              return (
+                                <section
+                                  className="planning-column"
+                                  key={boardDay}
+                                  onDragOver={(event) => {
+                                    if (writable) event.preventDefault();
+                                  }}
+                                  onDrop={(event) => {
+                                    if (!writable) return;
+                                    event.preventDefault();
+                                    const id =
+                                      event.dataTransfer.getData(
+                                        "text/tripflow-item",
+                                      ) || planningDragId.current;
+                                    planningDragId.current = "";
+                                    const item = data.items.find(
+                                      (row) => row.id === id,
+                                    );
+                                    if (!item) return;
+                                    const currentDay = localTime(
+                                      item.start_at,
+                                      trip.timezone,
+                                    ).slice(0, 10);
+                                    if (currentDay !== boardDay)
+                                      void reschedulePlanningItem(item, {
+                                        day: boardDay,
+                                      });
+                                  }}
+                                >
+                                  <header className="planning-column-head">
+                                    <div>
+                                      <b>{dateLabel(boardDay)}</b>
+                                      <small>
+                                        {boardItems.length} hoạt động
+                                      </small>
+                                    </div>
+                                    {writable && (
+                                      <button
+                                        type="button"
+                                        className="icon-btn"
+                                        aria-label={`Thêm hoạt động ngày ${dateLabel(boardDay)}`}
+                                        onClick={() =>
+                                          setSpec({
+                                            entity: "item",
+                                            defaults: {
+                                              start_at: utcTime(
+                                                `${boardDay}T09:00`,
+                                                trip.timezone,
+                                              ),
+                                              end_at: null,
+                                            },
+                                          })
+                                        }
+                                      >
+                                        <Plus size={16} />
+                                      </button>
+                                    )}
+                                  </header>
+                                  <div className="planning-column-list">
+                                    {boardItems.map((item) => (
+                                      <article
+                                        className={`planning-card ${item.status} ${planningBusyId === item.id ? "busy" : ""}`}
+                                        key={item.id}
+                                        draggable={
+                                          writable && planningBusyId !== item.id
+                                        }
+                                        onDragStart={(event) => {
+                                          planningDragId.current = item.id;
+                                          event.dataTransfer.effectAllowed =
+                                            "move";
+                                          event.dataTransfer.setData(
+                                            "text/tripflow-item",
+                                            item.id,
+                                          );
+                                        }}
+                                        onDragEnd={() => {
+                                          planningDragId.current = "";
+                                        }}
+                                      >
+                                        <div className="planning-card-head">
+                                          <span
+                                            className={`pill ${item.status === "active" ? "green" : ""}`}
+                                          >
+                                            {ITEM_STATUS[item.status]}
+                                          </span>
+                                          <b>
+                                            {planningBusyId === item.id
+                                              ? "Đang lưu…"
+                                              : localTime(
+                                                  item.start_at,
+                                                  trip.timezone,
+                                                ).slice(11)}
+                                          </b>
+                                        </div>
+                                        <h4>{item.title}</h4>
+                                        {localTime(
+                                          item.start_at,
+                                          trip.timezone,
+                                        ).slice(0, 10) !== boardDay && (
+                                          <small>
+                                            Tiếp từ{" "}
+                                            {dateLabel(
+                                              localTime(
+                                                item.start_at,
+                                                trip.timezone,
+                                              ),
+                                            )}
+                                          </small>
+                                        )}
+                                        <p>
+                                          <MapPin size={13} />{" "}
+                                          {item.location || "Chưa có địa điểm"}
+                                        </p>
+                                        {writable && (
+                                          <div className="planning-card-tools">
+                                            <button
+                                              type="button"
+                                              disabled={!!planningBusyId}
+                                              onClick={() =>
+                                                void reschedulePlanningItem(
+                                                  item,
+                                                  { minutes: -30 },
+                                                )
+                                              }
+                                            >
+                                              −30′
+                                            </button>
+                                            <button
+                                              type="button"
+                                              disabled={!!planningBusyId}
+                                              onClick={() =>
+                                                void reschedulePlanningItem(
+                                                  item,
+                                                  { minutes: 30 },
+                                                )
+                                              }
+                                            >
+                                              +30′
+                                            </button>
+                                            <select
+                                              aria-label={`Đổi ngày của ${item.title}`}
+                                              value={localTime(
+                                                item.start_at,
+                                                trip.timezone,
+                                              ).slice(0, 10)}
+                                              disabled={!!planningBusyId}
+                                              onChange={(event) =>
+                                                void reschedulePlanningItem(
+                                                  item,
+                                                  { day: event.target.value },
+                                                )
+                                              }
+                                            >
+                                              {boardDays.map((value) => (
+                                                <option
+                                                  value={value}
+                                                  key={value}
+                                                >
+                                                  {dateLabel(value)}
+                                                </option>
+                                              ))}
+                                            </select>
+                                            <button
+                                              type="button"
+                                              className="icon-btn"
+                                              aria-label={`Sửa ${item.title}`}
+                                              onClick={() => edit("item", item)}
+                                            >
+                                              <Pencil size={15} />
+                                            </button>
+                                          </div>
+                                        )}
+                                      </article>
+                                    ))}
+                                    {!boardItems.length && (
+                                      <div className="planning-column-empty">
+                                        Thả hoạt động vào ngày này
+                                      </div>
+                                    )}
+                                  </div>
+                                </section>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      ))}
+                    {planningView === "map" && routeAnalysis && (
+                      <section
+                        className="route-map-shell"
+                        aria-label="Bản đồ và phân tích tuyến đường"
+                      >
+                        <div className="route-map-head">
+                          <div>
+                            <span className="eyebrow">
+                              MAP · PLACES · ROUTE INTELLIGENCE
+                            </span>
+                            <h3>Bản đồ hành trình · {dateLabel(routeDay)}</h3>
+                            <p>
+                              Khoảng cách và thời gian di chuyển là ước tính để
+                              rà soát kế hoạch; mở Google Maps để xem tuyến thực
+                              tế.
+                            </p>
+                          </div>
+                          <div className="route-segment-actions">
+                            {routeAnalysis.directionsSegments.map(
+                              (segment, index) => (
+                                <Link key={segment.url} url={segment.url}>
+                                  <Navigation size={16} />{" "}
+                                  {routeAnalysis.directionsSegments.length === 1
+                                    ? "Mở tuyến Google Maps"
+                                    : `Đoạn ${index + 1}: điểm ${segment.fromIndex}–${segment.toIndex}`}
+                                </Link>
+                              ),
+                            )}
+                            {routeAnalysis.directionsSegments.length > 1 && (
+                              <small>
+                                Tuyến được chia thành{" "}
+                                {routeAnalysis.directionsSegments.length} đoạn
+                                liên tiếp để giữ đủ điểm trên điện thoại. Mở lần
+                                lượt theo số đoạn.
+                              </small>
+                            )}
+                          </div>
+                        </div>
+                        <div
+                          className="route-map-days"
+                          aria-label="Chọn ngày xem tuyến"
+                        >
+                          {boardDays.map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              className={routeDay === value ? "active" : ""}
+                              onClick={() => setDay(value)}
+                            >
+                              {dateLabel(value)}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="route-intelligence-stats">
+                          <div>
+                            <span>Điểm có tọa độ</span>
+                            <b>
+                              {routeAnalysis.mappedItems}/
+                              {routeAnalysis.items.length}
+                            </b>
+                          </div>
+                          <div>
+                            <span>Quãng đường ước tính</span>
+                            <b>
+                              {routeAnalysis.totalDistanceKm
+                                ? `${routeAnalysis.totalDistanceKm.toFixed(1)} km`
+                                : "—"}
+                            </b>
+                          </div>
+                          <div>
+                            <span>Thời gian di chuyển</span>
+                            <b>
+                              {routeAnalysis.totalTravelMinutes
+                                ? `${routeAnalysis.totalTravelMinutes} phút`
+                                : "—"}
+                            </b>
+                          </div>
+                          <div
+                            className={
+                              routeAnalysis.warnings.length ? "warn" : "ok"
+                            }
+                          >
+                            <span>Cảnh báo lịch trình</span>
+                            <b>{routeAnalysis.warnings.length}</b>
+                          </div>
+                        </div>
+                        {(mapResolveBusy || routeUnresolvedLinkCount > 0) && (
+                          <div
+                            className={`route-coordinate-status ${mapResolveBusy ? "loading" : "warning"}`}
+                          >
+                            <MapPin size={18} />
+                            <div>
+                              <b>
+                                {mapResolveBusy
+                                  ? "Đang đọc tọa độ từ link Google Maps…"
+                                  : "Có link Google Maps chưa đọc được tọa độ"}
+                              </b>
+                              <p>
+                                {mapResolveBusy
+                                  ? "TripFlow đang tự mở rộng link maps.app.goo.gl để lấy tọa độ. Bạn không cần nhập lại link."
+                                  : `${routeUnresolvedLinkCount} hoạt động chưa đọc được tọa độ. TripFlow V1.8.4 hỗ trợ trực tiếp link Google Maps → Chia sẻ → Sao chép đường liên kết (maps.app.goo.gl) và sẽ đọc redirect ở server; hãy mở lại Bản đồ để thử resolve lại khi mạng ổn định.`}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {routeMapPoints.length > 0 ? (
+                          <div className="route-spatial-map">
+                            <div className="route-map-caption">
+                              <b>Sơ đồ vị trí tương đối</b>
+                              <small>
+                                TripFlow dựng từ tọa độ đã đọc; bấm “Mở tuyến
+                                Google Maps” để xem bản đồ và đường đi thực tế.
+                              </small>
+                            </div>
+                            <div
+                              className="route-map-grid"
+                              aria-hidden="true"
+                            />
+                            <svg
+                              className="route-map-lines"
+                              viewBox="0 0 100 100"
+                              preserveAspectRatio="none"
+                              aria-hidden="true"
+                            >
+                              {routeMapPoints
+                                .slice(0, -1)
+                                .map((point, index) => {
+                                  const next = routeMapPoints[index + 1];
+                                  return (
+                                    <line
+                                      key={`${point.item.id}-${next.item.id}`}
+                                      x1={point.x}
+                                      y1={point.y}
+                                      x2={next.x}
+                                      y2={next.y}
+                                    />
+                                  );
+                                })}
+                            </svg>
+                            {routeMapPoints.map((point, index) => (
+                              <a
+                                className="route-map-point"
+                                key={point.item.id}
+                                style={{
+                                  left: `${point.x}%`,
+                                  top: `${point.y}%`,
+                                }}
+                                href={
+                                  point.item.map_url ||
+                                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(point.item.location || point.item.title)}`
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                title={`${index + 1}. ${point.item.title}`}
+                              >
+                                <span>{index + 1}</span>
+                                <small>{point.item.title}</small>
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="route-map-empty">
+                            <MapPin size={28} />
+                            <b>
+                              {mapResolveBusy
+                                ? "Đang đọc link Google Maps…"
+                                : "Chưa lấy được tọa độ để dựng sơ đồ"}
+                            </b>
+                            <p>
+                              TripFlow hỗ trợ trực tiếp link rút gọn
+                              maps.app.goo.gl lấy từ Google Maps → Chia sẻ → Sao
+                              chép đường liên kết. Resolver V1.8.4 dùng GET như
+                              trình duyệt, ưu tiên tọa độ địa điểm và không sửa
+                              link bạn đã lưu; tuyến vẫn có thể mở theo tên địa
+                              điểm khi đang mất mạng.
+                            </p>
+                          </div>
+                        )}
+                        <div className="route-legs">
+                          {routeAnalysis.items.map((item, index) => {
+                            const leg = routeAnalysis.legs[index];
+                            return (
+                              <article
+                                className="route-place-card"
+                                key={item.id}
+                              >
+                                <div className="route-place-index">
+                                  {index + 1}
+                                </div>
+                                <div className="route-place-main">
+                                  <div className="route-place-title">
+                                    <div>
+                                      <b>{item.title}</b>
+                                      <small>
+                                        {localTime(
+                                          item.start_at,
+                                          trip.timezone,
+                                        ).slice(11)}
+                                        {item.location
+                                          ? ` · ${item.location}`
+                                          : ""}
+                                      </small>
+                                    </div>
                                     <Link
                                       url={
-                                        x.map_url ||
-                                        "https://www.google.com/maps/search/?api=1&query=" +
-                                          encodeURIComponent(
-                                            x.location || trip.destination,
-                                          )
+                                        item.map_url ||
+                                        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || item.title)}`
                                       }
                                     >
                                       Bản đồ
                                     </Link>
                                   </div>
-                                </section>
-                              </article>
-                            ))}
-                        </div>
-                      </>
-                    ) : (
-                      <section
-                        className="planning-board-shell"
-                        aria-label="Planning Board"
-                      >
-                        <div className="planning-board-intro">
-                          <div>
-                            <span className="eyebrow">PLANNING BOARD</span>
-                            <h3>Kéo hoạt động sang ngày khác</h3>
-                            <p>
-                              Desktop có thể kéo thả. Trên mobile chọn ngày trực
-                              tiếp; dùng ±30 phút để chỉnh giờ mà không cần mở
-                              form.
-                            </p>
-                          </div>
-                          {writable && (
-                            <button
-                              className="btn secondary"
-                              onClick={() => edit("item")}
-                            >
-                              <Plus size={16} /> Thêm hoạt động
-                            </button>
-                          )}
-                        </div>
-                        <div className="planning-board">
-                          {boardDays.map((boardDay) => {
-                            const boardItems = progress.sorted.filter((item) =>
-                              itemOnDay(item, trip.timezone, boardDay),
-                            );
-                            return (
-                              <section
-                                className="planning-column"
-                                key={boardDay}
-                                onDragOver={(event) => {
-                                  if (writable) event.preventDefault();
-                                }}
-                                onDrop={(event) => {
-                                  if (!writable) return;
-                                  event.preventDefault();
-                                  const id =
-                                    event.dataTransfer.getData(
-                                      "text/tripflow-item",
-                                    ) || planningDragId.current;
-                                  planningDragId.current = "";
-                                  const item = data.items.find(
-                                    (row) => row.id === id,
-                                  );
-                                  if (!item) return;
-                                  const currentDay = localTime(
-                                    item.start_at,
-                                    trip.timezone,
-                                  ).slice(0, 10);
-                                  if (currentDay !== boardDay)
-                                    void reschedulePlanningItem(item, {
-                                      day: boardDay,
-                                    });
-                                }}
-                              >
-                                <header className="planning-column-head">
-                                  <div>
-                                    <b>{dateLabel(boardDay)}</b>
-                                    <small>{boardItems.length} hoạt động</small>
-                                  </div>
-                                  {writable && (
-                                    <button
-                                      type="button"
-                                      className="icon-btn"
-                                      aria-label={`Thêm hoạt động ngày ${dateLabel(boardDay)}`}
-                                      onClick={() =>
-                                        setSpec({
-                                          entity: "item",
-                                          defaults: {
-                                            start_at: utcTime(
-                                              `${boardDay}T09:00`,
-                                              trip.timezone,
-                                            ),
-                                            end_at: null,
-                                          },
-                                        })
-                                      }
-                                    >
-                                      <Plus size={16} />
-                                    </button>
-                                  )}
-                                </header>
-                                <div className="planning-column-list">
-                                  {boardItems.map((item) => (
-                                    <article
-                                      className={`planning-card ${item.status} ${planningBusyId === item.id ? "busy" : ""}`}
-                                      key={item.id}
-                                      draggable={
-                                        writable && planningBusyId !== item.id
-                                      }
-                                      onDragStart={(event) => {
-                                        planningDragId.current = item.id;
-                                        event.dataTransfer.effectAllowed =
-                                          "move";
-                                        event.dataTransfer.setData(
-                                          "text/tripflow-item",
-                                          item.id,
-                                        );
-                                      }}
-                                      onDragEnd={() => {
-                                        planningDragId.current = "";
-                                      }}
-                                    >
-                                      <div className="planning-card-head">
-                                        <span
-                                          className={`pill ${item.status === "active" ? "green" : ""}`}
-                                        >
-                                          {ITEM_STATUS[item.status]}
-                                        </span>
-                                        <b>
-                                          {planningBusyId === item.id
-                                            ? "Đang lưu…"
-                                            : localTime(
-                                                item.start_at,
-                                                trip.timezone,
-                                              ).slice(11)}
-                                        </b>
-                                      </div>
-                                      <h4>{item.title}</h4>
-                                      {localTime(
-                                        item.start_at,
-                                        trip.timezone,
-                                      ).slice(0, 10) !== boardDay && (
-                                        <small>
-                                          Tiếp từ{" "}
-                                          {dateLabel(
-                                            localTime(
-                                              item.start_at,
-                                              trip.timezone,
-                                            ),
-                                          )}
-                                        </small>
+                                  {leg && (
+                                    <div className={`route-leg ${leg.level}`}>
+                                      <ArrowRight size={15} />
+                                      <span>
+                                        {leg.distanceKm != null &&
+                                        leg.travelMinutes != null
+                                          ? `${leg.distanceKm.toFixed(1)} km · khoảng ${leg.travelMinutes} phút · trống ${leg.availableMinutes} phút`
+                                          : `Đến ${leg.to.title} · ${leg.label}`}
+                                      </span>
+                                      {leg.level === "tight" && (
+                                        <AlertTriangle size={15} />
                                       )}
-                                      <p>
-                                        <MapPin size={13} />{" "}
-                                        {item.location || "Chưa có địa điểm"}
-                                      </p>
-                                      {writable && (
-                                        <div className="planning-card-tools">
-                                          <button
-                                            type="button"
-                                            disabled={!!planningBusyId}
-                                            onClick={() =>
-                                              void reschedulePlanningItem(
-                                                item,
-                                                { minutes: -30 },
-                                              )
-                                            }
-                                          >
-                                            −30′
-                                          </button>
-                                          <button
-                                            type="button"
-                                            disabled={!!planningBusyId}
-                                            onClick={() =>
-                                              void reschedulePlanningItem(
-                                                item,
-                                                { minutes: 30 },
-                                              )
-                                            }
-                                          >
-                                            +30′
-                                          </button>
-                                          <select
-                                            aria-label={`Đổi ngày của ${item.title}`}
-                                            value={localTime(
-                                              item.start_at,
-                                              trip.timezone,
-                                            ).slice(0, 10)}
-                                            disabled={!!planningBusyId}
-                                            onChange={(event) =>
-                                              void reschedulePlanningItem(
-                                                item,
-                                                { day: event.target.value },
-                                              )
-                                            }
-                                          >
-                                            {boardDays.map((value) => (
-                                              <option value={value} key={value}>
-                                                {dateLabel(value)}
-                                              </option>
-                                            ))}
-                                          </select>
-                                          <button
-                                            type="button"
-                                            className="icon-btn"
-                                            aria-label={`Sửa ${item.title}`}
-                                            onClick={() => edit("item", item)}
-                                          >
-                                            <Pencil size={15} />
-                                          </button>
-                                        </div>
-                                      )}
-                                    </article>
-                                  ))}
-                                  {!boardItems.length && (
-                                    <div className="planning-column-empty">
-                                      Thả hoạt động vào ngày này
                                     </div>
                                   )}
                                 </div>
-                              </section>
+                              </article>
                             );
                           })}
+                          {!routeAnalysis.items.length && (
+                            <div className="planning-column-empty">
+                              Ngày này chưa có hoạt động.
+                            </div>
+                          )}
                         </div>
+                        {routeAnalysis.warnings.length > 0 && (
+                          <div className="route-warning-box">
+                            <b>
+                              <AlertTriangle size={16} /> Cần rà soát thời gian
+                              di chuyển
+                            </b>
+                            {routeAnalysis.warnings.map((warning) => (
+                              <p key={warning}>{warning}</p>
+                            ))}
+                          </div>
+                        )}
                       </section>
-                    ))}
-                  {planningView === "map" && routeAnalysis && (
-                    <section
-                      className="route-map-shell"
-                      aria-label="Bản đồ và phân tích tuyến đường"
-                    >
-                      <div className="route-map-head">
-                        <div>
-                          <span className="eyebrow">
-                            MAP · PLACES · ROUTE INTELLIGENCE
-                          </span>
-                          <h3>Bản đồ hành trình · {dateLabel(routeDay)}</h3>
-                          <p>
-                            Khoảng cách và thời gian di chuyển là ước tính để rà
-                            soát kế hoạch; mở Google Maps để xem tuyến thực tế.
-                          </p>
-                        </div>
-                        <div className="route-segment-actions">
-                          {routeAnalysis.directionsSegments.map(
-                            (segment, index) => (
-                              <Link key={segment.url} url={segment.url}>
-                                <Navigation size={16} />{" "}
-                                {routeAnalysis.directionsSegments.length === 1
-                                  ? "Mở tuyến Google Maps"
-                                  : `Đoạn ${index + 1}: điểm ${segment.fromIndex}–${segment.toIndex}`}
-                              </Link>
-                            ),
-                          )}
-                          {routeAnalysis.directionsSegments.length > 1 && (
-                            <small>
-                              Tuyến được chia thành{" "}
-                              {routeAnalysis.directionsSegments.length} đoạn
-                              liên tiếp để giữ đủ điểm trên điện thoại. Mở lần
-                              lượt theo số đoạn.
-                            </small>
-                          )}
-                        </div>
-                      </div>
-                      <div
-                        className="route-map-days"
-                        aria-label="Chọn ngày xem tuyến"
+                    )}
+                    {!data.items.length && (
+                      <section className="panel">
+                        <Empty
+                          title="Lên kế hoạch cho từng chặng"
+                          text="Ghi địa điểm, thời gian và những điều cần chuẩn bị."
+                          onAdd={writable ? () => edit("item") : undefined}
+                          label="Thêm hoạt động"
+                        />
+                      </section>
+                    )}
+                    <div className="route-history-launcher">
+                      <button
+                        className="btn secondary"
+                        onClick={() => setHistoryOpen(true)}
                       >
-                        {boardDays.map((value) => (
+                        <History size={17} />
+                        Xem lịch sử
+                        <span className="pill">
+                          {(data.live_events || []).length}
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
+                {tab === "money" && data && totals && financeReport && (
+                  <>
+                    <section className="money-banner finance-v030">
+                      <div>
+                        <span>Dự toán gốc</span>
+                        <strong>
+                          {financeReport.baseline_snapshot_id
+                            ? money(financeReport.totals.original_budget)
+                            : "Chưa chốt"}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Dự toán hiện tại</span>
+                        <strong>
+                          {money(financeReport.totals.current_budget)}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Thực chi ròng</span>
+                        <strong>
+                          {money(financeReport.totals.net_actual)}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>
+                          {financeReport.totals.current_variance < 0
+                            ? "Vượt dự toán"
+                            : "Còn lại"}
+                        </span>
+                        <strong
+                          className={
+                            financeReport.totals.current_variance < 0
+                              ? "over-text"
+                              : ""
+                          }
+                        >
+                          {money(
+                            Math.abs(financeReport.totals.current_variance),
+                          )}
+                        </strong>
+                      </div>
+                    </section>
+                    <div className="finance-toolbar">
+                      <div className="segments">
+                        {[
+                          ["wallet", "Ví du lịch"],
+                          ["summary", "Đối chiếu"],
+                          ["plan", "Dự toán"],
+                          ["actual", "Thực chi"],
+                          ["report", "Báo cáo"],
+                        ].map(([id, label]) => (
                           <button
-                            key={value}
-                            type="button"
-                            className={routeDay === value ? "active" : ""}
-                            onClick={() => setDay(value)}
+                            className={financeTab === id ? "active" : ""}
+                            onClick={() => setFinanceTab(id)}
+                            key={id}
                           >
-                            {dateLabel(value)}
+                            {label}
                           </button>
                         ))}
                       </div>
-                      <div className="route-intelligence-stats">
-                        <div>
-                          <span>Điểm có tọa độ</span>
-                          <b>
-                            {routeAnalysis.mappedItems}/
-                            {routeAnalysis.items.length}
-                          </b>
-                        </div>
-                        <div>
-                          <span>Quãng đường ước tính</span>
-                          <b>
-                            {routeAnalysis.totalDistanceKm
-                              ? `${routeAnalysis.totalDistanceKm.toFixed(1)} km`
-                              : "—"}
-                          </b>
-                        </div>
-                        <div>
-                          <span>Thời gian di chuyển</span>
-                          <b>
-                            {routeAnalysis.totalTravelMinutes
-                              ? `${routeAnalysis.totalTravelMinutes} phút`
-                              : "—"}
-                          </b>
-                        </div>
-                        <div
-                          className={
-                            routeAnalysis.warnings.length ? "warn" : "ok"
-                          }
-                        >
-                          <span>Cảnh báo lịch trình</span>
-                          <b>{routeAnalysis.warnings.length}</b>
-                        </div>
-                      </div>
-                      {(mapResolveBusy || routeUnresolvedLinkCount > 0) && (
-                        <div
-                          className={`route-coordinate-status ${mapResolveBusy ? "loading" : "warning"}`}
-                        >
-                          <MapPin size={18} />
-                          <div>
-                            <b>
-                              {mapResolveBusy
-                                ? "Đang đọc tọa độ từ link Google Maps…"
-                                : "Có link Google Maps chưa đọc được tọa độ"}
-                            </b>
-                            <p>
-                              {mapResolveBusy
-                                ? "TripFlow đang tự mở rộng link maps.app.goo.gl để lấy tọa độ. Bạn không cần nhập lại link."
-                                : `${routeUnresolvedLinkCount} hoạt động chưa đọc được tọa độ. TripFlow V1.8.4 hỗ trợ trực tiếp link Google Maps → Chia sẻ → Sao chép đường liên kết (maps.app.goo.gl) và sẽ đọc redirect ở server; hãy mở lại Bản đồ để thử resolve lại khi mạng ổn định.`}
-                            </p>
+                      <select
+                        aria-label="Lọc nhóm chi phí"
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                      >
+                        <option value="all">Tất cả nhóm</option>
+                        {CATEGORIES.map((c) => (
+                          <option key={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {financeTab === "wallet" && wallet ? (
+                      <>
+                        <section className="panel travel-wallet-panel">
+                          <div className="section-heading wallet-heading">
+                            <div>
+                              <span className="eyebrow">
+                                TRAVEL WALLET · V{VERSION}
+                              </span>
+                              <h2>Ví chuyến đi</h2>
+                              <p className="muted">
+                                Nhìn nhanh số tiền còn lại, mức chi an toàn và
+                                tốc độ sử dụng ngân sách.
+                              </p>
+                            </div>
+                            {writable && (
+                              <button
+                                className="wallet-add-expense"
+                                onClick={() => edit("expense")}
+                              >
+                                <span className="wallet-add-expense-icon">
+                                  <Plus size={18} />
+                                </span>
+                                <span>
+                                  <b>Ghi chi tiêu</b>
+                                  <small>Thêm khoản mới</small>
+                                </span>
+                              </button>
+                            )}
                           </div>
-                        </div>
-                      )}
-                      {routeMapPoints.length > 0 ? (
-                        <div className="route-spatial-map">
-                          <div className="route-map-caption">
-                            <b>Sơ đồ vị trí tương đối</b>
-                            <small>
-                              TripFlow dựng từ tọa độ đã đọc; bấm “Mở tuyến
-                              Google Maps” để xem bản đồ và đường đi thực tế.
-                            </small>
-                          </div>
-                          <div className="route-map-grid" aria-hidden="true" />
-                          <svg
-                            className="route-map-lines"
-                            viewBox="0 0 100 100"
-                            preserveAspectRatio="none"
-                            aria-hidden="true"
-                          >
-                            {routeMapPoints.slice(0, -1).map((point, index) => {
-                              const next = routeMapPoints[index + 1];
-                              return (
-                                <line
-                                  key={`${point.item.id}-${next.item.id}`}
-                                  x1={point.x}
-                                  y1={point.y}
-                                  x2={next.x}
-                                  y2={next.y}
-                                />
-                              );
-                            })}
-                          </svg>
-                          {routeMapPoints.map((point, index) => (
-                            <a
-                              className="route-map-point"
-                              key={point.item.id}
-                              style={{
-                                left: `${point.x}%`,
-                                top: `${point.y}%`,
-                              }}
-                              href={
-                                point.item.map_url ||
-                                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(point.item.location || point.item.title)}`
+                          <div className="wallet-kpis">
+                            <article
+                              className={
+                                wallet.remaining < 0
+                                  ? "wallet-kpi over"
+                                  : "wallet-kpi"
                               }
-                              target="_blank"
-                              rel="noreferrer"
-                              title={`${index + 1}. ${point.item.title}`}
                             >
-                              <span>{index + 1}</span>
-                              <small>{point.item.title}</small>
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="route-map-empty">
-                          <MapPin size={28} />
-                          <b>
-                            {mapResolveBusy
-                              ? "Đang đọc link Google Maps…"
-                              : "Chưa lấy được tọa độ để dựng sơ đồ"}
-                          </b>
-                          <p>
-                            TripFlow hỗ trợ trực tiếp link rút gọn
-                            maps.app.goo.gl lấy từ Google Maps → Chia sẻ → Sao
-                            chép đường liên kết. Resolver V1.8.4 dùng GET như
-                            trình duyệt, ưu tiên tọa độ địa điểm và không sửa
-                            link bạn đã lưu; tuyến vẫn có thể mở theo tên địa
-                            điểm khi đang mất mạng.
-                          </p>
-                        </div>
-                      )}
-                      <div className="route-legs">
-                        {routeAnalysis.items.map((item, index) => {
-                          const leg = routeAnalysis.legs[index];
-                          return (
-                            <article className="route-place-card" key={item.id}>
-                              <div className="route-place-index">
-                                {index + 1}
+                              <span>
+                                {wallet.remaining < 0
+                                  ? "Đã vượt"
+                                  : "Còn trong ngân sách"}
+                              </span>
+                              <b>{money(Math.abs(wallet.remaining))}</b>
+                              <small>
+                                {wallet.spending_percent == null
+                                  ? "Chưa có dự toán"
+                                  : `Đã dùng ${wallet.spending_percent}%`}
+                              </small>
+                            </article>
+                            <article className="wallet-kpi">
+                              <span>Bình quân / người</span>
+                              <b>{money(wallet.per_person)}</b>
+                              <small>
+                                {data.trip.people} người trong chuyến
+                              </small>
+                            </article>
+                            <article className="wallet-kpi">
+                              <span>Mức chi an toàn / ngày</span>
+                              <b>
+                                {wallet.safe_daily_remaining == null
+                                  ? "—"
+                                  : money(wallet.safe_daily_remaining)}
+                              </b>
+                              <small>
+                                {wallet.days_remaining > 0
+                                  ? `${wallet.days_remaining} ngày còn tính ngân sách`
+                                  : "Chuyến đi đã kết thúc"}
+                              </small>
+                            </article>
+                          </div>
+                          <div className={`spending-pace ${wallet.pace}`}>
+                            <div className="spending-pace-copy">
+                              {wallet.pace === "over" ||
+                              wallet.pace === "watch" ||
+                              wallet.pace === "no_budget" ? (
+                                <AlertTriangle size={20} />
+                              ) : (
+                                <CheckCircle2 size={20} />
+                              )}
+                              <div>
+                                <b>
+                                  {wallet.pace === "watch"
+                                    ? "Đang chi nhanh hơn tiến độ"
+                                    : wallet.pace === "over"
+                                      ? "Ngân sách đã bị vượt"
+                                      : wallet.pace === "no_budget"
+                                        ? "Thiếu dự toán để đối chiếu"
+                                        : "Tốc độ chi tiêu"}
+                                </b>
+                                <p>{wallet.pace_message}</p>
                               </div>
-                              <div className="route-place-main">
-                                <div className="route-place-title">
+                            </div>
+                            <div className="pace-bars">
+                              <div>
+                                <span>
+                                  Tiến độ chuyến đi ·{" "}
+                                  {wallet.trip_progress_percent}%
+                                </span>
+                                <Bar
+                                  value={wallet.trip_progress_percent}
+                                  max={100}
+                                />
+                              </div>
+                              <div>
+                                <span>
+                                  Đã dùng ngân sách ·{" "}
+                                  {wallet.spending_percent == null
+                                    ? "—"
+                                    : `${wallet.spending_percent}%`}
+                                </span>
+                                <Bar
+                                  value={wallet.spending_percent || 0}
+                                  max={100}
+                                  over={(wallet.spending_percent || 0) > 100}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section className="panel wallet-payers-panel">
+                          <div className="section-heading">
+                            <div>
+                              <span className="eyebrow">WHO PAID</span>
+                              <h2>Ai đã thanh toán</h2>
+                            </div>
+                            <span className="pill">
+                              {wallet.payers.length} người/nhãn người trả
+                            </span>
+                          </div>
+                          {wallet.payers.length ? (
+                            <div className="wallet-payer-list">
+                              {wallet.payers.map((payer) => (
+                                <div
+                                  className="wallet-payer-row"
+                                  key={payer.payer}
+                                >
+                                  <span className="wallet-avatar">
+                                    {payer.payer.slice(0, 1).toUpperCase()}
+                                  </span>
                                   <div>
-                                    <b>{item.title}</b>
+                                    <b>{payer.payer}</b>
                                     <small>
-                                      {localTime(
-                                        item.start_at,
-                                        trip.timezone,
-                                      ).slice(11)}
-                                      {item.location
-                                        ? ` · ${item.location}`
-                                        : ""}
+                                      {payer.transaction_count} giao dịch ·{" "}
+                                      {payer.share_percent}% thực chi ròng
                                     </small>
                                   </div>
-                                  <Link
-                                    url={
-                                      item.map_url ||
-                                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || item.title)}`
-                                    }
-                                  >
-                                    Bản đồ
-                                  </Link>
+                                  <strong>{money(payer.net_paid)}</strong>
                                 </div>
-                                {leg && (
-                                  <div className={`route-leg ${leg.level}`}>
-                                    <ArrowRight size={15} />
-                                    <span>
-                                      {leg.distanceKm != null &&
-                                      leg.travelMinutes != null
-                                        ? `${leg.distanceKm.toFixed(1)} km · khoảng ${leg.travelMinutes} phút · trống ${leg.availableMinutes} phút`
-                                        : `Đến ${leg.to.title} · ${leg.label}`}
-                                    </span>
-                                    {leg.level === "tight" && (
-                                      <AlertTriangle size={15} />
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </article>
-                          );
-                        })}
-                        {!routeAnalysis.items.length && (
-                          <div className="planning-column-empty">
-                            Ngày này chưa có hoạt động.
-                          </div>
-                        )}
-                      </div>
-                      {routeAnalysis.warnings.length > 0 && (
-                        <div className="route-warning-box">
-                          <b>
-                            <AlertTriangle size={16} /> Cần rà soát thời gian di
-                            chuyển
-                          </b>
-                          {routeAnalysis.warnings.map((warning) => (
-                            <p key={warning}>{warning}</p>
-                          ))}
-                        </div>
-                      )}
-                    </section>
-                  )}
-                  {!data.items.length && (
-                    <section className="panel">
-                      <Empty
-                        title="Lên kế hoạch cho từng chặng"
-                        text="Ghi địa điểm, thời gian và những điều cần chuẩn bị."
-                        onAdd={writable ? () => edit("item") : undefined}
-                        label="Thêm hoạt động"
-                      />
-                    </section>
-                  )}
-                  <div className="route-history-launcher">
-                    <button
-                      className="btn secondary"
-                      onClick={() => setHistoryOpen(true)}
-                    >
-                      <History size={17} />
-                      Xem lịch sử
-                      <span className="pill">
-                        {(data.live_events || []).length}
-                      </span>
-                    </button>
-                  </div>
-                </>
-              )}
-              {tab === "money" && data && totals && financeReport && (
-                <>
-                  <section className="money-banner finance-v030">
-                    <div>
-                      <span>Dự toán gốc</span>
-                      <strong>
-                        {financeReport.baseline_snapshot_id
-                          ? money(financeReport.totals.original_budget)
-                          : "Chưa chốt"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Dự toán hiện tại</span>
-                      <strong>
-                        {money(financeReport.totals.current_budget)}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Thực chi ròng</span>
-                      <strong>{money(financeReport.totals.net_actual)}</strong>
-                    </div>
-                    <div>
-                      <span>
-                        {financeReport.totals.current_variance < 0
-                          ? "Vượt dự toán"
-                          : "Còn lại"}
-                      </span>
-                      <strong
-                        className={
-                          financeReport.totals.current_variance < 0
-                            ? "over-text"
-                            : ""
-                        }
-                      >
-                        {money(Math.abs(financeReport.totals.current_variance))}
-                      </strong>
-                    </div>
-                  </section>
-                  <div className="finance-toolbar">
-                    <div className="segments">
-                      {[
-                        ["wallet", "Ví du lịch"],
-                        ["summary", "Đối chiếu"],
-                        ["plan", "Dự toán"],
-                        ["actual", "Thực chi"],
-                        ["report", "Báo cáo"],
-                      ].map(([id, label]) => (
-                        <button
-                          className={financeTab === id ? "active" : ""}
-                          onClick={() => setFinanceTab(id)}
-                          key={id}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <select
-                      aria-label="Lọc nhóm chi phí"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                    >
-                      <option value="all">Tất cả nhóm</option>
-                      {CATEGORIES.map((c) => (
-                        <option key={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {financeTab === "wallet" && wallet ? (
-                    <>
-                      <section className="panel travel-wallet-panel">
-                        <div className="section-heading wallet-heading">
-                          <div>
-                            <span className="eyebrow">
-                              TRAVEL WALLET · V{VERSION}
-                            </span>
-                            <h2>Ví chuyến đi</h2>
-                            <p className="muted">
-                              Nhìn nhanh số tiền còn lại, mức chi an toàn và tốc
-                              độ sử dụng ngân sách.
-                            </p>
-                          </div>
-                          {writable && (
-                            <button
-                              className="wallet-add-expense"
-                              onClick={() => edit("expense")}
-                            >
-                              <span className="wallet-add-expense-icon">
-                                <Plus size={18} />
-                              </span>
-                              <span>
-                                <b>Ghi chi tiêu</b>
-                                <small>Thêm khoản mới</small>
-                              </span>
-                            </button>
-                          )}
-                        </div>
-                        <div className="wallet-kpis">
-                          <article
-                            className={
-                              wallet.remaining < 0
-                                ? "wallet-kpi over"
-                                : "wallet-kpi"
-                            }
-                          >
-                            <span>
-                              {wallet.remaining < 0
-                                ? "Đã vượt"
-                                : "Còn trong ngân sách"}
-                            </span>
-                            <b>{money(Math.abs(wallet.remaining))}</b>
-                            <small>
-                              {wallet.spending_percent == null
-                                ? "Chưa có dự toán"
-                                : `Đã dùng ${wallet.spending_percent}%`}
-                            </small>
-                          </article>
-                          <article className="wallet-kpi">
-                            <span>Bình quân / người</span>
-                            <b>{money(wallet.per_person)}</b>
-                            <small>{data.trip.people} người trong chuyến</small>
-                          </article>
-                          <article className="wallet-kpi">
-                            <span>Mức chi an toàn / ngày</span>
-                            <b>
-                              {wallet.safe_daily_remaining == null
-                                ? "—"
-                                : money(wallet.safe_daily_remaining)}
-                            </b>
-                            <small>
-                              {wallet.days_remaining > 0
-                                ? `${wallet.days_remaining} ngày còn tính ngân sách`
-                                : "Chuyến đi đã kết thúc"}
-                            </small>
-                          </article>
-                        </div>
-                        <div className={`spending-pace ${wallet.pace}`}>
-                          <div className="spending-pace-copy">
-                            {wallet.pace === "over" ||
-                            wallet.pace === "watch" ||
-                            wallet.pace === "no_budget" ? (
-                              <AlertTriangle size={20} />
-                            ) : (
-                              <CheckCircle2 size={20} />
-                            )}
-                            <div>
-                              <b>
-                                {wallet.pace === "watch"
-                                  ? "Đang chi nhanh hơn tiến độ"
-                                  : wallet.pace === "over"
-                                    ? "Ngân sách đã bị vượt"
-                                    : wallet.pace === "no_budget"
-                                      ? "Thiếu dự toán để đối chiếu"
-                                      : "Tốc độ chi tiêu"}
-                              </b>
-                              <p>{wallet.pace_message}</p>
-                            </div>
-                          </div>
-                          <div className="pace-bars">
-                            <div>
-                              <span>
-                                Tiến độ chuyến đi ·{" "}
-                                {wallet.trip_progress_percent}%
-                              </span>
-                              <Bar
-                                value={wallet.trip_progress_percent}
-                                max={100}
-                              />
-                            </div>
-                            <div>
-                              <span>
-                                Đã dùng ngân sách ·{" "}
-                                {wallet.spending_percent == null
-                                  ? "—"
-                                  : `${wallet.spending_percent}%`}
-                              </span>
-                              <Bar
-                                value={wallet.spending_percent || 0}
-                                max={100}
-                                over={(wallet.spending_percent || 0) > 100}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </section>
-
-                      <section className="panel wallet-payers-panel">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">WHO PAID</span>
-                            <h2>Ai đã thanh toán</h2>
-                          </div>
-                          <span className="pill">
-                            {wallet.payers.length} người/nhãn người trả
-                          </span>
-                        </div>
-                        {wallet.payers.length ? (
-                          <div className="wallet-payer-list">
-                            {wallet.payers.map((payer) => (
-                              <div
-                                className="wallet-payer-row"
-                                key={payer.payer}
-                              >
-                                <span className="wallet-avatar">
-                                  {payer.payer.slice(0, 1).toUpperCase()}
-                                </span>
-                                <div>
-                                  <b>{payer.payer}</b>
-                                  <small>
-                                    {payer.transaction_count} giao dịch ·{" "}
-                                    {payer.share_percent}% thực chi ròng
-                                  </small>
-                                </div>
-                                <strong>{money(payer.net_paid)}</strong>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="muted">
-                            Chưa có giao dịch để tổng hợp người thanh toán.
-                          </p>
-                        )}
-                        <p className="wallet-note">
-                          Travel Wallet V{VERSION} dùng danh sách người tham gia
-                          chuyến đi cho trường Người thanh toán, giúp dữ liệu
-                          người trả nhất quán khi tổng hợp.
-                        </p>
-                      </section>
-
-                      <section className="panel wallet-shortcuts-panel">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">FAVORITE · RECENT</span>
-                            <h2>Khoản chi dùng nhanh</h2>
-                          </div>
-                        </div>
-                        {favoriteExpenses.length > 0 && (
-                          <div className="expense-shortcut-group">
-                            <b>Yêu thích</b>
-                            <div className="expense-shortcut-grid">
-                              {favoriteExpenses.map((expense) => (
-                                <article
-                                  className="expense-shortcut"
-                                  key={expense.id}
-                                >
-                                  <button
-                                    className="expense-star active"
-                                    onClick={() =>
-                                      toggleFavoriteExpense(expense.id)
-                                    }
-                                    title="Bỏ khỏi yêu thích"
-                                  >
-                                    <Star size={16} fill="currentColor" />
-                                  </button>
-                                  <span>{expense.category}</span>
-                                  <h3>{expense.title}</h3>
-                                  <strong>{money(expense.amount)}</strong>
-                                  {writable && (
-                                    <button
-                                      className="text-btn"
-                                      onClick={() => repeatExpense(expense)}
-                                    >
-                                      <Copy size={15} /> Dùng lại
-                                    </button>
-                                  )}
-                                </article>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        <div className="expense-shortcut-group">
-                          <b>Gần đây</b>
-                          {recentExpenses.length ? (
-                            <div className="expense-shortcut-grid">
-                              {recentExpenses.map((expense) => (
-                                <article
-                                  className="expense-shortcut"
-                                  key={expense.id}
-                                >
-                                  <button
-                                    className={`expense-star ${favoriteExpenseIds.includes(expense.id) ? "active" : ""}`}
-                                    onClick={() =>
-                                      toggleFavoriteExpense(expense.id)
-                                    }
-                                    title="Đánh dấu yêu thích"
-                                  >
-                                    <Star
-                                      size={16}
-                                      fill={
-                                        favoriteExpenseIds.includes(expense.id)
-                                          ? "currentColor"
-                                          : "none"
-                                      }
-                                    />
-                                  </button>
-                                  <span>
-                                    {dateLabel(expense.spent_on)} ·{" "}
-                                    {expense.category}
-                                  </span>
-                                  <h3>{expense.title}</h3>
-                                  <strong>{money(expense.amount)}</strong>
-                                  {writable && (
-                                    <button
-                                      className="text-btn"
-                                      onClick={() => repeatExpense(expense)}
-                                    >
-                                      <Copy size={15} /> Dùng lại
-                                    </button>
-                                  )}
-                                </article>
                               ))}
                             </div>
                           ) : (
-                            <p className="muted">Chưa có khoản chi gần đây.</p>
+                            <p className="muted">
+                              Chưa có giao dịch để tổng hợp người thanh toán.
+                            </p>
                           )}
-                        </div>
-                      </section>
-                    </>
-                  ) : financeTab === "summary" ? (
-                    <>
-                      <section className="panel">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">FINANCE V0.3.0</span>
-                            <h2>Dự toán gốc · hiện tại · thực tế</h2>
-                          </div>
-                          <div className="finance-actions">
-                            <button
-                              className="btn secondary"
-                              onClick={() =>
-                                download(
-                                  "TripFlow-Finance.csv",
-                                  csv(data),
-                                  "text/csv;charset=utf-8",
-                                )
-                              }
-                            >
-                              <Download size={16} />
-                              CSV
-                            </button>
-                            <button
-                              className="btn secondary"
-                              onClick={() =>
-                                download(
-                                  "TripFlow-Finance.json",
-                                  financeJson(data),
-                                  "application/json;charset=utf-8",
-                                )
-                              }
-                            >
-                              <FileText size={16} />
-                              JSON
-                            </button>
-                          </div>
-                        </div>
-                        <div className="comparison-bars">
-                          {financeReport.baseline_snapshot_id && (
+                          <p className="wallet-note">
+                            Travel Wallet V{VERSION} dùng danh sách người tham
+                            gia chuyến đi cho trường Người thanh toán, giúp dữ
+                            liệu người trả nhất quán khi tổng hợp.
+                          </p>
+                        </section>
+
+                        <section className="panel wallet-shortcuts-panel">
+                          <div className="section-heading">
                             <div>
-                              <span>Dự toán gốc</span>
+                              <span className="eyebrow">FAVORITE · RECENT</span>
+                              <h2>Khoản chi dùng nhanh</h2>
+                            </div>
+                          </div>
+                          {favoriteExpenses.length > 0 && (
+                            <div className="expense-shortcut-group">
+                              <b>Yêu thích</b>
+                              <div className="expense-shortcut-grid">
+                                {favoriteExpenses.map((expense) => (
+                                  <article
+                                    className="expense-shortcut"
+                                    key={expense.id}
+                                  >
+                                    <button
+                                      className="expense-star active"
+                                      onClick={() =>
+                                        toggleFavoriteExpense(expense.id)
+                                      }
+                                      title="Bỏ khỏi yêu thích"
+                                    >
+                                      <Star size={16} fill="currentColor" />
+                                    </button>
+                                    <span>{expense.category}</span>
+                                    <h3>{expense.title}</h3>
+                                    <strong>{money(expense.amount)}</strong>
+                                    {writable && (
+                                      <button
+                                        className="text-btn"
+                                        onClick={() => repeatExpense(expense)}
+                                      >
+                                        <Copy size={15} /> Dùng lại
+                                      </button>
+                                    )}
+                                  </article>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="expense-shortcut-group">
+                            <b>Gần đây</b>
+                            {recentExpenses.length ? (
+                              <div className="expense-shortcut-grid">
+                                {recentExpenses.map((expense) => (
+                                  <article
+                                    className="expense-shortcut"
+                                    key={expense.id}
+                                  >
+                                    <button
+                                      className={`expense-star ${favoriteExpenseIds.includes(expense.id) ? "active" : ""}`}
+                                      onClick={() =>
+                                        toggleFavoriteExpense(expense.id)
+                                      }
+                                      title="Đánh dấu yêu thích"
+                                    >
+                                      <Star
+                                        size={16}
+                                        fill={
+                                          favoriteExpenseIds.includes(
+                                            expense.id,
+                                          )
+                                            ? "currentColor"
+                                            : "none"
+                                        }
+                                      />
+                                    </button>
+                                    <span>
+                                      {dateLabel(expense.spent_on)} ·{" "}
+                                      {expense.category}
+                                    </span>
+                                    <h3>{expense.title}</h3>
+                                    <strong>{money(expense.amount)}</strong>
+                                    {writable && (
+                                      <button
+                                        className="text-btn"
+                                        onClick={() => repeatExpense(expense)}
+                                      >
+                                        <Copy size={15} /> Dùng lại
+                                      </button>
+                                    )}
+                                  </article>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="muted">
+                                Chưa có khoản chi gần đây.
+                              </p>
+                            )}
+                          </div>
+                        </section>
+                      </>
+                    ) : financeTab === "summary" ? (
+                      <>
+                        <section className="panel">
+                          <div className="section-heading">
+                            <div>
+                              <span className="eyebrow">FINANCE V0.3.0</span>
+                              <h2>Dự toán gốc · hiện tại · thực tế</h2>
+                            </div>
+                            <div className="finance-actions">
+                              <button
+                                className="btn secondary"
+                                onClick={() =>
+                                  download(
+                                    "TripFlow-Finance.csv",
+                                    csv(data),
+                                    "text/csv;charset=utf-8",
+                                  )
+                                }
+                              >
+                                <Download size={16} />
+                                CSV
+                              </button>
+                              <button
+                                className="btn secondary"
+                                onClick={() =>
+                                  download(
+                                    "TripFlow-Finance.json",
+                                    financeJson(data),
+                                    "application/json;charset=utf-8",
+                                  )
+                                }
+                              >
+                                <FileText size={16} />
+                                JSON
+                              </button>
+                            </div>
+                          </div>
+                          <div className="comparison-bars">
+                            {financeReport.baseline_snapshot_id && (
+                              <div>
+                                <span>Dự toán gốc</span>
+                                <Bar
+                                  value={financeReport.totals.original_budget}
+                                  max={Math.max(
+                                    financeReport.totals.original_budget,
+                                    financeReport.totals.current_budget,
+                                    financeReport.totals.net_actual,
+                                  )}
+                                />
+                                <b>
+                                  {money(financeReport.totals.original_budget)}
+                                </b>
+                              </div>
+                            )}
+                            <div>
+                              <span>Hiện tại</span>
                               <Bar
-                                value={financeReport.totals.original_budget}
+                                value={financeReport.totals.current_budget}
                                 max={Math.max(
                                   financeReport.totals.original_budget,
                                   financeReport.totals.current_budget,
@@ -4775,1300 +4847,1319 @@ function App() {
                                 )}
                               />
                               <b>
-                                {money(financeReport.totals.original_budget)}
+                                {money(financeReport.totals.current_budget)}
                               </b>
                             </div>
-                          )}
-                          <div>
-                            <span>Hiện tại</span>
-                            <Bar
-                              value={financeReport.totals.current_budget}
-                              max={Math.max(
-                                financeReport.totals.original_budget,
-                                financeReport.totals.current_budget,
-                                financeReport.totals.net_actual,
-                              )}
-                            />
-                            <b>{money(financeReport.totals.current_budget)}</b>
+                            <div>
+                              <span>Thực chi</span>
+                              <Bar
+                                value={financeReport.totals.net_actual}
+                                max={Math.max(
+                                  financeReport.totals.original_budget,
+                                  financeReport.totals.current_budget,
+                                  financeReport.totals.net_actual,
+                                )}
+                                over={
+                                  financeReport.totals.net_actual >
+                                  financeReport.totals.current_budget
+                                }
+                              />
+                              <b>{money(financeReport.totals.net_actual)}</b>
+                            </div>
                           </div>
-                          <div>
-                            <span>Thực chi</span>
-                            <Bar
-                              value={financeReport.totals.net_actual}
-                              max={Math.max(
-                                financeReport.totals.original_budget,
-                                financeReport.totals.current_budget,
-                                financeReport.totals.net_actual,
-                              )}
-                              over={
-                                financeReport.totals.net_actual >
-                                financeReport.totals.current_budget
-                              }
-                            />
-                            <b>{money(financeReport.totals.net_actual)}</b>
+                          <div className="table-scroll">
+                            <table>
+                              <thead>
+                                <tr>
+                                  <th>Nhóm</th>
+                                  <th>Dự toán gốc</th>
+                                  <th>Hiện tại</th>
+                                  <th>Thực chi</th>
+                                  <th>Chênh lệch</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {financeReport.categories
+                                  .filter(
+                                    (x) =>
+                                      category === "all" ||
+                                      x.category === category,
+                                  )
+                                  .map((x) => (
+                                    <tr key={x.category}>
+                                      <td>{x.category}</td>
+                                      <td>
+                                        {financeReport.baseline_snapshot_id
+                                          ? money(Number(x.original))
+                                          : "—"}
+                                      </td>
+                                      <td>{money(Number(x.current))}</td>
+                                      <td>{money(Number(x.actual))}</td>
+                                      <td
+                                        className={
+                                          Number(x.variance) < 0
+                                            ? "negative"
+                                            : ""
+                                        }
+                                      >
+                                        {money(Number(x.variance))}
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
                           </div>
-                        </div>
-                        <div className="table-scroll">
-                          <table>
-                            <thead>
-                              <tr>
-                                <th>Nhóm</th>
-                                <th>Dự toán gốc</th>
-                                <th>Hiện tại</th>
-                                <th>Thực chi</th>
-                                <th>Chênh lệch</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {financeReport.categories
-                                .filter(
-                                  (x) =>
-                                    category === "all" ||
-                                    x.category === category,
-                                )
-                                .map((x) => (
-                                  <tr key={x.category}>
-                                    <td>{x.category}</td>
-                                    <td>
-                                      {financeReport.baseline_snapshot_id
-                                        ? money(Number(x.original))
-                                        : "—"}
-                                    </td>
-                                    <td>{money(Number(x.current))}</td>
-                                    <td>{money(Number(x.actual))}</td>
-                                    <td
-                                      className={
-                                        Number(x.variance) < 0 ? "negative" : ""
-                                      }
-                                    >
-                                      {money(Number(x.variance))}
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        <p className="hint">
-                          Chênh lệch = dự toán hiện tại − thực chi ròng. Thực
-                          chi ròng = tổng chi − hoàn tiền. Dự toán gốc lấy từ
-                          lần chốt đầu tiên và không thay đổi theo các lần chỉnh
-                          sửa sau.
-                        </p>
-                      </section>
+                          <p className="hint">
+                            Chênh lệch = dự toán hiện tại − thực chi ròng. Thực
+                            chi ròng = tổng chi − hoàn tiền. Dự toán gốc lấy từ
+                            lần chốt đầu tiên và không thay đổi theo các lần
+                            chỉnh sửa sau.
+                          </p>
+                        </section>
 
-                      <section className="panel">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">RECONCILIATION</span>
-                            <h2>Đối chiếu từng khoản</h2>
+                        <section className="panel">
+                          <div className="section-heading">
+                            <div>
+                              <span className="eyebrow">RECONCILIATION</span>
+                              <h2>Đối chiếu từng khoản</h2>
+                            </div>
+                            <span className="pill">
+                              {data.budgets.length} khoản
+                            </span>
                           </div>
-                          <span className="pill">
-                            {data.budgets.length} khoản
-                          </span>
+                          {data.budgets
+                            .filter(
+                              (b) =>
+                                category === "all" || b.category === category,
+                            )
+                            .map((b) => {
+                              const actual = net(
+                                data.expenses.filter(
+                                  (x) => x.budget_id === b.id,
+                                ),
+                              );
+                              const variance = Number(b.amount) - actual;
+                              return (
+                                <div className="reconcile" key={b.id}>
+                                  <div>
+                                    <b>{b.title}</b>
+                                    <small>
+                                      {b.category}
+                                      {b.item_id
+                                        ? " · " +
+                                          (data.items.find(
+                                            (x) => x.id === b.item_id,
+                                          )?.title || "Hoạt động")
+                                        : ""}
+                                    </small>
+                                  </div>
+                                  <div>
+                                    <b>
+                                      {money(actual)} /{" "}
+                                      {money(Number(b.amount))}
+                                    </b>
+                                    <small
+                                      className={variance < 0 ? "negative" : ""}
+                                    >
+                                      {variance < 0 ? "Vượt " : "Còn "}
+                                      {money(Math.abs(variance))}
+                                    </small>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          {!data.budgets.length && (
+                            <p className="muted">
+                              Chưa có khoản dự toán để đối chiếu.
+                            </p>
+                          )}
+                          <p className="notice">
+                            Thực chi chưa gắn dự toán:{" "}
+                            <b>{money(financeReport.totals.unlinked_actual)}</b>
+                            . Khoản này vẫn được tính vào thực chi toàn chuyến.
+                          </p>
+                        </section>
+
+                        <section className="panel">
+                          <div className="section-heading">
+                            <div>
+                              <span className="eyebrow">BUDGET SNAPSHOT</span>
+                              <h2>Dự toán đã chốt</h2>
+                            </div>
+                            {permissions.can_close_budget && (
+                              <button
+                                disabled={!online}
+                                className="btn secondary"
+                                onClick={() => edit("snapshot")}
+                              >
+                                <LockKeyhole size={16} />
+                                {baselineSnapshot
+                                  ? "Chốt bản điều chỉnh"
+                                  : "Chốt dự toán gốc"}
+                              </button>
+                            )}
+                          </div>
+                          {baselineSnapshot ? (
+                            <>
+                              <div className="snapshot-status">
+                                <span className="snapshot-badge baseline">
+                                  Dự toán gốc · #
+                                  {baselineSnapshot.snapshot_no ?? 1}
+                                </span>
+                                <b>{baselineSnapshot.title}</b>
+                                <small>
+                                  {dateLabel(baselineSnapshot.created_at)} ·{" "}
+                                  {baselineSnapshot.item_count ??
+                                    baselineSnapshot.data.length}{" "}
+                                  khoản
+                                </small>
+                              </div>
+                              <div className="snapshot-values">
+                                <span>
+                                  Ngân sách gốc
+                                  <b>
+                                    {money(
+                                      Number(
+                                        baselineSnapshot.total_amount ??
+                                          planned(baselineSnapshot.data),
+                                      ),
+                                    )}
+                                  </b>
+                                </span>
+                                <span>
+                                  Dự toán hiện tại
+                                  <b>
+                                    {money(financeReport.totals.current_budget)}
+                                  </b>
+                                </span>
+                                <span>
+                                  Thay đổi kế hoạch
+                                  <b
+                                    className={
+                                      financeReport.totals.current_budget >
+                                      financeReport.totals.original_budget
+                                        ? "negative"
+                                        : ""
+                                    }
+                                  >
+                                    {money(
+                                      financeReport.totals.current_budget -
+                                        financeReport.totals.original_budget,
+                                    )}
+                                  </b>
+                                </span>
+                                <span>
+                                  So với thực chi
+                                  <b
+                                    className={
+                                      (financeReport.totals.original_variance ??
+                                        0) < 0
+                                        ? "negative"
+                                        : ""
+                                    }
+                                  >
+                                    {money(
+                                      Number(
+                                        financeReport.totals
+                                          .original_variance ?? 0,
+                                      ),
+                                    )}
+                                  </b>
+                                </span>
+                              </div>
+                              <details>
+                                <summary>
+                                  Lịch sử {orderedSnapshots?.length || 0} lần
+                                  chốt
+                                </summary>
+                                <div className="snapshot-history">
+                                  {orderedSnapshots?.map((snapshot) => (
+                                    <div key={snapshot.id}>
+                                      <span
+                                        className={`snapshot-badge ${
+                                          snapshot.snapshot_kind ===
+                                            "baseline" ||
+                                          snapshot.id === baselineSnapshot.id
+                                            ? "baseline"
+                                            : ""
+                                        }`}
+                                      >
+                                        {snapshot.snapshot_kind ===
+                                          "baseline" ||
+                                        snapshot.id === baselineSnapshot.id
+                                          ? "Gốc"
+                                          : `Điều chỉnh #${snapshot.snapshot_no ?? "?"}`}
+                                      </span>
+                                      <span>{snapshot.title}</span>
+                                      <b>
+                                        {money(
+                                          Number(
+                                            snapshot.total_amount ??
+                                              planned(snapshot.data),
+                                          ),
+                                        )}
+                                      </b>
+                                      <small>
+                                        {dateLabel(snapshot.created_at)}
+                                      </small>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                              {latestSnapshot &&
+                                latestSnapshot.id !== baselineSnapshot.id && (
+                                  <p className="hint">
+                                    Bản chốt mới nhất chỉ lưu lịch sử thay đổi.
+                                    Dự toán gốc vẫn là lần chốt đầu tiên.
+                                  </p>
+                                )}
+                            </>
+                          ) : (
+                            <div className="integrity-empty">
+                              <AlertTriangle size={22} />
+                              <div>
+                                <b>Chưa có dự toán gốc</b>
+                                <p>
+                                  Hãy chốt ngân sách trước chuyến đi. Lần chốt
+                                  đầu tiên sẽ trở thành baseline bất biến để đối
+                                  chiếu về sau.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </section>
+                      </>
+                    ) : financeTab === "plan" ? (
+                      <section className="panel finance-ledger-panel">
+                        <div className="section-heading finance-ledger-heading">
+                          <div>
+                            <span className="eyebrow">CURRENT BUDGET</span>
+                            <h2>Dự toán hiện tại</h2>
+                          </div>
+                          {writable && (
+                            <button
+                              className="btn secondary"
+                              onClick={() => edit("budget")}
+                            >
+                              <Plus size={16} />
+                              Thêm dự toán
+                            </button>
+                          )}
                         </div>
                         {data.budgets
                           .filter(
                             (b) =>
                               category === "all" || b.category === category,
                           )
-                          .map((b) => {
-                            const actual = net(
-                              data.expenses.filter((x) => x.budget_id === b.id),
-                            );
-                            const variance = Number(b.amount) - actual;
-                            return (
-                              <div className="reconcile" key={b.id}>
-                                <div>
-                                  <b>{b.title}</b>
-                                  <small>
-                                    {b.category}
-                                    {b.item_id
-                                      ? " · " +
-                                        (data.items.find(
-                                          (x) => x.id === b.item_id,
-                                        )?.title || "Hoạt động")
-                                      : ""}
-                                  </small>
-                                </div>
-                                <div>
-                                  <b>
-                                    {money(actual)} / {money(Number(b.amount))}
-                                  </b>
-                                  <small
-                                    className={variance < 0 ? "negative" : ""}
-                                  >
-                                    {variance < 0 ? "Vượt " : "Còn "}
-                                    {money(Math.abs(variance))}
-                                  </small>
-                                </div>
+                          .map((b) => (
+                            <article className="ledger-row" key={b.id}>
+                              <span className="ledger-icon">
+                                <Wallet size={20} />
+                              </span>
+                              <div className="ledger-content">
+                                <h3>{b.title}</h3>
+                                <small>
+                                  {b.category}
+                                  {b.item_id
+                                    ? " · " +
+                                      data.items.find((x) => x.id === b.item_id)
+                                        ?.title
+                                    : ""}
+                                </small>
+                                <small>
+                                  {b.quantity} × {money(Number(b.unit_price))}
+                                </small>
+                                {b.note && <p className="prewrap">{b.note}</p>}
                               </div>
-                            );
-                          })}
+                              <b className="ledger-amount">
+                                {money(Number(b.amount))}
+                              </b>
+                              {rowTools("budget", b)}
+                            </article>
+                          ))}
                         {!data.budgets.length && (
-                          <p className="muted">
-                            Chưa có khoản dự toán để đối chiếu.
-                          </p>
+                          <Empty
+                            title="Dự trù trước khi lên đường"
+                            text="Thêm vé xe, khách sạn, ăn uống và những khoản dự kiến."
+                            onAdd={writable ? () => edit("budget") : undefined}
+                          />
                         )}
-                        <p className="notice">
-                          Thực chi chưa gắn dự toán:{" "}
-                          <b>{money(financeReport.totals.unlinked_actual)}</b>.
-                          Khoản này vẫn được tính vào thực chi toàn chuyến.
-                        </p>
                       </section>
-
-                      <section className="panel">
-                        <div className="section-heading">
+                    ) : financeTab === "actual" ? (
+                      <section className="panel finance-ledger-panel">
+                        <div className="section-heading finance-ledger-heading actual-ledger-heading">
                           <div>
-                            <span className="eyebrow">BUDGET SNAPSHOT</span>
-                            <h2>Dự toán đã chốt</h2>
+                            <span className="eyebrow">ACTUAL SPENDING</span>
+                            <h2>Nhật ký chi tiêu</h2>
                           </div>
-                          {permissions.can_close_budget && (
-                            <button
-                              disabled={!online}
-                              className="btn secondary"
-                              onClick={() => edit("snapshot")}
-                            >
-                              <LockKeyhole size={16} />
-                              {baselineSnapshot
-                                ? "Chốt bản điều chỉnh"
-                                : "Chốt dự toán gốc"}
-                            </button>
-                          )}
+                          <div className="section-heading-actions">
+                            <span className="pill">
+                              {data.expenses.length} giao dịch
+                            </span>
+                            {writable && (
+                              <button
+                                className="btn secondary"
+                                onClick={() => edit("expense")}
+                              >
+                                <Plus size={16} /> Ghi chi tiêu
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        {baselineSnapshot ? (
-                          <>
-                            <div className="snapshot-status">
-                              <span className="snapshot-badge baseline">
-                                Dự toán gốc · #
-                                {baselineSnapshot.snapshot_no ?? 1}
+                        {data.expenses
+                          .filter(
+                            (x) =>
+                              category === "all" || x.category === category,
+                          )
+                          .toSorted((a, b) =>
+                            b.spent_on.localeCompare(a.spent_on),
+                          )
+                          .map((x) => (
+                            <article className="ledger-row" key={x.id}>
+                              <span
+                                className={`ledger-icon ${x.kind === "refund" ? "refund" : ""}`}
+                              >
+                                <Receipt size={20} />
                               </span>
-                              <b>{baselineSnapshot.title}</b>
-                              <small>
-                                {dateLabel(baselineSnapshot.created_at)} ·{" "}
-                                {baselineSnapshot.item_count ??
-                                  baselineSnapshot.data.length}{" "}
-                                khoản
-                              </small>
+                              <div className="ledger-content">
+                                <h3>{x.title}</h3>
+                                <small>
+                                  {dateLabel(x.spent_on)} · {x.category} ·{" "}
+                                  {x.payer || "Chưa ghi người trả"}
+                                </small>
+                                <small>
+                                  {x.kind === "refund" ? "Hoàn tiền · " : ""}
+                                  {x.budget_id
+                                    ? data.budgets.find(
+                                        (b) => b.id === x.budget_id,
+                                      )?.title
+                                    : "Ngoài dự toán / chưa liên kết"}
+                                </small>
+                                {x.note && <p className="prewrap">{x.note}</p>}
+                                {x.receipt_url && (
+                                  <Link url={x.receipt_url}>Xem chứng từ</Link>
+                                )}
+                              </div>
+                              <b
+                                className={`ledger-amount ${x.kind === "refund" ? "positive" : ""}`}
+                              >
+                                {x.kind === "refund" ? "−" : ""}
+                                {money(Number(x.amount))}
+                              </b>
+                              {rowTools("expense", x)}
+                            </article>
+                          ))}
+                        {!data.expenses.length && (
+                          <Empty
+                            title="Chưa có khoản chi"
+                            text="Ghi lại chi tiêu ngay khi phát sinh."
+                            onAdd={writable ? () => edit("expense") : undefined}
+                            label="Ghi chi tiêu"
+                          />
+                        )}
+                      </section>
+                    ) : (
+                      <>
+                        <section className="panel">
+                          <div className="section-heading">
+                            <div>
+                              <span className="eyebrow">DATA INTEGRITY</span>
+                              <h2>Kiểm tra tính đúng tài chính</h2>
                             </div>
-                            <div className="snapshot-values">
-                              <span>
-                                Ngân sách gốc
-                                <b>
-                                  {money(
-                                    Number(
-                                      baselineSnapshot.total_amount ??
-                                        planned(baselineSnapshot.data),
-                                    ),
-                                  )}
-                                </b>
-                              </span>
-                              <span>
-                                Dự toán hiện tại
-                                <b>
-                                  {money(financeReport.totals.current_budget)}
-                                </b>
-                              </span>
-                              <span>
-                                Thay đổi kế hoạch
-                                <b
-                                  className={
-                                    financeReport.totals.current_budget >
-                                    financeReport.totals.original_budget
-                                      ? "negative"
-                                      : ""
-                                  }
-                                >
-                                  {money(
-                                    financeReport.totals.current_budget -
-                                      financeReport.totals.original_budget,
-                                  )}
-                                </b>
-                              </span>
-                              <span>
-                                So với thực chi
-                                <b
-                                  className={
-                                    (financeReport.totals.original_variance ??
-                                      0) < 0
-                                      ? "negative"
-                                      : ""
-                                  }
-                                >
-                                  {money(
-                                    Number(
-                                      financeReport.totals.original_variance ??
-                                        0,
-                                    ),
-                                  )}
-                                </b>
-                              </span>
-                            </div>
-                            <details>
-                              <summary>
-                                Lịch sử {orderedSnapshots?.length || 0} lần chốt
-                              </summary>
-                              <div className="snapshot-history">
-                                {orderedSnapshots?.map((snapshot) => (
-                                  <div key={snapshot.id}>
-                                    <span
-                                      className={`snapshot-badge ${
-                                        snapshot.snapshot_kind === "baseline" ||
-                                        snapshot.id === baselineSnapshot.id
-                                          ? "baseline"
-                                          : ""
-                                      }`}
-                                    >
-                                      {snapshot.snapshot_kind === "baseline" ||
-                                      snapshot.id === baselineSnapshot.id
-                                        ? "Gốc"
-                                        : `Điều chỉnh #${snapshot.snapshot_no ?? "?"}`}
-                                    </span>
-                                    <span>{snapshot.title}</span>
-                                    <b>
-                                      {money(
-                                        Number(
-                                          snapshot.total_amount ??
-                                            planned(snapshot.data),
-                                        ),
-                                      )}
-                                    </b>
+                            <span
+                              className={`integrity-pill ${financeReport.integrity.status}`}
+                            >
+                              {financeReport.integrity.status === "ok" ? (
+                                <CheckCircle2 size={16} />
+                              ) : (
+                                <AlertTriangle size={16} />
+                              )}
+                              {financeReport.integrity.status === "ok"
+                                ? "Dữ liệu hợp lệ"
+                                : `${financeReport.integrity.issue_count} cảnh báo`}
+                            </span>
+                          </div>
+                          {financeReport.integrity.issues.length ? (
+                            <div className="integrity-list">
+                              {financeReport.integrity.issues.map((issue) => (
+                                <div key={issue.code}>
+                                  <AlertTriangle size={18} />
+                                  <div>
+                                    <b>{issue.message}</b>
                                     <small>
-                                      {dateLabel(snapshot.created_at)}
+                                      Mã {issue.code} · {issue.count} trường hợp
                                     </small>
                                   </div>
-                                ))}
-                              </div>
-                            </details>
-                            {latestSnapshot &&
-                              latestSnapshot.id !== baselineSnapshot.id && (
-                                <p className="hint">
-                                  Bản chốt mới nhất chỉ lưu lịch sử thay đổi. Dự
-                                  toán gốc vẫn là lần chốt đầu tiên.
-                                </p>
-                              )}
-                          </>
-                        ) : (
-                          <div className="integrity-empty">
-                            <AlertTriangle size={22} />
-                            <div>
-                              <b>Chưa có dự toán gốc</b>
-                              <p>
-                                Hãy chốt ngân sách trước chuyến đi. Lần chốt đầu
-                                tiên sẽ trở thành baseline bất biến để đối chiếu
-                                về sau.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </section>
-                    </>
-                  ) : financeTab === "plan" ? (
-                    <section className="panel finance-ledger-panel">
-                      <div className="section-heading finance-ledger-heading">
-                        <div>
-                          <span className="eyebrow">CURRENT BUDGET</span>
-                          <h2>Dự toán hiện tại</h2>
-                        </div>
-                        {writable && (
-                          <button
-                            className="btn secondary"
-                            onClick={() => edit("budget")}
-                          >
-                            <Plus size={16} />
-                            Thêm dự toán
-                          </button>
-                        )}
-                      </div>
-                      {data.budgets
-                        .filter(
-                          (b) => category === "all" || b.category === category,
-                        )
-                        .map((b) => (
-                          <article className="ledger-row" key={b.id}>
-                            <span className="ledger-icon">
-                              <Wallet size={20} />
-                            </span>
-                            <div className="ledger-content">
-                              <h3>{b.title}</h3>
-                              <small>
-                                {b.category}
-                                {b.item_id
-                                  ? " · " +
-                                    data.items.find((x) => x.id === b.item_id)
-                                      ?.title
-                                  : ""}
-                              </small>
-                              <small>
-                                {b.quantity} × {money(Number(b.unit_price))}
-                              </small>
-                              {b.note && <p className="prewrap">{b.note}</p>}
-                            </div>
-                            <b className="ledger-amount">
-                              {money(Number(b.amount))}
-                            </b>
-                            {rowTools("budget", b)}
-                          </article>
-                        ))}
-                      {!data.budgets.length && (
-                        <Empty
-                          title="Dự trù trước khi lên đường"
-                          text="Thêm vé xe, khách sạn, ăn uống và những khoản dự kiến."
-                          onAdd={writable ? () => edit("budget") : undefined}
-                        />
-                      )}
-                    </section>
-                  ) : financeTab === "actual" ? (
-                    <section className="panel finance-ledger-panel">
-                      <div className="section-heading finance-ledger-heading actual-ledger-heading">
-                        <div>
-                          <span className="eyebrow">ACTUAL SPENDING</span>
-                          <h2>Nhật ký chi tiêu</h2>
-                        </div>
-                        <div className="section-heading-actions">
-                          <span className="pill">
-                            {data.expenses.length} giao dịch
-                          </span>
-                          {writable && (
-                            <button
-                              className="btn secondary"
-                              onClick={() => edit("expense")}
-                            >
-                              <Plus size={16} /> Ghi chi tiêu
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      {data.expenses
-                        .filter(
-                          (x) => category === "all" || x.category === category,
-                        )
-                        .toSorted((a, b) =>
-                          b.spent_on.localeCompare(a.spent_on),
-                        )
-                        .map((x) => (
-                          <article className="ledger-row" key={x.id}>
-                            <span
-                              className={`ledger-icon ${x.kind === "refund" ? "refund" : ""}`}
-                            >
-                              <Receipt size={20} />
-                            </span>
-                            <div className="ledger-content">
-                              <h3>{x.title}</h3>
-                              <small>
-                                {dateLabel(x.spent_on)} · {x.category} ·{" "}
-                                {x.payer || "Chưa ghi người trả"}
-                              </small>
-                              <small>
-                                {x.kind === "refund" ? "Hoàn tiền · " : ""}
-                                {x.budget_id
-                                  ? data.budgets.find(
-                                      (b) => b.id === x.budget_id,
-                                    )?.title
-                                  : "Ngoài dự toán / chưa liên kết"}
-                              </small>
-                              {x.note && <p className="prewrap">{x.note}</p>}
-                              {x.receipt_url && (
-                                <Link url={x.receipt_url}>Xem chứng từ</Link>
-                              )}
-                            </div>
-                            <b
-                              className={`ledger-amount ${x.kind === "refund" ? "positive" : ""}`}
-                            >
-                              {x.kind === "refund" ? "−" : ""}
-                              {money(Number(x.amount))}
-                            </b>
-                            {rowTools("expense", x)}
-                          </article>
-                        ))}
-                      {!data.expenses.length && (
-                        <Empty
-                          title="Chưa có khoản chi"
-                          text="Ghi lại chi tiêu ngay khi phát sinh."
-                          onAdd={writable ? () => edit("expense") : undefined}
-                          label="Ghi chi tiêu"
-                        />
-                      )}
-                    </section>
-                  ) : (
-                    <>
-                      <section className="panel">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">DATA INTEGRITY</span>
-                            <h2>Kiểm tra tính đúng tài chính</h2>
-                          </div>
-                          <span
-                            className={`integrity-pill ${financeReport.integrity.status}`}
-                          >
-                            {financeReport.integrity.status === "ok" ? (
-                              <CheckCircle2 size={16} />
-                            ) : (
-                              <AlertTriangle size={16} />
-                            )}
-                            {financeReport.integrity.status === "ok"
-                              ? "Dữ liệu hợp lệ"
-                              : `${financeReport.integrity.issue_count} cảnh báo`}
-                          </span>
-                        </div>
-                        {financeReport.integrity.issues.length ? (
-                          <div className="integrity-list">
-                            {financeReport.integrity.issues.map((issue) => (
-                              <div key={issue.code}>
-                                <AlertTriangle size={18} />
-                                <div>
-                                  <b>{issue.message}</b>
-                                  <small>
-                                    Mã {issue.code} · {issue.count} trường hợp
-                                  </small>
                                 </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="integrity-ok">
+                              <ShieldCheck size={26} />
+                              <div>
+                                <b>
+                                  Không phát hiện sai lệch cấu trúc tài chính
+                                </b>
+                                <p>
+                                  Refund, liên kết dự toán và snapshot đang nhất
+                                  quán theo dữ liệu server.
+                                </p>
                               </div>
-                            ))}
+                            </div>
+                          )}
+                        </section>
+
+                        <section className="report-kpis">
+                          <article className="panel">
+                            <span>Tổng chi trước hoàn</span>
+                            <b>{money(financeReport.totals.gross_payments)}</b>
+                          </article>
+                          <article className="panel">
+                            <span>Đã hoàn tiền</span>
+                            <b>{money(financeReport.totals.refunds)}</b>
+                          </article>
+                          <article className="panel">
+                            <span>Thực chi ròng</span>
+                            <b>{money(financeReport.totals.net_actual)}</b>
+                          </article>
+                          <article className="panel">
+                            <span>Ngoài dự toán</span>
+                            <b>{money(financeReport.totals.unlinked_actual)}</b>
+                          </article>
+                        </section>
+
+                        <section className="panel">
+                          <div className="section-heading">
+                            <h2>Báo cáo theo ngày</h2>
+                            <small className="muted">
+                              {financeReport.days.length} ngày có giao dịch
+                            </small>
                           </div>
-                        ) : (
-                          <div className="integrity-ok">
-                            <ShieldCheck size={26} />
-                            <div>
-                              <b>Không phát hiện sai lệch cấu trúc tài chính</b>
-                              <p>
-                                Refund, liên kết dự toán và snapshot đang nhất
-                                quán theo dữ liệu server.
-                              </p>
+                          {financeReport.days.length ? (
+                            <div className="table-scroll">
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>Ngày</th>
+                                    <th>Chi</th>
+                                    <th>Hoàn</th>
+                                    <th>Thực chi ròng</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {financeReport.days.map((row) => (
+                                    <tr key={row.day}>
+                                      <td>{dateLabel(row.day)}</td>
+                                      <td>{money(Number(row.payments))}</td>
+                                      <td>{money(Number(row.refunds))}</td>
+                                      <td>{money(Number(row.actual))}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <p className="muted">
+                              Chưa có giao dịch để thống kê.
+                            </p>
+                          )}
+                        </section>
+
+                        <section className="panel">
+                          <div className="section-heading">
+                            <h2>Báo cáo theo hoạt động</h2>
+                            <div className="finance-actions">
+                              <button
+                                className="btn secondary"
+                                onClick={() =>
+                                  download(
+                                    "TripFlow-Finance.csv",
+                                    csv(data),
+                                    "text/csv;charset=utf-8",
+                                  )
+                                }
+                              >
+                                <Download size={16} />
+                                CSV
+                              </button>
+                              <button
+                                className="btn secondary"
+                                onClick={() =>
+                                  download(
+                                    "TripFlow-Finance.json",
+                                    financeJson(data),
+                                    "application/json;charset=utf-8",
+                                  )
+                                }
+                              >
+                                <FileText size={16} />
+                                JSON
+                              </button>
                             </div>
                           </div>
-                        )}
-                      </section>
-
-                      <section className="report-kpis">
-                        <article className="panel">
-                          <span>Tổng chi trước hoàn</span>
-                          <b>{money(financeReport.totals.gross_payments)}</b>
-                        </article>
-                        <article className="panel">
-                          <span>Đã hoàn tiền</span>
-                          <b>{money(financeReport.totals.refunds)}</b>
-                        </article>
-                        <article className="panel">
-                          <span>Thực chi ròng</span>
-                          <b>{money(financeReport.totals.net_actual)}</b>
-                        </article>
-                        <article className="panel">
-                          <span>Ngoài dự toán</span>
-                          <b>{money(financeReport.totals.unlinked_actual)}</b>
-                        </article>
-                      </section>
-
-                      <section className="panel">
-                        <div className="section-heading">
-                          <h2>Báo cáo theo ngày</h2>
-                          <small className="muted">
-                            {financeReport.days.length} ngày có giao dịch
-                          </small>
-                        </div>
-                        {financeReport.days.length ? (
                           <div className="table-scroll">
                             <table>
                               <thead>
                                 <tr>
-                                  <th>Ngày</th>
-                                  <th>Chi</th>
-                                  <th>Hoàn</th>
-                                  <th>Thực chi ròng</th>
+                                  <th>Hoạt động</th>
+                                  <th>Dự toán</th>
+                                  <th>Thực chi</th>
+                                  <th>Chênh lệch</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {financeReport.days.map((row) => (
-                                  <tr key={row.day}>
-                                    <td>{dateLabel(row.day)}</td>
-                                    <td>{money(Number(row.payments))}</td>
-                                    <td>{money(Number(row.refunds))}</td>
+                                {financeReport.activities.map((row) => (
+                                  <tr key={row.item_id || "unassigned"}>
+                                    <td>{row.title}</td>
+                                    <td>{money(Number(row.current_budget))}</td>
                                     <td>{money(Number(row.actual))}</td>
+                                    <td
+                                      className={
+                                        Number(row.variance) < 0
+                                          ? "negative"
+                                          : ""
+                                      }
+                                    >
+                                      {money(Number(row.variance))}
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </div>
-                        ) : (
-                          <p className="muted">
-                            Chưa có giao dịch để thống kê.
-                          </p>
-                        )}
-                      </section>
-
-                      <section className="panel">
-                        <div className="section-heading">
-                          <h2>Báo cáo theo hoạt động</h2>
-                          <div className="finance-actions">
-                            <button
-                              className="btn secondary"
-                              onClick={() =>
-                                download(
-                                  "TripFlow-Finance.csv",
-                                  csv(data),
-                                  "text/csv;charset=utf-8",
-                                )
-                              }
-                            >
-                              <Download size={16} />
-                              CSV
-                            </button>
-                            <button
-                              className="btn secondary"
-                              onClick={() =>
-                                download(
-                                  "TripFlow-Finance.json",
-                                  financeJson(data),
-                                  "application/json;charset=utf-8",
-                                )
-                              }
-                            >
-                              <FileText size={16} />
-                              JSON
-                            </button>
-                          </div>
-                        </div>
-                        <div className="table-scroll">
-                          <table>
-                            <thead>
-                              <tr>
-                                <th>Hoạt động</th>
-                                <th>Dự toán</th>
-                                <th>Thực chi</th>
-                                <th>Chênh lệch</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {financeReport.activities.map((row) => (
-                                <tr key={row.item_id || "unassigned"}>
-                                  <td>{row.title}</td>
-                                  <td>{money(Number(row.current_budget))}</td>
-                                  <td>{money(Number(row.actual))}</td>
-                                  <td
-                                    className={
-                                      Number(row.variance) < 0 ? "negative" : ""
-                                    }
-                                  >
-                                    {money(Number(row.variance))}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </section>
-                    </>
-                  )}
-                </>
-              )}
-              {tab === "media" && data && trip && story && (
-                <MediaModule
-                  data={data}
-                  trip={trip}
-                  story={story}
-                  storyCoverEmbed={storyCoverEmbed}
-                  storyCoverPreview={storyCoverPreview}
-                  setMediaViewerId={setMediaViewerId}
-                  writable={writable}
-                  edit={edit}
-                  rowTools={rowTools}
-                />
-              )}
-              {tab === "more" && data && (
-                <>
-                  <section className="more-hub-intro">
-                    <div>
-                      <span className="eyebrow">
-                        TRIPFLOW MODULE HUB · V{VERSION}
-                      </span>
-                      <h2>Thêm & quản lý</h2>
-                      <p>
-                        Thông tin được gom theo module. Mở đúng nhóm bạn cần để
-                        màn hình gọn và dễ tập trung hơn.
-                      </p>
-                    </div>
-                  </section>
-                  <section className="panel appearance-panel">
-                    <div>
-                      <h3>Giao diện</h3>
-                      <p className="muted">
-                        Chọn sáng, tối hoặc tự động theo thiết bị.
-                      </p>
-                    </div>
-                    <ThemeControl />
-                  </section>
-                  <details className="module-block" id="module-trip">
-                    <summary>
-                      <span className="module-block-icon">
-                        <Compass size={20} />
-                      </span>
-                      <span>
-                        <b>Chuyến đi, thành viên & kế hoạch</b>
-                        <small>
-                          Thông tin chuyến, người tham gia, cộng tác và template
-                        </small>
-                      </span>
-                      <ChevronDown size={19} className="module-chevron" />
-                    </summary>
-                    <div className="module-block-content">
-                      <div className="settings-grid">
-                        <section className="panel">
-                          <div className="section-heading">
-                            <h2>Thông tin chuyến đi</h2>
-                            {writable && (
-                              <button
-                                className="icon-btn"
-                                aria-label="Sửa chuyến đi"
-                                onClick={() => edit("trip", trip)}
-                              >
-                                <Pencil size={18} />
-                              </button>
-                            )}
-                          </div>
-                          <dl>
-                            <dt>Tên</dt>
-                            <dd>{trip.name}</dd>
-                            <dt>Điểm đến</dt>
-                            <dd>{trip.destination}</dd>
-                            <dt>Ngày</dt>
-                            <dd>
-                              {dateLabel(trip.start_date)} –{" "}
-                              {`${dateLabel(tripPeriod(trip, data.items).end)}${trip.end_date ? "" : " (dự kiến)"}`}
-                            </dd>
-                            <dt>Múi giờ</dt>
-                            <dd>{trip.timezone}</dd>
-                            <dt>Trạng thái</dt>
-                            <dd>{TRIP_STATUS[trip.status]}</dd>
-                            <dt>Quyền của bạn</dt>
-                            <dd>
-                              {
-                                {
-                                  owner: "Chủ chuyến",
-                                  editor: "Chỉnh sửa",
-                                  viewer: "Chỉ xem",
-                                }[data.role]
-                              }
-                            </dd>
-                          </dl>
                         </section>
-                        <section className="panel">
+                      </>
+                    )}
+                  </>
+                )}
+                {tab === "media" && data && trip && story && (
+                  <MediaModule
+                    data={data}
+                    trip={trip}
+                    story={story}
+                    storyCoverEmbed={storyCoverEmbed}
+                    storyCoverPreview={storyCoverPreview}
+                    setMediaViewerId={setMediaViewerId}
+                    writable={writable}
+                    edit={edit}
+                    rowTools={rowTools}
+                  />
+                )}
+                {tab === "more" && data && (
+                  <>
+                    <section className="more-hub-intro">
+                      <div>
+                        <span className="eyebrow">
+                          TRIPFLOW MODULE HUB · V{VERSION}
+                        </span>
+                        <h2>Thêm & quản lý</h2>
+                        <p>
+                          Thông tin được gom theo module. Mở đúng nhóm bạn cần
+                          để màn hình gọn và dễ tập trung hơn.
+                        </p>
+                      </div>
+                    </section>
+                    <section className="panel appearance-panel">
+                      <div>
+                        <h3>Giao diện</h3>
+                        <p className="muted">
+                          Chọn sáng, tối hoặc tự động theo thiết bị.
+                        </p>
+                      </div>
+                      <ThemeControl />
+                    </section>
+                    <details className="module-block" id="module-trip">
+                      <summary>
+                        <span className="module-block-icon">
+                          <Compass size={20} />
+                        </span>
+                        <span>
+                          <b>Chuyến đi, thành viên & kế hoạch</b>
+                          <small>
+                            Thông tin chuyến, người tham gia, cộng tác và
+                            template
+                          </small>
+                        </span>
+                        <ChevronDown size={19} className="module-chevron" />
+                      </summary>
+                      <div className="module-block-content">
+                        <div className="settings-grid">
+                          <section className="panel">
+                            <div className="section-heading">
+                              <h2>Thông tin chuyến đi</h2>
+                              {writable && (
+                                <button
+                                  className="icon-btn"
+                                  aria-label="Sửa chuyến đi"
+                                  onClick={() => edit("trip", trip)}
+                                >
+                                  <Pencil size={18} />
+                                </button>
+                              )}
+                            </div>
+                            <dl>
+                              <dt>Tên</dt>
+                              <dd>{trip.name}</dd>
+                              <dt>Điểm đến</dt>
+                              <dd>{trip.destination}</dd>
+                              <dt>Ngày</dt>
+                              <dd>
+                                {dateLabel(trip.start_date)} –{" "}
+                                {`${dateLabel(tripPeriod(trip, data.items).end)}${trip.end_date ? "" : " (dự kiến)"}`}
+                              </dd>
+                              <dt>Múi giờ</dt>
+                              <dd>{trip.timezone}</dd>
+                              <dt>Trạng thái</dt>
+                              <dd>{TRIP_STATUS[trip.status]}</dd>
+                              <dt>Quyền của bạn</dt>
+                              <dd>
+                                {
+                                  {
+                                    owner: "Chủ chuyến",
+                                    editor: "Chỉnh sửa",
+                                    viewer: "Chỉ xem",
+                                  }[data.role]
+                                }
+                              </dd>
+                            </dl>
+                          </section>
+                          <section className="panel">
+                            <div className="section-heading">
+                              <h2>Người tham gia</h2>
+                              {writable && (
+                                <button
+                                  className="btn secondary"
+                                  onClick={() => edit("participant")}
+                                >
+                                  <Plus size={16} />
+                                  Thêm
+                                </button>
+                              )}
+                            </div>
+                            <p className="hint">
+                              Danh sách người đi, không tự cấp quyền tài khoản.
+                              Bình quân chi phí dùng số người trong thông tin
+                              chuyến đi: {trip.people}.
+                            </p>
+                            {data.participants.map((x) => (
+                              <div className="simple-row" key={x.id}>
+                                <div>
+                                  <b>{x.name}</b>
+                                  <small>{x.note}</small>
+                                </div>
+                                {rowTools("participant", x)}
+                              </div>
+                            ))}
+                            {!data.participants.length && (
+                              <p className="muted">Chưa thêm người tham gia.</p>
+                            )}
+                          </section>
+                        </div>
+                        <section className="panel collaboration-panel">
                           <div className="section-heading">
-                            <h2>Người tham gia</h2>
-                            {writable && (
+                            <div>
+                              <span className="eyebrow">
+                                COLLABORATION · V0.5.0
+                              </span>
+                              <h2>Chia sẻ & phân quyền</h2>
+                            </div>
+                            {permissions.can_invite && (
                               <button
+                                disabled={!online}
                                 className="btn secondary"
-                                onClick={() => edit("participant")}
+                                onClick={() => edit("invitation")}
                               >
                                 <Plus size={16} />
-                                Thêm
+                                Mời thành viên
                               </button>
                             )}
                           </div>
                           <p className="hint">
-                            Danh sách người đi, không tự cấp quyền tài khoản.
-                            Bình quân chi phí dùng số người trong thông tin
-                            chuyến đi: {trip.people}.
+                            Tài khoản truy cập và người thực sự tham gia chuyến
+                            đi là hai danh sách độc lập. Lời mời gắn đúng email,
+                            có hạn 7 ngày và không cho tạo trùng khi lời mời cũ
+                            còn hiệu lực. Thay đổi Editor/Viewer hoặc thu hồi
+                            quyền có hiệu lực ngay ở server; thiết bị online
+                            nhận cập nhật qua Realtime.
                           </p>
-                          {data.participants.map((x) => (
-                            <div className="simple-row" key={x.id}>
-                              <div>
-                                <b>{x.name}</b>
-                                <small>{x.note}</small>
-                              </div>
-                              {rowTools("participant", x)}
-                            </div>
-                          ))}
-                          {!data.participants.length && (
-                            <p className="muted">Chưa thêm người tham gia.</p>
-                          )}
-                        </section>
-                      </div>
-                      <section className="panel collaboration-panel">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">
-                              COLLABORATION · V0.5.0
-                            </span>
-                            <h2>Chia sẻ & phân quyền</h2>
-                          </div>
-                          {permissions.can_invite && (
-                            <button
-                              disabled={!online}
-                              className="btn secondary"
-                              onClick={() => edit("invitation")}
-                            >
-                              <Plus size={16} />
-                              Mời thành viên
-                            </button>
-                          )}
-                        </div>
-                        <p className="hint">
-                          Tài khoản truy cập và người thực sự tham gia chuyến đi
-                          là hai danh sách độc lập. Lời mời gắn đúng email, có
-                          hạn 7 ngày và không cho tạo trùng khi lời mời cũ còn
-                          hiệu lực. Thay đổi Editor/Viewer hoặc thu hồi quyền có
-                          hiệu lực ngay ở server; thiết bị online nhận cập nhật
-                          qua Realtime.
-                        </p>
-                        <div className="collab-summary">
-                          <div>
-                            <ShieldCheck size={19} />
-                            <span>
-                              <b>
-                                {data.role === "owner"
-                                  ? "Owner"
-                                  : data.role === "editor"
-                                    ? "Editor"
-                                    : "Viewer"}
-                              </b>
-                              <small>Quyền của bạn</small>
-                            </span>
-                          </div>
-                          <div>
-                            <Users size={19} />
-                            <span>
-                              <b>{data.members.length + 1}</b>
-                              <small>Tài khoản có quyền</small>
-                            </span>
-                          </div>
-                          <div>
-                            <Clock size={19} />
-                            <span>
-                              <b>
-                                {
-                                  data.invitations.filter(
-                                    (x) =>
-                                      !x.used_at &&
-                                      !x.revoked_at &&
-                                      new Date(x.expires_at) >= new Date(),
-                                  ).length
-                                }
-                              </b>
-                              <small>Lời mời đang chờ</small>
-                            </span>
-                          </div>
-                          <div>
-                            <Compass size={19} />
-                            <span>
-                              <b>{data.participants.length}</b>
-                              <small>Người đi thực tế</small>
-                            </span>
-                          </div>
-                        </div>
-                        <div
-                          className="permission-matrix"
-                          aria-label="Ma trận quyền cộng tác"
-                        >
-                          <div className="permission-row head">
-                            <b>Quyền</b>
-                            <b>Owner</b>
-                            <b>Editor</b>
-                            <b>Viewer</b>
-                          </div>
-                          {[
-                            ["Xem dữ liệu", true, true, true],
-                            ["Sửa lịch / chi phí / media", true, true, false],
-                            ["Check-in Live Trip", true, true, false],
-                            ...PERMISSION_FIELDS.map(([, label]) => [
-                              label,
-                              true,
-                              "Cấp riêng",
-                              "Cấp riêng",
-                            ]),
-                          ].map(([label, o, e, v]) => (
-                            <div className="permission-row" key={String(label)}>
-                              <span>{String(label)}</span>
-                              <span>{o ? "✓" : "—"}</span>
-                              <span>
-                                {typeof e === "string" ? e : e ? "✓" : "—"}
-                              </span>
-                              <span>
-                                {typeof v === "string" ? v : v ? "✓" : "—"}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        <div
-                          className="permission-grants"
-                          aria-label="Quyền đặc biệt của bạn"
-                        >
-                          {PERMISSION_FIELDS.map(([key, label]) => (
-                            <span
-                              className={`pill ${permissions[key] ? "green" : ""}`}
-                              key={key}
-                            >
-                              {permissions[key] ? "✓" : "—"} {label}
-                            </span>
-                          ))}
-                        </div>
-                        <p className="hint">
-                          Editor/Viewer không mặc định có năm quyền đặc biệt.
-                          Chủ chuyến cấp riêng khi mời hoặc sửa thành viên;
-                          người được quyền Đổi quyền chỉ đổi Editor/Viewer của
-                          thành viên khác.
-                        </p>
-                        <div className="simple-row owner-row">
-                          <div>
-                            <b>Chủ chuyến đi</b>
-                            <small>
-                              Owner · toàn quyền quản lý cộng tác và dữ liệu
-                              nhạy cảm
-                            </small>
-                          </div>
-                          <span className="pill">Owner</span>
-                        </div>
-                        {data.members.map((m) => (
-                          <div className="simple-row" key={m.id}>
+                          <div className="collab-summary">
                             <div>
-                              <b>{m.email}</b>
+                              <ShieldCheck size={19} />
+                              <span>
+                                <b>
+                                  {data.role === "owner"
+                                    ? "Owner"
+                                    : data.role === "editor"
+                                      ? "Editor"
+                                      : "Viewer"}
+                                </b>
+                                <small>Quyền của bạn</small>
+                              </span>
+                            </div>
+                            <div>
+                              <Users size={19} />
+                              <span>
+                                <b>{data.members.length + 1}</b>
+                                <small>Tài khoản có quyền</small>
+                              </span>
+                            </div>
+                            <div>
+                              <Clock size={19} />
+                              <span>
+                                <b>
+                                  {
+                                    data.invitations.filter(
+                                      (x) =>
+                                        !x.used_at &&
+                                        !x.revoked_at &&
+                                        new Date(x.expires_at) >= new Date(),
+                                    ).length
+                                  }
+                                </b>
+                                <small>Lời mời đang chờ</small>
+                              </span>
+                            </div>
+                            <div>
+                              <Compass size={19} />
+                              <span>
+                                <b>{data.participants.length}</b>
+                                <small>Người đi thực tế</small>
+                              </span>
+                            </div>
+                          </div>
+                          <div
+                            className="permission-matrix"
+                            aria-label="Ma trận quyền cộng tác"
+                          >
+                            <div className="permission-row head">
+                              <b>Quyền</b>
+                              <b>Owner</b>
+                              <b>Editor</b>
+                              <b>Viewer</b>
+                            </div>
+                            {[
+                              ["Xem dữ liệu", true, true, true],
+                              ["Sửa lịch / chi phí / media", true, true, false],
+                              ["Check-in Live Trip", true, true, false],
+                              ...PERMISSION_FIELDS.map(([, label]) => [
+                                label,
+                                true,
+                                "Cấp riêng",
+                                "Cấp riêng",
+                              ]),
+                            ].map(([label, o, e, v]) => (
+                              <div
+                                className="permission-row"
+                                key={String(label)}
+                              >
+                                <span>{String(label)}</span>
+                                <span>{o ? "✓" : "—"}</span>
+                                <span>
+                                  {typeof e === "string" ? e : e ? "✓" : "—"}
+                                </span>
+                                <span>
+                                  {typeof v === "string" ? v : v ? "✓" : "—"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <div
+                            className="permission-grants"
+                            aria-label="Quyền đặc biệt của bạn"
+                          >
+                            {PERMISSION_FIELDS.map(([key, label]) => (
+                              <span
+                                className={`pill ${permissions[key] ? "green" : ""}`}
+                                key={key}
+                              >
+                                {permissions[key] ? "✓" : "—"} {label}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="hint">
+                            Editor/Viewer không mặc định có năm quyền đặc biệt.
+                            Chủ chuyến cấp riêng khi mời hoặc sửa thành viên;
+                            người được quyền Đổi quyền chỉ đổi Editor/Viewer của
+                            thành viên khác.
+                          </p>
+                          <div className="simple-row owner-row">
+                            <div>
+                              <b>Chủ chuyến đi</b>
                               <small>
-                                {m.role === "editor"
-                                  ? "Được chỉnh sửa"
-                                  : "Chỉ xem"}
-                              </small>
-                              <small className="member-grants">
-                                {PERMISSION_FIELDS.filter(([key]) => m[key])
-                                  .map(([, label]) => label)
-                                  .join(" · ") ||
-                                  "Chưa được cấp quyền đặc biệt"}
+                                Owner · toàn quyền quản lý cộng tác và dữ liệu
+                                nhạy cảm
                               </small>
                             </div>
-                            {(permissions.can_change_roles ||
-                              permissions.can_revoke_access) && (
-                              <div className="row-tools">
-                                {permissions.can_change_roles &&
-                                  (owner || m.user_id !== user?.id) && (
-                                    <button
-                                      disabled={!online}
-                                      className="icon-btn"
-                                      aria-label="Sửa quyền"
-                                      onClick={() => edit("member", m)}
-                                    >
-                                      <Pencil size={17} />
-                                    </button>
-                                  )}
-                                {permissions.can_revoke_access && (
-                                  <button
-                                    disabled={!online}
-                                    className="icon-btn danger"
-                                    aria-label="Thu hồi quyền"
-                                    onClick={() => remove("member", m)}
-                                  >
-                                    <Trash2 size={17} />
-                                  </button>
-                                )}
-                              </div>
-                            )}
+                            <span className="pill">Owner</span>
                           </div>
-                        ))}
-                        {(permissions.can_invite ||
-                          permissions.can_revoke_access ||
-                          permissions.can_change_roles) &&
-                          data.invitations
-                            .filter((x) => !x.used_at && !x.revoked_at)
-                            .map((i) => (
-                              <div className="simple-row" key={i.id}>
-                                <div>
-                                  <b>{i.email}</b>
-                                  <small>
-                                    {new Date(i.expires_at) < new Date()
-                                      ? "Đã hết hạn"
-                                      : "Chờ chấp nhận"}{" "}
-                                    ·{" "}
-                                    {i.role === "editor" ? "Editor" : "Viewer"}·
-                                    hết hạn {dateLabel(i.expires_at)}
-                                  </small>
-                                </div>
+                          {data.members.map((m) => (
+                            <div className="simple-row" key={m.id}>
+                              <div>
+                                <b>{m.email}</b>
+                                <small>
+                                  {m.role === "editor"
+                                    ? "Được chỉnh sửa"
+                                    : "Chỉ xem"}
+                                </small>
+                                <small className="member-grants">
+                                  {PERMISSION_FIELDS.filter(([key]) => m[key])
+                                    .map(([, label]) => label)
+                                    .join(" · ") ||
+                                    "Chưa được cấp quyền đặc biệt"}
+                                </small>
+                              </div>
+                              {(permissions.can_change_roles ||
+                                permissions.can_revoke_access) && (
                                 <div className="row-tools">
-                                  {permissions.can_invite && (
-                                    <button
-                                      disabled={!online}
-                                      className="icon-btn"
-                                      aria-label="Xem liên kết mời"
-                                      onClick={() =>
-                                        setShareLink(
-                                          location.origin +
-                                            "/?invite=" +
-                                            i.token,
-                                        )
-                                      }
-                                    >
-                                      <Link2 size={18} />
-                                    </button>
-                                  )}
+                                  {permissions.can_change_roles &&
+                                    (owner || m.user_id !== user?.id) && (
+                                      <button
+                                        disabled={!online}
+                                        className="icon-btn"
+                                        aria-label="Sửa quyền"
+                                        onClick={() => edit("member", m)}
+                                      >
+                                        <Pencil size={17} />
+                                      </button>
+                                    )}
                                   {permissions.can_revoke_access && (
                                     <button
                                       disabled={!online}
                                       className="icon-btn danger"
-                                      aria-label="Thu hồi lời mời"
-                                      onClick={() => remove("invitation", i)}
+                                      aria-label="Thu hồi quyền"
+                                      onClick={() => remove("member", m)}
                                     >
                                       <Trash2 size={17} />
                                     </button>
                                   )}
                                 </div>
-                              </div>
-                            ))}
-                      </section>
-                      {planningTemplatesPanel(true)}
-                      {permissions.can_delete_trip && (
-                        <section className="panel danger-panel">
-                          <div>
-                            <h2>Xóa chuyến đi</h2>
-                            <p className="muted">
-                              Chuyến đi sẽ không còn trong danh sách của các
-                              thành viên. Chủ chuyến có thể khôi phục từ thùng
-                              rác. Cần online và xử lý hết thay đổi chờ đồng bộ
-                              trước khi xóa.
-                            </p>
-                          </div>
-                          <button
-                            className="btn danger-btn"
-                            disabled={
-                              !online ||
-                              queueRows.some((row) => row.tripId === selectedId)
-                            }
-                            onClick={() => remove("trip", trip)}
-                          >
-                            <Trash2 size={16} />
-                            Xóa chuyến đi
-                          </button>
-                        </section>
-                      )}
-                    </div>
-                  </details>
-
-                  <details className="module-block" id="module-reporting">
-                    <summary>
-                      <span className="module-block-icon">
-                        <FileText size={20} />
-                      </span>
-                      <span>
-                        <b>Báo cáo & tổng kết chuyến đi</b>
-                        <small>Analytics, tài chính và Post-Trip Report</small>
-                      </span>
-                      <ChevronDown size={19} className="module-chevron" />
-                    </summary>
-                    <div className="module-block-content">
-                      {analytics && financeReport && data && trip && (
-                        <AnalyticsModule
-                          analytics={analytics}
-                          financeReport={financeReport}
-                          data={data}
-                          trip={trip}
-                          minutesText={minutesText}
-                        />
-                      )}
-                    </div>
-                  </details>
-
-                  <details className="module-block" id="module-system">
-                    <summary>
-                      <span className="module-block-icon">
-                        <ShieldCheck size={20} />
-                      </span>
-                      <span>
-                        <b>Ứng dụng, dữ liệu & vận hành</b>
-                        <small>
-                          PWA, backup, offline, production, roadmap và audit
-                        </small>
-                      </span>
-                      <ChevronDown size={19} className="module-chevron" />
-                    </summary>
-                    <div className="module-block-content">
-                      <ReleaseReadiness online={online} />
-                      <section className="panel pwa-panel">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">
-                              MOBILE UX & PWA · V0.6.0
-                            </span>
-                            <h2>Ứng dụng trên thiết bị</h2>
-                            <p className="muted">
-                              Safe-area iPhone/Android, form mobile fullscreen,
-                              cập nhật service worker có kiểm soát và cache
-                              offline theo tài khoản.
-                            </p>
-                          </div>
-                          <span
-                            className={`status-chip ${pwaState.standalone ? "active" : ""}`}
-                          >
-                            {pwaState.standalone ? "Đã cài" : "Trình duyệt"}
-                          </span>
-                        </div>
-                        <div className="pwa-summary">
-                          <div>
-                            <Compass size={19} />
-                            <span>
-                              <b>
-                                {pwaState.standalone ? "Standalone" : "Web"}
-                              </b>
-                              <small>Chế độ hiển thị</small>
-                            </span>
-                          </div>
-                          <div>
-                            <RefreshCw size={19} />
-                            <span>
-                              <b>
-                                {pwaState.updateReady
-                                  ? "Có bản mới"
-                                  : pwaState.serviceWorkerReady
-                                    ? "Sẵn sàng"
-                                    : "Đang kiểm tra"}
-                              </b>
-                              <small>Service worker</small>
-                            </span>
-                          </div>
-                          <div>
-                            <ShieldCheck size={19} />
-                            <span>
-                              <b>
-                                {pwaState.storagePersisted
-                                  ? "Được bảo vệ"
-                                  : "Tiêu chuẩn"}
-                              </b>
-                              <small>Cache offline</small>
-                            </span>
-                          </div>
-                        </div>
-                        <div className="actions">
-                          {!pwaState.standalone && (
-                            <button
-                              className="btn secondary"
-                              onClick={() => void installPwa()}
-                            >
-                              <Download size={17} />
-                              {pwaState.installable
-                                ? "Cài TripFlow"
-                                : pwaState.ios
-                                  ? "Cách cài trên iPhone"
-                                  : "Cài ứng dụng"}
-                            </button>
-                          )}
-                          {pwaState.updateReady && (
-                            <button
-                              className="btn primary"
-                              onClick={applyPwaUpdate}
-                            >
-                              <RefreshCw size={17} />
-                              Cập nhật TripFlow
-                            </button>
-                          )}
-                          {!pwaState.storagePersisted && (
-                            <button
-                              className="btn secondary"
-                              onClick={() => void protectOfflineStorage()}
-                            >
-                              <ShieldCheck size={17} />
-                              Bảo vệ cache offline
-                            </button>
-                          )}
-                        </div>
-                        {pwaState.ios && !pwaState.standalone && (
-                          <p className="hint pwa-ios-hint">
-                            Safari iPhone/iPad: bấm Chia sẻ →{" "}
-                            <b>Thêm vào Màn hình chính</b>. iOS không cung cấp
-                            nút cài tự động như Chrome Android.
-                          </p>
-                        )}
-                      </section>
-                      {owner && recoveryPanel(true)}
-                      <section className="panel">
-                        <div className="section-heading">
-                          <div>
-                            <h2>Dữ liệu, offline & tài khoản</h2>
-                            <p className="muted">
-                              Supabase là nguồn dữ liệu chính. IndexedDB giữ bản
-                              cache theo từng tài khoản và hàng đợi thao tác khi
-                              mạng yếu.
-                            </p>
-                          </div>
-                          <span
-                            className={`status-chip ${online ? "active" : "deactivated"}`}
-                          >
-                            {online ? "Online" : "Offline"}
-                          </span>
-                        </div>
-                        <div className="sync-summary">
-                          <div>
-                            <CloudUpload size={19} />
-                            <span>
-                              <b>{queuePending}</b>
-                              <small>Chờ đồng bộ</small>
-                            </span>
-                          </div>
-                          <div>
-                            <AlertTriangle size={19} />
-                            <span>
-                              <b>{queueIssues}</b>
-                              <small>Xung đột / bị từ chối</small>
-                            </span>
-                          </div>
-                        </div>
-                        {queueRows.length > 0 && (
-                          <div className="sync-queue-list">
-                            {queueRows.map((row) => (
-                              <div key={row.operationId}>
-                                <span className={`sync-dot ${row.state}`} />
-                                <span>
-                                  <b>
-                                    {row.mutation.entity} ·{" "}
-                                    {row.mutation.action}
-                                  </b>
-                                  <small>
-                                    {row.state === "pending"
-                                      ? row.nextAttemptAt
-                                        ? "Đang chờ tự thử lại"
-                                        : "Chờ gửi"
-                                      : row.state === "sending"
-                                        ? "Đang gửi"
-                                        : row.state === "conflict"
-                                          ? "Xung đột dữ liệu"
-                                          : "Bị từ chối"}
-                                    {row.error ? ` · ${row.error}` : ""}
-                                  </small>
-                                  {(row.state === "conflict" ||
-                                    row.state === "rejected") && (
-                                    <div className="sync-row-actions">
-                                      {row.state === "conflict" &&
-                                        row.mutation.action !== "create" && (
-                                          <button
-                                            type="button"
-                                            disabled={!online || syncing}
-                                            onClick={() =>
-                                              void keepQueuedChange(row)
-                                            }
-                                          >
-                                            Giữ bản trên máy
-                                          </button>
-                                        )}
+                              )}
+                            </div>
+                          ))}
+                          {(permissions.can_invite ||
+                            permissions.can_revoke_access ||
+                            permissions.can_change_roles) &&
+                            data.invitations
+                              .filter((x) => !x.used_at && !x.revoked_at)
+                              .map((i) => (
+                                <div className="simple-row" key={i.id}>
+                                  <div>
+                                    <b>{i.email}</b>
+                                    <small>
+                                      {new Date(i.expires_at) < new Date()
+                                        ? "Đã hết hạn"
+                                        : "Chờ chấp nhận"}{" "}
+                                      ·{" "}
+                                      {i.role === "editor"
+                                        ? "Editor"
+                                        : "Viewer"}
+                                      · hết hạn {dateLabel(i.expires_at)}
+                                    </small>
+                                  </div>
+                                  <div className="row-tools">
+                                    {permissions.can_invite && (
                                       <button
-                                        type="button"
-                                        disabled={!online || syncing}
+                                        disabled={!online}
+                                        className="icon-btn"
+                                        aria-label="Xem liên kết mời"
                                         onClick={() =>
-                                          void discardQueuedChange(row)
+                                          setShareLink(
+                                            location.origin +
+                                              "/?invite=" +
+                                              i.token,
+                                          )
                                         }
                                       >
-                                        Dùng bản cloud
+                                        <Link2 size={18} />
                                       </button>
-                                    </div>
-                                  )}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="actions">
-                          {queueRows.length > 0 && (
+                                    )}
+                                    {permissions.can_revoke_access && (
+                                      <button
+                                        disabled={!online}
+                                        className="icon-btn danger"
+                                        aria-label="Thu hồi lời mời"
+                                        onClick={() => remove("invitation", i)}
+                                      >
+                                        <Trash2 size={17} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                        </section>
+                        {planningTemplatesPanel(true)}
+                        {permissions.can_delete_trip && (
+                          <section className="panel danger-panel">
+                            <div>
+                              <h2>Xóa chuyến đi</h2>
+                              <p className="muted">
+                                Chuyến đi sẽ không còn trong danh sách của các
+                                thành viên. Chủ chuyến có thể khôi phục từ thùng
+                                rác. Cần online và xử lý hết thay đổi chờ đồng
+                                bộ trước khi xóa.
+                              </p>
+                            </div>
                             <button
-                              className="btn secondary"
-                              disabled={!online || syncing}
-                              onClick={() => void syncPending(true)}
-                            >
-                              <CloudUpload size={17} />
-                              {syncing ? "Đang đồng bộ…" : "Đồng bộ ngay"}
-                            </button>
-                          )}
-                          {queueIssues > 0 && (
-                            <span className="sync-resolution-hint">
-                              Xung đột được xử lý từng mục để tránh ghi đè dữ
-                              liệu ngoài ý muốn.
-                            </span>
-                          )}
-                          {account?.role === "master" && (
-                            <button
-                              className="btn secondary"
-                              onClick={() => navigate("admin")}
-                            >
-                              <ShieldCheck size={17} />
-                              Quản trị Master
-                            </button>
-                          )}
-                          {owner && (
-                            <button
-                              className="btn secondary"
-                              onClick={() =>
-                                download(
-                                  "TripFlow-" + trip.id + ".json",
-                                  JSON.stringify(
-                                    {
-                                      format: "tripflow-cloud-export",
-                                      version: 2,
-                                      exportedAt: new Date().toISOString(),
-                                      trip,
-                                      items: data.items,
-                                      budgets: data.budgets,
-                                      expenses: data.expenses,
-                                      media: data.media,
-                                      participants: data.participants,
-                                      snapshots: data.snapshots,
-                                    },
-                                    null,
-                                    2,
-                                  ),
-                                  "application/json",
+                              className="btn danger-btn"
+                              disabled={
+                                !online ||
+                                queueRows.some(
+                                  (row) => row.tripId === selectedId,
                                 )
                               }
+                              onClick={() => remove("trip", trip)}
                             >
-                              <Download size={17} />
-                              Xuất dữ liệu JSON
+                              <Trash2 size={16} />
+                              Xóa chuyến đi
                             </button>
-                          )}
-                          <button className="btn secondary" onClick={logout}>
-                            <LogOut size={17} />
-                            Đăng xuất
-                          </button>
-                        </div>
-                        <p className="hint">
-                          Offline Pro hỗ trợ tạo/sửa/xóa lịch trình, dự toán,
-                          chi tiêu, người tham gia, media và sửa thông tin
-                          chuyến hiện tại. Phân quyền, lời mời, snapshot, xóa
-                          chuyến và quản trị vẫn yêu cầu online.
-                        </p>
-                        <p className="hint">
-                          {user.email} · TripFlow {VERSION}
-                          {account?.role === "master" ? " · MASTER" : ""}
-                        </p>
-                      </section>
-                      <ProductRoadmap />
-                      <section className="panel">
-                        <h2>Lịch sử gần đây</h2>
-                        <p className="hint">
-                          15 thay đổi gần nhất. Nhật ký đầy đủ được lưu trong
-                          database.
-                        </p>
-                        {data.audits.slice(0, 15).map((a) => (
-                          <div className="audit-row" key={a.id}>
-                            <Clock size={15} />
-                            <span>
-                              <b>{tableNames[a.entity] || a.entity}</b> ·{" "}
-                              {a.action === "INSERT"
-                                ? "Thêm mới"
-                                : a.action === "DELETE"
-                                  ? "Thu hồi"
-                                  : a.after_data?.deleted_at
-                                    ? "Xóa"
-                                    : "Cập nhật"}
-                              {a.after_data?.title
-                                ? " · " + String(a.after_data.title)
-                                : ""}
-                              <small>
-                                {dateLabel(
-                                  localTime(a.created_at, trip.timezone),
-                                )}{" "}
-                                ·{" "}
-                                {localTime(a.created_at, trip.timezone).slice(
-                                  11,
-                                )}
-                              </small>
+                          </section>
+                        )}
+                      </div>
+                    </details>
+
+                    <details className="module-block" id="module-reporting">
+                      <summary>
+                        <span className="module-block-icon">
+                          <FileText size={20} />
+                        </span>
+                        <span>
+                          <b>Báo cáo & tổng kết chuyến đi</b>
+                          <small>
+                            Analytics, tài chính và Post-Trip Report
+                          </small>
+                        </span>
+                        <ChevronDown size={19} className="module-chevron" />
+                      </summary>
+                      <div className="module-block-content">
+                        {analytics && financeReport && data && trip && (
+                          <AnalyticsModule
+                            analytics={analytics}
+                            financeReport={financeReport}
+                            data={data}
+                            trip={trip}
+                            minutesText={minutesText}
+                          />
+                        )}
+                      </div>
+                    </details>
+
+                    <details className="module-block" id="module-system">
+                      <summary>
+                        <span className="module-block-icon">
+                          <ShieldCheck size={20} />
+                        </span>
+                        <span>
+                          <b>Ứng dụng, dữ liệu & vận hành</b>
+                          <small>
+                            PWA, backup, offline, production, roadmap và audit
+                          </small>
+                        </span>
+                        <ChevronDown size={19} className="module-chevron" />
+                      </summary>
+                      <div className="module-block-content">
+                        <ReleaseReadiness online={online} />
+                        <section className="panel pwa-panel">
+                          <div className="section-heading">
+                            <div>
+                              <span className="eyebrow">
+                                MOBILE UX & PWA · V0.6.0
+                              </span>
+                              <h2>Ứng dụng trên thiết bị</h2>
+                              <p className="muted">
+                                Safe-area iPhone/Android, form mobile
+                                fullscreen, cập nhật service worker có kiểm soát
+                                và cache offline theo tài khoản.
+                              </p>
+                            </div>
+                            <span
+                              className={`status-chip ${pwaState.standalone ? "active" : ""}`}
+                            >
+                              {pwaState.standalone ? "Đã cài" : "Trình duyệt"}
                             </span>
                           </div>
-                        ))}
-                      </section>
-                    </div>
-                  </details>
-                </>
-              )}
-            </>
-          )}
+                          <div className="pwa-summary">
+                            <div>
+                              <Compass size={19} />
+                              <span>
+                                <b>
+                                  {pwaState.standalone ? "Standalone" : "Web"}
+                                </b>
+                                <small>Chế độ hiển thị</small>
+                              </span>
+                            </div>
+                            <div>
+                              <RefreshCw
+                                size={19}
+                                className={
+                                  tripsQ.isFetching || bq.isFetching || syncing
+                                    ? "tf-busy-icon"
+                                    : undefined
+                                }
+                              />
+                              <span>
+                                <b>
+                                  {pwaState.updateReady
+                                    ? "Có bản mới"
+                                    : pwaState.serviceWorkerReady
+                                      ? "Sẵn sàng"
+                                      : "Đang kiểm tra"}
+                                </b>
+                                <small>Service worker</small>
+                              </span>
+                            </div>
+                            <div>
+                              <ShieldCheck size={19} />
+                              <span>
+                                <b>
+                                  {pwaState.storagePersisted
+                                    ? "Được bảo vệ"
+                                    : "Tiêu chuẩn"}
+                                </b>
+                                <small>Cache offline</small>
+                              </span>
+                            </div>
+                          </div>
+                          <div className="actions">
+                            {!pwaState.standalone && (
+                              <button
+                                className="btn secondary"
+                                onClick={() => void installPwa()}
+                              >
+                                <Download size={17} />
+                                {pwaState.installable
+                                  ? "Cài TripFlow"
+                                  : pwaState.ios
+                                    ? "Cách cài trên iPhone"
+                                    : "Cài ứng dụng"}
+                              </button>
+                            )}
+                            {pwaState.updateReady && (
+                              <button
+                                className="btn primary"
+                                onClick={applyPwaUpdate}
+                              >
+                                <RefreshCw size={17} />
+                                Cập nhật TripFlow
+                              </button>
+                            )}
+                            {!pwaState.storagePersisted && (
+                              <button
+                                className="btn secondary"
+                                onClick={() => void protectOfflineStorage()}
+                              >
+                                <ShieldCheck size={17} />
+                                Bảo vệ cache offline
+                              </button>
+                            )}
+                          </div>
+                          {pwaState.ios && !pwaState.standalone && (
+                            <p className="hint pwa-ios-hint">
+                              Safari iPhone/iPad: bấm Chia sẻ →{" "}
+                              <b>Thêm vào Màn hình chính</b>. iOS không cung cấp
+                              nút cài tự động như Chrome Android.
+                            </p>
+                          )}
+                        </section>
+                        {owner && recoveryPanel(true)}
+                        <section className="panel">
+                          <div className="section-heading">
+                            <div>
+                              <h2>Dữ liệu, offline & tài khoản</h2>
+                              <p className="muted">
+                                Supabase là nguồn dữ liệu chính. IndexedDB giữ
+                                bản cache theo từng tài khoản và hàng đợi thao
+                                tác khi mạng yếu.
+                              </p>
+                            </div>
+                            <span
+                              className={`status-chip ${online ? "active" : "deactivated"}`}
+                            >
+                              {online ? "Online" : "Offline"}
+                            </span>
+                          </div>
+                          <div className="sync-summary">
+                            <div>
+                              <CloudUpload size={19} />
+                              <span>
+                                <b>{queuePending}</b>
+                                <small>Chờ đồng bộ</small>
+                              </span>
+                            </div>
+                            <div>
+                              <AlertTriangle size={19} />
+                              <span>
+                                <b>{queueIssues}</b>
+                                <small>Xung đột / bị từ chối</small>
+                              </span>
+                            </div>
+                          </div>
+                          {queueRows.length > 0 && (
+                            <div className="sync-queue-list">
+                              {queueRows.map((row) => (
+                                <div key={row.operationId}>
+                                  <span className={`sync-dot ${row.state}`} />
+                                  <span>
+                                    <b>
+                                      {row.mutation.entity} ·{" "}
+                                      {row.mutation.action}
+                                    </b>
+                                    <small>
+                                      {row.state === "pending"
+                                        ? row.nextAttemptAt
+                                          ? "Đang chờ tự thử lại"
+                                          : "Chờ gửi"
+                                        : row.state === "sending"
+                                          ? "Đang gửi"
+                                          : row.state === "conflict"
+                                            ? "Xung đột dữ liệu"
+                                            : "Bị từ chối"}
+                                      {row.error ? ` · ${row.error}` : ""}
+                                    </small>
+                                    {(row.state === "conflict" ||
+                                      row.state === "rejected") && (
+                                      <div className="sync-row-actions">
+                                        {row.state === "conflict" &&
+                                          row.mutation.action !== "create" && (
+                                            <button
+                                              type="button"
+                                              disabled={!online || syncing}
+                                              onClick={() =>
+                                                void keepQueuedChange(row)
+                                              }
+                                            >
+                                              Giữ bản trên máy
+                                            </button>
+                                          )}
+                                        <button
+                                          type="button"
+                                          disabled={!online || syncing}
+                                          onClick={() =>
+                                            void discardQueuedChange(row)
+                                          }
+                                        >
+                                          Dùng bản cloud
+                                        </button>
+                                      </div>
+                                    )}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="actions">
+                            {queueRows.length > 0 && (
+                              <button
+                                className="btn secondary"
+                                disabled={!online || syncing}
+                                onClick={() => void syncPending(true)}
+                              >
+                                <CloudUpload size={17} />
+                                {syncing ? "Đang đồng bộ…" : "Đồng bộ ngay"}
+                              </button>
+                            )}
+                            {queueIssues > 0 && (
+                              <span className="sync-resolution-hint">
+                                Xung đột được xử lý từng mục để tránh ghi đè dữ
+                                liệu ngoài ý muốn.
+                              </span>
+                            )}
+                            {account?.role === "master" && (
+                              <button
+                                className="btn secondary"
+                                onClick={() => navigate("admin")}
+                              >
+                                <ShieldCheck size={17} />
+                                Quản trị Master
+                              </button>
+                            )}
+                            {owner && (
+                              <button
+                                className="btn secondary"
+                                onClick={() =>
+                                  download(
+                                    "TripFlow-" + trip.id + ".json",
+                                    JSON.stringify(
+                                      {
+                                        format: "tripflow-cloud-export",
+                                        version: 2,
+                                        exportedAt: new Date().toISOString(),
+                                        trip,
+                                        items: data.items,
+                                        budgets: data.budgets,
+                                        expenses: data.expenses,
+                                        media: data.media,
+                                        participants: data.participants,
+                                        snapshots: data.snapshots,
+                                      },
+                                      null,
+                                      2,
+                                    ),
+                                    "application/json",
+                                  )
+                                }
+                              >
+                                <Download size={17} />
+                                Xuất dữ liệu JSON
+                              </button>
+                            )}
+                            <button className="btn secondary" onClick={logout}>
+                              <LogOut size={17} />
+                              Đăng xuất
+                            </button>
+                          </div>
+                          <p className="hint">
+                            Offline Pro hỗ trợ tạo/sửa/xóa lịch trình, dự toán,
+                            chi tiêu, người tham gia, media và sửa thông tin
+                            chuyến hiện tại. Phân quyền, lời mời, snapshot, xóa
+                            chuyến và quản trị vẫn yêu cầu online.
+                          </p>
+                          <p className="hint">
+                            {user.email} · TripFlow {VERSION}
+                            {account?.role === "master" ? " · MASTER" : ""}
+                          </p>
+                        </section>
+                        <ProductRoadmap />
+                        <section className="panel">
+                          <h2>Lịch sử gần đây</h2>
+                          <p className="hint">
+                            15 thay đổi gần nhất. Nhật ký đầy đủ được lưu trong
+                            database.
+                          </p>
+                          {data.audits.slice(0, 15).map((a) => (
+                            <div className="audit-row" key={a.id}>
+                              <Clock size={15} />
+                              <span>
+                                <b>{tableNames[a.entity] || a.entity}</b> ·{" "}
+                                {a.action === "INSERT"
+                                  ? "Thêm mới"
+                                  : a.action === "DELETE"
+                                    ? "Thu hồi"
+                                    : a.after_data?.deleted_at
+                                      ? "Xóa"
+                                      : "Cập nhật"}
+                                {a.after_data?.title
+                                  ? " · " + String(a.after_data.title)
+                                  : ""}
+                                <small>
+                                  {dateLabel(
+                                    localTime(a.created_at, trip.timezone),
+                                  )}{" "}
+                                  ·{" "}
+                                  {localTime(a.created_at, trip.timezone).slice(
+                                    11,
+                                  )}
+                                </small>
+                              </span>
+                            </div>
+                          ))}
+                        </section>
+                      </div>
+                    </details>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </main>
         <footer className="page-footer">
           <b>TRIPFLOW</b>
@@ -6141,6 +6232,8 @@ function App() {
           open
           onClose={() => !quickEntryBusy && setQuickActionsOpen(false)}
           title="Command Center"
+          className="dialog-sheet"
+          busy={quickEntryBusy}
         >
           <div className="dialog-body command-center-dialog">
             <div className="command-entry">
@@ -6593,6 +6686,7 @@ function App() {
         <Dialog
           open
           onClose={() => !working && setTemplateApply(null)}
+          busy={working}
           title="Tạo chuyến từ mẫu"
         >
           <div className="dialog-body form-grid template-apply-dialog">
@@ -6870,7 +6964,12 @@ function App() {
         </Dialog>
       )}
       {tripPicker && (
-        <Dialog open onClose={() => setTripPicker(false)} title="Các chuyến đi">
+        <Dialog
+          open
+          onClose={() => setTripPicker(false)}
+          title="Các chuyến đi"
+          className="dialog-sheet"
+        >
           <div className="dialog-body trip-list">
             {trips.map((t) => (
               <button
@@ -6922,6 +7021,8 @@ function App() {
           open
           onClose={() => !working && setConfirm(null)}
           title={confirm.title}
+          className={`dialog-compact ${confirm.danger ? "dialog-danger" : ""}`}
+          busy={working}
         >
           <div className="dialog-body">
             <p>{confirm.text}</p>
@@ -6954,6 +7055,13 @@ function App() {
                 }
               }}
             >
+              {working ? (
+                <BusyIndicator />
+              ) : confirm.danger ? (
+                <Trash2 size={17} />
+              ) : (
+                <Check size={17} />
+              )}
               {working ? "Đang xử lý…" : "Xác nhận"}
             </button>
           </footer>
@@ -6990,7 +7098,7 @@ function App() {
                     await navigator.clipboard.writeText(shareLink);
                     notify("Đã sao chép liên kết.");
                   } catch {
-                    notify("Hãy chọn và sao chép liên kết trong ô.");
+                    notify("Hãy chọn và sao chép liên kết trong ô.", "info");
                   }
                 }}
               >
@@ -7002,12 +7110,7 @@ function App() {
           </div>
         </Dialog>
       )}
-      {toast && (
-        <div className="toast" role="status">
-          <CheckCircle2 size={18} />
-          {toast}
-        </div>
-      )}
+      <Toast notice={toast} onDismiss={dismissToast} />
     </div>
   );
 }

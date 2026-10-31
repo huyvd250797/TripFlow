@@ -251,15 +251,17 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 
 - Popup phiên bản mới và cập nhật một lần bấm, có bảo vệ bản nháp/queue offline. Cache build bao gồm các module lazy.
 
-## ⬜ V2.6.0 — UI/UX Motion & Visual Polish
+## ✅ V2.6.0 — UI/UX Motion & Visual Polish
 
 - Animation/micro-interaction nhẹ cho modal, bottom sheet, tab, card và trạng thái lưu/xóa/thành công.
 - Chuẩn hóa typography, spacing, button, loading/empty/error/success state trên toàn app.
-- Motion phải nhanh, có `prefers-reduced-motion` và không làm chậm thao tác.
+- Motion 120–180 ms, có `prefers-reduced-motion` và không chờ animation để lưu/chuyển màn hình.
+- Bottom sheet mobile cho Command Center/danh sách chuyến, popup xác nhận compact, spinner/busy guard, toast ba trạng thái và trả focus khi đóng.
+- Sửa database compatibility về V2.4.1 và kiểm thử đối chiếu RPC; không migration mới.
 
 ## ⬜ V2.7.0 — Mobile Navigation & Interaction Polish
 
 - Giữ context/scroll khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm.
 - Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
 
-**Phiên bản tiếp theo:** **V2.6.0 – UI/UX Motion & Visual Polish**.
+**Phiên bản tiếp theo:** **V2.7.0 – Mobile Navigation & Interaction Polish**.

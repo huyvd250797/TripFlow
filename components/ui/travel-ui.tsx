@@ -46,7 +46,9 @@ export function Empty({
 }) {
   return (
     <div className="empty">
-      <Compass size={40} />
+      <span className="empty-icon">
+        <Compass size={30} aria-hidden="true" />
+      </span>
       <h3>{title}</h3>
       <p>{text}</p>
       {onAdd && (

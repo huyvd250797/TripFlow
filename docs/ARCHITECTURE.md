@@ -1,5 +1,13 @@
 # Kiến trúc TripFlow
 
+## V2.6.0 Motion và visual polish
+
+- Lớp `app/polish.css` import cuối, dùng token spacing/radius/duration và màu semantic theo theme; không thay dữ liệu nghiệp vụ.
+- Chuyển tab bằng wrapper `screen-content` keyed theo tab, fade ngắn; không remount toàn app/query provider khi refetch.
+- Dialog dùng animation scale độc lập với transform căn giữa, sheet chọn theo class; busy guard và focus restore dùng chung. `useId` tránh trùng ID mô tả khi có nhiều popup.
+- `components/ui/feedback.tsx` dùng chung BusyIndicator/Toast; toast có id riêng mỗi lượt để cùng nội dung vẫn khởi động lại thời gian hiển thị, pause khi hover/focus và live region cho trình đọc màn hình.
+- Không thêm dependency/migration. Sửa compatibility về `DATABASE_VERSION = 2.4.1` để khớp RPC; integration test đối chiếu trực tiếp marker đã cài.
+
 ## V2.5.0 Performance và cập nhật ứng dụng
 
 - App version `2.5.0`, database compatibility `2.4.1`; không thêm schema/migration.
