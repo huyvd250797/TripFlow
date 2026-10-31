@@ -1,4 +1,5 @@
 "use client";
+import { setUpdateBlocker } from "@/lib/update-safety";
 import { ThemeControl } from "./theme-control";
 import { useEffect, useState } from "react";
 import { ArrowRight, LockKeyhole, Map, Wallet, Mail } from "lucide-react";
@@ -14,10 +15,21 @@ export function Auth({
   onDone: () => void;
   initialError?: string;
 }) {
+  const [draft, setDraft] = useState(false);
+
   const [mode, setMode] = useState(recovery ? "change" : "login"),
     [error, setError] = useState(initialError),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setUpdateBlocker(
+      "auth-form",
+      draft || busy
+        ? "Hãy hoàn tất đăng nhập hoặc xóa nội dung đang nhập trước khi cập nhật."
+        : undefined,
+    );
+    return () => setUpdateBlocker("auth-form");
+  }, [draft, busy]);
   useEffect(() => {
     if (initialError) setError(initialError);
     if (new URLSearchParams(location.search).has("auth_error"))
@@ -167,7 +179,16 @@ export function Auth({
                     ? "Lưu kế hoạch và mở trên các thiết bị của bạn."
                     : "Sử dụng mật khẩu ít nhất 8 ký tự."}
               </p>
-              <form onSubmit={submit}>
+              <form
+                onInput={(e) =>
+                  setDraft(
+                    [...new FormData(e.currentTarget).values()].some(
+                      (value) => typeof value === "string" && value.length > 0,
+                    ),
+                  )
+                }
+                onSubmit={submit}
+              >
                 {mode !== "change" && (
                   <label className="field">
                     <span>Email</span>

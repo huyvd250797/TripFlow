@@ -1,4 +1,13 @@
-# Kiến trúc TripFlow 1.0.0
+# Kiến trúc TripFlow
+
+## V2.5.0 Performance và cập nhật ứng dụng
+
+- App version `2.5.0`, database compatibility `2.4.1`; không thêm schema/migration.
+- Media, Analytics, Editor, Master, Roadmap và Readiness tải theo nhu cầu với skeleton. Các phép tổng hợp nặng được memo hóa; bản đồ chỉ resolve khi mở bản đồ.
+- Mutation được xác nhận trước, cập nhật cache từ kết quả server rồi reconcile nền. Realtime và save dùng chung bộ gộp refresh; polling dự phòng vẫn giữ khi mất Realtime.
+- `/api/version` công khai chỉ trả metadata phiên bản và không cache. `AppUpdate` kiểm tra khi mở/focus/online và theo chu kỳ, nhận diện waiting worker, hiển thị popup rồi chỉ kích hoạt sau thao tác Cập nhật.
+- `update-safety` chặn khi đang ghi hoặc nhập dở, chạy bước lưu view/cache trước kích hoạt; queue IndexedDB không bị xóa. `controllerchange` chỉ reload tab vừa đồng ý cập nhật.
+- Build sinh danh sách chunk thật trong Service Worker để cache offline, giữ cache hiện tại và một bản trước cho tab cũ. Không cache API/auth riêng tư. Xem `UPGRADE-V2.5.0.md` về giới hạn chuyển từ bản cũ.
 
 ## Công nghệ và luồng dữ liệu
 
@@ -16,22 +25,22 @@ Luồng ghi: form → Zod → POST cùng origin → kiểm tra phiên → RPC �
 
 ## Cấu trúc source
 
-| Vị trí                                    | Trách nhiệm                                         |
-| ----------------------------------------- | --------------------------------------------------- |
-| `app/page.tsx`, `components/tripflow.tsx` | Shell, điều hướng và màn hình nghiệp vụ             |
-| `components/editor.tsx`                   | Form tạo/sửa, kiểm tra nhập, retry operation ID     |
-| `components/auth.tsx`                     | Đăng nhập, đăng ký, account gate, phục hồi mật khẩu |
-| `components/ui/dialog.tsx`                | Dialog, focus trap, thao tác bàn phím               |
-| `app/api/tripflow/route.ts`               | Đọc bundle, account gate, validation, mutation API  |
-| `app/auth/confirm`, `app/auth/callback`   | Email token/PKCE exchange                           |
+| Vị trí                                           | Trách nhiệm                                          |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| `app/page.tsx`, `components/tripflow.tsx`        | Shell, điều hướng và màn hình nghiệp vụ              |
+| `components/editor.tsx`                          | Form tạo/sửa, kiểm tra nhập, retry operation ID      |
+| `components/auth.tsx`                            | Đăng nhập, đăng ký, account gate, phục hồi mật khẩu  |
+| `components/ui/dialog.tsx`                       | Dialog, focus trap, thao tác bàn phím                |
+| `app/api/tripflow/route.ts`                      | Đọc bundle, account gate, validation, mutation API   |
+| `app/auth/confirm`, `app/auth/callback`          | Email token/PKCE exchange                            |
 | `app/api/admin/route.ts`, `components/admin.tsx` | Khu vực Master, user status và dữ liệu toàn hệ thống |
-| `lib/offline.ts`                          | IndexedDB cache, queue và trạng thái đồng bộ        |
-| `components/roadmap.tsx`, `lib/roadmap.ts` | Roadmap phát hành hiển thị trong ứng dụng           |
-| `lib/domain.ts`                           | Tính toán chi phí, lịch trình, thời gian, CSV       |
-| `lib/validation.ts`, `lib/types.ts`       | Hợp đồng dữ liệu và schema                          |
-| `lib/supabase`                            | Browser/server client                               |
-| `supabase/migrations`                     | Schema, constraints, RLS, transaction, audit        |
-| `tests`                                   | Unit, PostgreSQL integration và browser integration |
+| `lib/offline.ts`                                 | IndexedDB cache, queue và trạng thái đồng bộ         |
+| `components/roadmap.tsx`, `lib/roadmap.ts`       | Roadmap phát hành hiển thị trong ứng dụng            |
+| `lib/domain.ts`                                  | Tính toán chi phí, lịch trình, thời gian, CSV        |
+| `lib/validation.ts`, `lib/types.ts`              | Hợp đồng dữ liệu và schema                           |
+| `lib/supabase`                                   | Browser/server client                                |
+| `supabase/migrations`                            | Schema, constraints, RLS, transaction, audit         |
+| `tests`                                          | Unit, PostgreSQL integration và browser integration  |
 
 ## Mô hình dữ liệu
 
@@ -81,11 +90,9 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 
 Điểm theo thời gian là suy luận từ lịch. Check-in là xác nhận chủ động. GPS dùng Geolocation API theo thao tác, không ghi tọa độ lên database và không theo dõi nền. Khi lịch trùng giờ, app thông báo thay vì giả định có mặt ở nhiều nơi.
 
-
 ## Live Trip V0.4.0
 
 `itinerary_items` vẫn là trạng thái hiện tại; `itinerary_events` là event history bất biến. Mutation status chạy qua `tf_mutate`, dùng trip advisory lock + unique active index, sau đó ghi event trong cùng transaction. `operation_id` + `(operation_id,item_id)` đảm bảo retry offline không nhân đôi lịch sử. Supabase Realtime chỉ đóng vai trò thông báo thay đổi; database/API vẫn là nguồn sự thật và client luôn có refetch dự phòng.
-
 
 ## V0.9.0 Release Candidate hardening
 
@@ -95,14 +102,12 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - Mutation endpoints tiếp tục dùng RPC làm cổng ghi duy nhất; V0.9 bổ sung same-origin/content-type/payload guards ở HTTP layer.
 - CSP và các security headers áp dụng ở Next.js; RLS/RPC vẫn là lớp quyết định quyền cuối cùng.
 
-
 ## V1.0.0 Stable Production
 
 - `tf_schema_versions` có marker `1.0.0`; migration Stable thay `tf_release_readiness()` để trả `app_version/database_version = 1.0.0` và `channel = stable`.
 - `/api/release` còn kiểm tra chéo kết quả RPC với `VERSION`; source V1.0.0 không chấp nhận database V0.9.0 là production-ready.
 - V1.0.0 không thay đổi schema nghiệp vụ, quyền hoặc dữ liệu chuyến đi; migration chỉ chốt marker/capability kiểm tra phát hành.
 - Roadmap 1.0 kết thúc tại V1.0.0; frontend xử lý trạng thái không còn `NEXT_VERSION` thay vì giả định luôn có bản kế tiếp.
-
 
 ## V1.1.0 Brand/UI compatibility
 
@@ -116,7 +121,6 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - Smart Workspace là lớp client trên `Bundle` hiện có; không tạo bảng/index/search service mới và không tạo nguồn dữ liệu thứ hai.
 - Search chạy cục bộ trên bundle của chuyến đang mở, normalize Unicode để hỗ trợ tìm không dấu. Kết quả chỉ chứa navigation metadata, không cache thêm dữ liệu riêng.
 - Quick actions tái sử dụng `Editor`, `status()` và mutation API hiện hữu nên tiếp tục chịu RLS/account gate/idempotency như các thao tác chuẩn.
-
 
 ## V1.3.0 Media storytelling schema
 
@@ -134,7 +138,6 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 - `tf_create_trip_from_template()` tạo chuyến mới trong transaction, remap item → budget và dời toàn bộ lịch theo offset phút so với ngày bắt đầu mẫu.
 - `VERSION = 1.4.0`; `DATABASE_VERSION = 1.4.0`.
 
-
 ## V1.5.0 Quick Entry frontend architecture
 
 - Quick Entry là parser rule-based frontend tại `lib/quick-entry.ts`; không gọi AI/dịch vụ ngoài.
@@ -146,11 +149,9 @@ Chỉ lưu URL HTTPS, tiêu đề, loại, ghi chú, liên kết hoạt động.
 
 Không thay đổi kiến trúc hay schema. Patch chỉ làm an toàn đường đọc Bundle khi UI chưa tải dữ liệu (`data?.expenses`) và sửa import test cho `dateLabel`. Runtime App `1.5.1`, Database requirement `1.4.0`.
 
-
 ## V1.6.0 context automation
 
 Smart Defaults được tính ở client từ Bundle đã xác thực (activity/budget/expense gần nhất), không tạo nguồn dữ liệu thứ hai và không cần schema mới. Đây chỉ là giá trị gợi ý; mutation vẫn đi qua validation/API/RLS hiện hữu. Cảnh báo context không tự chặn hoặc tự ghi dữ liệu.
-
 
 ## V1.7.0 planning interaction
 

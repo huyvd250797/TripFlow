@@ -225,7 +225,16 @@ async function main() {
       },
     });
   });
+  let reads = { list: 0, bundle: 0 };
   await page.route("**/api/tripflow*", async (route) => {
+    if (process.env.TRIPFLOW_PERF_TEST) {
+      if (route.request().method() === "GET") {
+        if (new URL(route.request().url()).searchParams.has("trip"))
+          reads.bundle++;
+        else reads.list++;
+      }
+      await new Promise((r) => setTimeout(r, 120));
+    }
     try {
       let body: Record<string, unknown>;
       if (route.request().method() === "POST") {
@@ -328,6 +337,35 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_PERF_TEST) {
+      await nav("Chi phí");
+      await page
+        .getByRole("button", { name: "Ghi chi tiêu", exact: true })
+        .first()
+        .click();
+      await page.getByLabel("Số tiền VNĐ *", { exact: true }).fill("250000");
+      await page
+        .getByLabel("Nội dung chi *", { exact: true })
+        .fill("Performance fixture");
+      reads = { list: 0, bundle: 0 };
+      const start = performance.now();
+      await page
+        .getByRole("button", { name: "Lưu thay đổi", exact: true })
+        .click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      const elapsed = performance.now() - start;
+      await new Promise((r) => setTimeout(r, 700));
+      console.log(
+        "PERFORMANCE " +
+          JSON.stringify({
+            saveToDialogClosedMs: Math.round(elapsed),
+            listReads: reads.list,
+            bundleReads: reads.bundle,
+            fixtureLatencyPerApiMs: 120,
+          }),
+      );
+      return;
+    }
     await page.screenshot({
       path: "test-results/v241-dark-mobile-home.png",
       fullPage: true,
@@ -492,7 +530,7 @@ async function main() {
     await expect(page.locator(".error")).toHaveCount(0);
     expect(errors).toEqual([]);
     console.log(
-      "PASS V2.4.1: five permission fields, owner grant persisted, viewer action visibility, offline Wallet+sync, theme persistence/system switching, 40 responsive views, delete-trip navigation/cache cleanup, no JS errors.",
+      "PASS V2.5.0 regression: five permission fields, owner grant persisted, viewer action visibility, offline Wallet+sync, theme persistence/system switching, 40 responsive views, delete-trip navigation/cache cleanup, no JS errors.",
     );
   } finally {
     await context.close();

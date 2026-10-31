@@ -202,3 +202,102 @@ html[data-theme="dark"] .daily-attention {
     display: none;
   }
 }
+
+/* V2.5: local loading states and app update. */
+.module-skeleton {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px;
+  min-height: 200px;
+  background: var(--panel);
+  color: var(--muted);
+}
+.module-skeleton span {
+  font-size: 13px;
+}
+.module-skeleton i {
+  display: block;
+  height: 22px;
+  margin-top: 18px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--surface-soft),
+    var(--line),
+    var(--surface-soft)
+  );
+  background-size: 200% 100%;
+  animation: skeleton-flow 1.5s linear infinite;
+}
+.module-skeleton i:nth-child(3) {
+  width: 80%;
+}
+.module-skeleton i:nth-child(4) {
+  width: 60%;
+}
+@keyframes skeleton-flow {
+  to {
+    background-position: -200% 0;
+  }
+}
+.app-update-pill {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 82px);
+  right: 16px;
+  z-index: 95;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  background: var(--panel);
+  color: var(--primary);
+  box-shadow: var(--tf-shadow-sm);
+  font-size: 13px;
+  font-weight: 700;
+}
+.update-dialog-body {
+  padding: 26px;
+}
+.dialog-content.app-update-dialog {
+  left: 50%;
+  top: calc(
+    var(--tf-viewport-top, 0px) + var(--tf-viewport-height, 100dvh) / 2
+  );
+  transform: translate(-50%, -50%);
+  width: calc(100% - 32px);
+  max-width: 480px;
+  height: auto;
+  max-height: calc(var(--tf-viewport-height, 100dvh) - 32px);
+  border-radius: 22px;
+}
+.app-update-dialog .dialog-body {
+  flex: 0 1 auto;
+}
+.app-update-dialog .hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.app-update-dialog .hint svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.update-dialog-body h3 {
+  margin-top: 18px;
+}
+.update-icon {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  background: var(--surface-soft);
+  color: var(--primary);
+  border-radius: 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .module-skeleton i {
+    animation: none;
+  }
+}

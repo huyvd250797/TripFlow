@@ -1,5 +1,5 @@
-export const VERSION = "2.4.1";
-export const DATABASE_VERSION = "2.4.1";
+export const VERSION = "2.5.0";
+export const DATABASE_VERSION = "2.5.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",

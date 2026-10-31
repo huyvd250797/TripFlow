@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Check,
@@ -23,6 +23,7 @@ import {
 } from "@/lib/smart-defaults";
 import { inferExpenseCategory } from "@/lib/expense-intelligence";
 import { PERMISSION_FIELDS } from "@/lib/permissions";
+import { setUpdateBlocker } from "@/lib/update-safety";
 import { schemas } from "@/lib/validation";
 export type EditSpec = {
   entity: Entity;
@@ -128,6 +129,15 @@ export function Editor({
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [advancedOpen, setAdvancedOpen] = useState(Boolean(row));
+  useEffect(() => {
+    setUpdateBlocker(
+      "editor",
+      isDirty || busy
+        ? "Hãy lưu hoặc đóng biểu mẫu đang nhập trước khi cập nhật."
+        : undefined,
+    );
+    return () => setUpdateBlocker("editor");
+  }, [isDirty, busy]);
   const operation = useRef<{ hash: string; id: string } | null>(null);
   const id = useRef(crypto.randomUUID());
   const fields: Field[] = [];

@@ -7,11 +7,13 @@ export function Dialog({
   title,
   children,
   description,
+  className,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   description?: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -19,7 +21,7 @@ export function Dialog({
       <D.Portal>
         <D.Overlay className="dialog-overlay" />
         <D.Content
-          className="dialog-content"
+          className={`dialog-content${className ? ` ${className}` : ""}`}
           aria-describedby={description ? "dialog-description" : undefined}
         >
           <header className="dialog-header">

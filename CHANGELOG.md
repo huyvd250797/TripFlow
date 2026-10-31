@@ -1,5 +1,16 @@
 # Changelog
 
+## V2.5.0 — Performance, Loading & Perceived Speed
+
+- Tải riêng Editor, viewer ảnh, quản trị, roadmap, readiness, Media và Analytics khi mở; có skeleton theo khu vực.
+- Ghi nhận kết quả lưu ngay sau khi server chấp nhận, cập nhật cache/local rồi đối chiếu nền. Sửa chi tiêu không tải lại danh sách chuyến; gộp Realtime và lượt đọc sau lưu, giữ polling dự phòng.
+- Memo hóa báo cáo, lịch và dữ liệu suy ra; chỉ dựng nhật ký khi mở Media, analytics khi mở Thêm; bỏ thời gian chờ splash tối thiểu. API vẫn xác thực người dùng và quyền tại server.
+- Popup **Có phiên bản mới → Cập nhật / Để sau**, kiểm tra mỗi phút khi app hiển thị, khi focus/online và khi worker mới sẵn sàng. Nút Cập nhật tự chuyển worker rồi tải lại bình thường; không cần hard reload hoặc đóng app.
+- Không cập nhật khi đang lưu hoặc có biểu mẫu chưa lưu. Giữ queue offline, chuyến/tab/bộ lọc/vị trí đang xem; tab khác không bị ép tải lại. Nếu mạng lỗi, giữ trang hiện tại và cho thử lại.
+- Build tự tạo manifest cache cho cả các module tải riêng, giữ offline và một shell trước đó cho tab cũ.
+- **Không migration mới:** App **2.5.0**, database tiếp tục **2.4.1**. Hướng dẫn tại [docs/UPGRADE-V2.5.0.md](docs/UPGRADE-V2.5.0.md).
+- Phiên bản kế tiếp: **V2.6.0 — UI/UX Motion & Visual Polish** theo roadmap hiện có.
+
 ## V2.4.1 — Travel Reliability Fix
 
 - Ví, báo cáo và xuất CSV phản ánh ngay thực chi/dự toán đang chờ đồng bộ offline.

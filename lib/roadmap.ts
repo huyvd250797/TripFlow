@@ -233,7 +233,7 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V2.5.0",
     title: "Performance, Loading & Perceived Speed",
-    done: false,
+    done: true,
     description:
       "Tối ưu tốc độ mở app và chuyển màn hình bằng lazy loading, giảm request thừa, cache dữ liệu phù hợp, skeleton/loading state theo ngữ cảnh, optimistic UI và đo các điểm chậm thực tế trên mobile.",
   },

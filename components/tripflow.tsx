@@ -1,11 +1,35 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   QueryClient,
   QueryClientProvider,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
+import {
+  download,
+  openPrintableReport,
+  Link,
+  Empty,
+  Bar,
+} from "./ui/travel-ui";
+const MediaModule = dynamic(
+  () => import("./media-module").then((m) => m.MediaModule),
+  { loading: () => <ModuleSkeleton label="Đang tải kỷ niệm" />, ssr: false },
+);
+const AnalyticsModule = dynamic(
+  () => import("./analytics-module").then((m) => m.AnalyticsModule),
+  { loading: () => <ModuleSkeleton label="Đang tải báo cáo" />, ssr: false },
+);
+import { AppUpdate } from "./app-update";
+import { ModuleSkeleton } from "./loading/module-skeleton";
+import {
+  beginAppWrite,
+  setUpdateBlocker,
+  registerUpdatePreparation,
+} from "@/lib/update-safety";
+import { createRefreshScheduler } from "@/lib/refresh-scheduler";
 import type { User } from "@supabase/supabase-js";
 import {
   Compass,
@@ -58,9 +82,16 @@ import { browserClient, configured } from "@/lib/supabase/client";
 import { ThemeControl } from "./theme-control";
 import { PERMISSION_FIELDS, tripPermissions } from "@/lib/permissions";
 import { Auth } from "./auth";
-import { Editor, type EditSpec } from "./editor";
+import type { EditSpec } from "./editor";
+const Editor = dynamic(() => import("./editor").then((m) => m.Editor), {
+  loading: () => <ModuleSkeleton label="Đang tải" />,
+  ssr: false,
+});
 import { Dialog } from "./ui/dialog";
-import { ZoomableImage } from "./zoomable-image";
+const ZoomableImage = dynamic(
+  () => import("./zoomable-image").then((m) => m.ZoomableImage),
+  { loading: () => <ModuleSkeleton label="Đang tải" />, ssr: false },
+);
 import {
   VERSION,
   TRIP_STATUS,
@@ -102,9 +133,18 @@ import {
   mediaPreviewUrl,
   mediaEmbedUrl,
 } from "@/lib/domain";
-import { MasterAdmin } from "./admin";
-import { ProductRoadmap } from "./roadmap";
-import { ReleaseReadiness } from "./release-readiness";
+const MasterAdmin = dynamic(
+  () => import("./admin").then((m) => m.MasterAdmin),
+  { loading: () => <ModuleSkeleton label="Đang tải" />, ssr: false },
+);
+const ProductRoadmap = dynamic(
+  () => import("./roadmap").then((m) => m.ProductRoadmap),
+  { loading: () => <ModuleSkeleton label="Đang tải" />, ssr: false },
+);
+const ReleaseReadiness = dynamic(
+  () => import("./release-readiness").then((m) => m.ReleaseReadiness),
+  { loading: () => <ModuleSkeleton label="Đang tải" />, ssr: false },
+);
 import { BrandMark, BrandName } from "./brand";
 import {
   searchTripWorkspace,
@@ -184,55 +224,7 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
     );
   return data as T;
 }
-function download(name: string, content: string, type: string) {
-  const u = URL.createObjectURL(new Blob([content], { type }));
-  const a = document.createElement("a");
-  a.href = u;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(u), 1000);
-}
-function openPrintableReport(name: string, content: string) {
-  const u = URL.createObjectURL(
-    new Blob([content], { type: "text/html;charset=utf-8" }),
-  );
-  const opened = window.open(u + "#print", "_blank");
-  if (!opened) download(name, content, "text/html;charset=utf-8");
-  setTimeout(() => URL.revokeObjectURL(u), 60000);
-}
-function Link({ url, children }: { url: string; children: React.ReactNode }) {
-  return (
-    <a className="link" href={url} target="_blank" rel="noopener noreferrer">
-      {children}
-      <ArrowUpRight size={16} />
-    </a>
-  );
-}
-function Empty({
-  title,
-  text,
-  onAdd,
-  label = "Thêm mới",
-}: {
-  title: string;
-  text: string;
-  onAdd?: () => void;
-  label?: string;
-}) {
-  return (
-    <div className="empty">
-      <Compass size={40} />
-      <h3>{title}</h3>
-      <p>{text}</p>
-      {onAdd && (
-        <button className="btn primary" onClick={onAdd}>
-          <Plus size={17} />
-          {label}
-        </button>
-      )}
-    </div>
-  );
-}
+
 function appScrollRoot() {
   if (typeof document === "undefined") return null;
   if (document.documentElement.dataset.pwa !== "standalone") return null;
@@ -252,37 +244,24 @@ function scrollAppTo(top: number, behavior: ScrollBehavior = "auto") {
   else window.scrollTo({ top, behavior });
 }
 
-function Bar({
-  value,
-  max,
-  over = false,
-}: {
-  value: number;
-  max: number;
-  over?: boolean;
-}) {
-  return (
-    <div className={`bar ${over ? "over" : ""}`}>
-      <span
-        style={{
-          width: `${Math.max(0, Math.min(100, max ? (value / max) * 100 : 0))}%`,
-        }}
-      />
-    </div>
-  );
-}
 export function TripFlow() {
   const [client] = useState(
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { staleTime: 15000, retry: 1, refetchOnWindowFocus: true },
+          queries: {
+            staleTime: 30000,
+            gcTime: 30 * 60 * 1000,
+            retry: 1,
+            refetchOnWindowFocus: true,
+          },
         },
       }),
   );
   return (
     <QueryClientProvider client={client}>
       <App />
+      <AppUpdate />
     </QueryClientProvider>
   );
 }
@@ -352,12 +331,18 @@ function App() {
       ios: false,
     });
   const syncLock = useRef(false);
+  const tripRefreshRef = useRef<ReturnType<
+    typeof createRefreshScheduler
+  > | null>(null);
   const planningDragId = useRef("");
   const installPromptRef = useRef<InstallPromptEvent | null>(null);
-  const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
-  const swReloadingRef = useRef(false);
   const restoredViewRef = useRef("");
-  const initialSplashRef = useRef(true);
+  const pendingScroll = useRef<{
+    top: number;
+    key: string;
+    until: number;
+  } | null>(null);
+
   const notify = useCallback((s: string) => setToast(s), []);
   useEffect(() => {
     if (toast) {
@@ -366,24 +351,13 @@ function App() {
     }
   }, [toast]);
   const loadAuth = useCallback(async () => {
-    const splashStartedAt = performance.now();
     if (!configured()) {
       setAuthLoading(false);
-      initialSplashRef.current = false;
       return;
     }
-    const s = browserClient();
-    const { data } = await s.auth.getUser();
-    setUser(data.user);
-    if (initialSplashRef.current) {
-      const remaining = Math.max(
-        0,
-        680 - (performance.now() - splashStartedAt),
-      );
-      if (remaining)
-        await new Promise((resolve) => setTimeout(resolve, remaining));
-      initialSplashRef.current = false;
-    }
+    // Session is only a fast UI bootstrap; every API still verifies the user on the server.
+    const { data } = await browserClient().auth.getSession();
+    setUser(data.session?.user || null);
     setAuthLoading(false);
   }, []);
   useEffect(() => {
@@ -465,51 +439,11 @@ function App() {
         );
     }
 
-    let updateTimer: ReturnType<typeof setInterval> | undefined;
-    let onFocus: (() => void) | undefined;
-    let controllerChanged: (() => void) | undefined;
-    if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          swRegistrationRef.current = registration;
-          setPwaState((x) => ({
-            ...x,
-            serviceWorkerReady: true,
-            updateReady: Boolean(
-              registration.waiting && navigator.serviceWorker.controller,
-            ),
-          }));
-          const watchInstalling = () => {
-            const worker = registration.installing;
-            if (!worker) return;
-            worker.addEventListener("statechange", () => {
-              if (
-                worker.state === "installed" &&
-                navigator.serviceWorker.controller
-              )
-                setPwaState((x) => ({ ...x, updateReady: true }));
-            });
-          };
-          registration.addEventListener("updatefound", watchInstalling);
-          onFocus = () => void registration.update().catch(() => undefined);
-          window.addEventListener("focus", onFocus);
-          updateTimer = setInterval(
-            () => void registration.update().catch(() => undefined),
-            60 * 60 * 1000,
-          );
-        })
-        .catch(() => undefined);
-      controllerChanged = () => {
-        if (swReloadingRef.current) return;
-        swReloadingRef.current = true;
-        window.location.reload();
-      };
-      navigator.serviceWorker.addEventListener(
-        "controllerchange",
-        controllerChanged,
-      );
-    }
+    const workerReady = () =>
+      setPwaState((x) => ({ ...x, serviceWorkerReady: true }));
+    const updateReady = () => setPwaState((x) => ({ ...x, updateReady: true }));
+    window.addEventListener("tripflow:worker-ready", workerReady);
+    window.addEventListener("tripflow:update-available", updateReady);
 
     return () => {
       window.visualViewport?.removeEventListener("resize", syncViewport);
@@ -517,13 +451,8 @@ function App() {
       window.removeEventListener("orientationchange", syncViewport);
       window.removeEventListener("beforeinstallprompt", beforeInstall);
       window.removeEventListener("appinstalled", installed);
-      if (onFocus) window.removeEventListener("focus", onFocus);
-      if (controllerChanged)
-        navigator.serviceWorker?.removeEventListener(
-          "controllerchange",
-          controllerChanged,
-        );
-      if (updateTimer) clearInterval(updateTimer);
+      window.removeEventListener("tripflow:worker-ready", workerReady);
+      window.removeEventListener("tripflow:update-available", updateReady);
     };
   }, [notify]);
   useEffect(() => {
@@ -557,7 +486,7 @@ function App() {
       }
     },
     enabled: !!user,
-    refetchInterval: online ? 30000 : false,
+    refetchInterval: online ? 120000 : false,
   });
   const trips = tripsQ.data?.trips || [];
   const account = tripsQ.data?.account;
@@ -598,15 +527,16 @@ function App() {
       if (saved.day) setDay(saved.day);
       if (saved.category) setCategory(saved.category);
       if (saved.financeTab) setFinanceTab(saved.financeTab);
-      requestAnimationFrame(() => {
-        const activeTab = canRestoreTab && saved.tab ? saved.tab : "home";
-        const y = Number(
-          sessionStorage.getItem(
-            `tripflow:scroll:${restoreKey}:${activeTab}`,
-          ) || 0,
-        );
-        scrollAppTo(Number.isFinite(y) ? y : 0);
-      });
+      const activeTab = canRestoreTab && saved.tab ? saved.tab : "home";
+      const y = Number(
+        sessionStorage.getItem(`tripflow:scroll:${restoreKey}:${activeTab}`) ||
+          0,
+      );
+      pendingScroll.current = {
+        top: Number.isFinite(y) ? y : 0,
+        key: `${restoreKey}:${activeTab}`,
+        until: Date.now() + 10000,
+      };
     } catch {
       // sessionStorage có thể bị chặn ở private mode; app vẫn hoạt động bình thường.
     }
@@ -771,12 +701,117 @@ function App() {
       }
     },
     enabled: !!user && !!selectedId,
-    refetchInterval: online ? 30000 : false,
+    refetchInterval: online
+      ? realtimeState === "live"
+        ? 120000
+        : 30000
+      : false,
   });
   const data = bq.data,
     trip = data?.trip;
   useEffect(() => {
-    if (!data || planningView !== "map" || !online) return;
+    if (!data || !user || !selectedId) return;
+    const restore = () => {
+      const saved = pendingScroll.current;
+      if (
+        saved &&
+        saved.key === `${user.id}:${selectedId}:${tab}` &&
+        Date.now() < saved.until
+      )
+        requestAnimationFrame(() => scrollAppTo(saved.top));
+    };
+    restore();
+    window.addEventListener("tripflow:module-ready", restore);
+    const cancel = () => {
+      pendingScroll.current = null;
+    };
+    window.addEventListener("pointerdown", cancel, { once: true });
+    window.addEventListener("wheel", cancel, { once: true });
+    return () => {
+      window.removeEventListener("tripflow:module-ready", restore);
+      window.removeEventListener("pointerdown", cancel);
+      window.removeEventListener("wheel", cancel);
+    };
+  }, [data, user, selectedId, tab]);
+
+  useEffect(() => {
+    const blocked =
+      working || syncing || quickEntryBusy || !!planningBusyId || !!dailyBusyId;
+    setUpdateBlocker(
+      "app-task",
+      blocked
+        ? "Đang lưu hoặc đồng bộ dữ liệu. Vui lòng chờ hoàn tất."
+        : undefined,
+    );
+    setUpdateBlocker(
+      "app-draft",
+      (quickActionsOpen && !!quickEntryText.trim()) ||
+        !!templateApply ||
+        !!templateName.trim() ||
+        !!templateDescription.trim()
+        ? "Hãy lưu hoặc đóng phần nhập đang dở trước khi cập nhật."
+        : undefined,
+    );
+    return () => {
+      setUpdateBlocker("app-task");
+      setUpdateBlocker("app-draft");
+    };
+  }, [
+    working,
+    syncing,
+    quickEntryBusy,
+    planningBusyId,
+    dailyBusyId,
+    quickActionsOpen,
+    quickEntryText,
+    templateApply,
+    templateName,
+    templateDescription,
+  ]);
+  useEffect(
+    () =>
+      registerUpdatePreparation("trip-view", async () => {
+        if (!user) return;
+        if (selectedId) {
+          sessionStorage.setItem(`tripflow:selected:${user.id}`, selectedId);
+          sessionStorage.setItem(
+            `tripflow:view:${user.id}:${selectedId}`,
+            JSON.stringify({ tab, day, category, financeTab }),
+          );
+          sessionStorage.setItem(
+            `tripflow:scroll:${user.id}:${selectedId}:${tab}`,
+            String(currentScrollTop()),
+          );
+          const current = qc.getQueryData<Bundle>([
+            "trip",
+            user.id,
+            selectedId,
+          ]);
+          if (current) await cacheBundle(user.id, selectedId, current);
+        }
+        await listQueue(user.id); // Ensure IndexedDB is readable; never clear the queue on update.
+      }),
+    [user, selectedId, tab, day, category, financeTab, qc],
+  );
+  useEffect(() => {
+    if (user && selectedId) {
+      try {
+        sessionStorage.setItem(`tripflow:selected:${user.id}`, selectedId);
+      } catch {}
+    }
+  }, [user, selectedId]);
+  useEffect(() => {
+    if (user) {
+      try {
+        setSelected(
+          sessionStorage.getItem(`tripflow:selected:${user.id}`) || "",
+        );
+      } catch {}
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!data || tab !== "route" || planningView !== "map" || !online) return;
     const pending = data.items.filter((item) => {
       if (!item.map_url || extractMapCoordinate(item.map_url)) return false;
       return !Object.prototype.hasOwnProperty.call(resolvedMapLinks, item.id);
@@ -814,7 +849,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [data, planningView, online, resolvedMapLinks]);
+  }, [data, tab, planningView, online, resolvedMapLinks]);
   const templatesQ = useQuery<TemplateListResponse>({
     queryKey: ["trip-templates", user?.id],
     queryFn: () => api<TemplateListResponse>("/api/templates"),
@@ -846,17 +881,36 @@ function App() {
     }
     const s = browserClient();
     setRealtimeState("connecting");
-    const refreshTrip = () => {
-      void qc.invalidateQueries({
-        queryKey: ["trip", user.id, selectedId],
-      });
-    };
-    const refreshTripAndList = () => {
-      refreshTrip();
-      void qc.invalidateQueries({ queryKey: ["trips", user.id] });
-    };
+    const refresh = createRefreshScheduler((includeList) => {
+      void qc.invalidateQueries({ queryKey: ["trip", user.id, selectedId] });
+      if (includeList)
+        void qc.invalidateQueries({ queryKey: ["trips", user.id] });
+    });
+    tripRefreshRef.current = refresh;
+    const refreshTrip = () => refresh.schedule();
+    const refreshTripAndList = () => refresh.schedule(true);
     const channel = s
       .channel("trip-live:" + selectedId)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "budget_items",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "budget_snapshots",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
       .on(
         "postgres_changes",
         {
@@ -973,6 +1027,8 @@ function App() {
       });
     return () => {
       setRealtimeState("idle");
+      if (tripRefreshRef.current === refresh) tripRefreshRef.current = null;
+      refresh.dispose();
       void s.removeChannel(channel);
     };
   }, [user, selectedId, qc, online, notify]);
@@ -1175,6 +1231,19 @@ function App() {
   }
 
   async function save(m: Mutation) {
+    const done = beginAppWrite();
+    const started = performance.now();
+    try {
+      await saveImpl(m);
+    } finally {
+      done();
+      performance.measure("tripflow:save", {
+        start: started,
+        end: performance.now(),
+      });
+    }
+  }
+  async function saveImpl(m: Mutation) {
     if (m.entity === "trip" && m.action === "delete") {
       if (!navigator.onLine) throw new Error("Xóa chuyến đi cần kết nối mạng.");
       if (!permissions.can_delete_trip)
@@ -1251,10 +1320,50 @@ function App() {
           return next;
         });
     }
-    await Promise.all([
-      qc.invalidateQueries({ queryKey: ["trips", user?.id] }),
-      qc.invalidateQueries({ queryKey: ["trip", user?.id] }),
-    ]);
+    if (user && canQueueMutation(m)) {
+      const key = ["trip", user.id, m.tripId] as const;
+      const before = qc.getQueryData<Bundle>(key);
+      if (before) {
+        let visible = applyOptimisticMutation(before, m);
+        const field = (
+          {
+            item: "items",
+            budget: "budgets",
+            expense: "expenses",
+            media: "media",
+            participant: "participants",
+          } as const
+        )[m.entity as "item" | "budget" | "expense" | "media" | "participant"];
+        if (field && m.action !== "delete" && result.result.id) {
+          visible = {
+            ...visible,
+            [field]: visible[field].map((row) =>
+              row.id === result.result.id ? result.result : row,
+            ),
+          } as Bundle;
+        } else if (m.entity === "trip")
+          visible.trip = { ...visible.trip, ...result.result };
+        qc.setQueryData(key, visible);
+        await cacheBundle(user.id, m.tripId, visible);
+      }
+    }
+    // Only trip metadata/lifecycle changes require re-reading the trip list.
+    const updateList =
+      m.entity === "trip" ||
+      (m.entity === "item" && m.action === "status") ||
+      m.entity === "member";
+    if (
+      m.tripId === selectedId &&
+      tripRefreshRef.current &&
+      !(m.entity === "trip" && m.action === "delete")
+    )
+      tripRefreshRef.current.schedule(updateList);
+    else {
+      if (updateList)
+        void qc.invalidateQueries({ queryKey: ["trips", user?.id] });
+      if (!(m.entity === "trip" && m.action === "delete"))
+        void qc.invalidateQueries({ queryKey: ["trip", user?.id, m.tripId] });
+    }
     notify("Đã lưu trên hệ thống.");
   }
 
@@ -1509,14 +1618,9 @@ function App() {
     }
   }
   function applyPwaUpdate() {
-    const worker = swRegistrationRef.current?.waiting;
-    if (!worker) {
-      void swRegistrationRef.current?.update();
-      notify("Đang kiểm tra bản TripFlow mới…");
-      return;
-    }
-    worker.postMessage({ type: "SKIP_WAITING" });
+    window.dispatchEvent(new Event("tripflow:show-update"));
   }
+
   async function protectOfflineStorage() {
     if (!navigator.storage?.persist) {
       notify("Trình duyệt này không hỗ trợ yêu cầu lưu trữ bền vững.");
@@ -2048,6 +2152,129 @@ function App() {
     );
   }
 
+  const totals = useMemo(
+    () => (data ? compare(data.budgets, data.expenses) : null),
+    [data?.budgets, data?.expenses],
+  );
+  const financeReport = useMemo(
+    () => (data ? data.finance_report || buildFinanceReport(data) : null),
+    [data],
+  );
+  const wallet = useMemo(
+    () =>
+      data ? buildTravelWallet(data, now || new Date().toISOString()) : null,
+    [data, now],
+  );
+  const favoriteExpenses = useMemo(
+    () =>
+      data
+        ? data.expenses.filter(
+            (row) =>
+              row.kind === "payment" && favoriteExpenseIds.includes(row.id),
+          )
+        : [],
+    [data?.expenses, favoriteExpenseIds],
+  );
+  const recentExpenses = useMemo(
+    () =>
+      data
+        ? data.expenses
+            .filter((row) => row.kind === "payment")
+            .toSorted(
+              (a, b) =>
+                b.spent_on.localeCompare(a.spent_on) ||
+                b.created_at.localeCompare(a.created_at),
+            )
+            .slice(0, 5)
+        : [],
+    [data?.expenses],
+  );
+  const analytics = useMemo(
+    () => (data && tab === "more" ? buildTripAnalytics(data) : null),
+    [data, tab],
+  );
+  const story = useMemo(
+    () => (data && tab === "media" ? buildTripStory(data) : null),
+    [data, tab],
+  );
+  const storyCoverPreview = useMemo(
+    () => (story?.cover ? mediaPreviewUrl(story.cover) : null),
+    [story],
+  );
+  const storyCoverEmbed = useMemo(
+    () => (story?.cover ? mediaEmbedUrl(story.cover) : null),
+    [story],
+  );
+  const mediaViewer = useMemo(
+    () =>
+      mediaViewerId && data
+        ? data.media.find((row) => row.id === mediaViewerId) || null
+        : null,
+    [mediaViewerId, data?.media],
+  );
+  const mediaViewerPreview = useMemo(
+    () => (mediaViewer ? mediaEmbedUrl(mediaViewer) : null),
+    [mediaViewer],
+  );
+  const progress = useMemo(
+    () => (data ? live(data.items, now || new Date().toISOString()) : null),
+    [data?.items, now],
+  );
+  const daily = useMemo(
+    () =>
+      data
+        ? buildDailyCommandCenter(data, now || new Date().toISOString())
+        : null,
+    [data, now],
+  );
+  const boardDays = useMemo(
+    () => (data && trip ? planningDays(trip, data.items, trip.timezone) : []),
+    [data?.trip, data?.items],
+  );
+  const routeDay = useMemo(
+    () =>
+      trip && boardDays.length
+        ? day !== "all" && boardDays.includes(day)
+          ? day
+          : progress?.active
+            ? localTime(progress.active.start_at, trip.timezone).slice(0, 10)
+            : progress?.next
+              ? localTime(progress.next.start_at, trip.timezone).slice(0, 10)
+              : boardDays[0]
+        : "",
+    [trip, boardDays, day, progress],
+  );
+  const routeItems = useMemo(
+    () =>
+      data
+        ? data.items.map((item) => ({
+            ...item,
+            map_url: resolvedMapLinks[item.id] || item.map_url,
+          }))
+        : [],
+    [data?.items, resolvedMapLinks],
+  );
+  const routeAnalysis = useMemo(
+    () =>
+      data && trip && routeDay
+        ? analyzeRouteDay(routeItems, trip.timezone, routeDay)
+        : null,
+    [data, trip, routeDay, routeItems],
+  );
+  const routeMapPoints = useMemo(
+    () => (routeAnalysis ? mapPointLayout(routeAnalysis.items) : []),
+    [routeAnalysis],
+  );
+  const routeUnresolvedLinkCount = useMemo(
+    () =>
+      routeAnalysis
+        ? routeAnalysis.items.filter(
+            (item) => item.map_url && !extractMapCoordinate(item.map_url),
+          ).length
+        : 0,
+    [routeAnalysis],
+  );
+
   async function logout() {
     const pending = queueRows.length;
     const message = pending
@@ -2095,73 +2322,6 @@ function App() {
         }}
       />
     );
-  const totals = data ? compare(data.budgets, data.expenses) : null;
-  const financeReport = data
-    ? data.finance_report || buildFinanceReport(data)
-    : null;
-  const wallet = data
-    ? buildTravelWallet(data, now || new Date().toISOString())
-    : null;
-  const favoriteExpenses = data
-    ? data.expenses.filter(
-        (row) => row.kind === "payment" && favoriteExpenseIds.includes(row.id),
-      )
-    : [];
-  const recentExpenses = data
-    ? data.expenses
-        .filter((row) => row.kind === "payment")
-        .toSorted(
-          (a, b) =>
-            b.spent_on.localeCompare(a.spent_on) ||
-            b.created_at.localeCompare(a.created_at),
-        )
-        .slice(0, 5)
-    : [];
-  const analytics = data ? buildTripAnalytics(data) : null;
-  const story = data ? buildTripStory(data) : null;
-  const storyCoverPreview = story?.cover ? mediaPreviewUrl(story.cover) : null;
-  const storyCoverEmbed = story?.cover ? mediaEmbedUrl(story.cover) : null;
-  const mediaViewer =
-    mediaViewerId && data
-      ? data.media.find((row) => row.id === mediaViewerId) || null
-      : null;
-  const mediaViewerPreview = mediaViewer ? mediaEmbedUrl(mediaViewer) : null;
-  const progress = data
-    ? live(data.items, now || new Date().toISOString())
-    : null;
-  const daily = data
-    ? buildDailyCommandCenter(data, now || new Date().toISOString())
-    : null;
-  const boardDays =
-    data && trip ? planningDays(trip, data.items, trip.timezone) : [];
-  const routeDay =
-    trip && boardDays.length
-      ? day !== "all" && boardDays.includes(day)
-        ? day
-        : progress?.active
-          ? localTime(progress.active.start_at, trip.timezone).slice(0, 10)
-          : progress?.next
-            ? localTime(progress.next.start_at, trip.timezone).slice(0, 10)
-            : boardDays[0]
-      : "";
-  const routeItems = data
-    ? data.items.map((item) => ({
-        ...item,
-        map_url: resolvedMapLinks[item.id] || item.map_url,
-      }))
-    : [];
-  const routeAnalysis =
-    data && trip && routeDay
-      ? analyzeRouteDay(routeItems, trip.timezone, routeDay)
-      : null;
-  const routeMapPoints = routeAnalysis
-    ? mapPointLayout(routeAnalysis.items)
-    : [];
-  const routeUnresolvedLinkCount = routeAnalysis
-    ? routeAnalysis.items.filter(
-        (item) => item.map_url && !extractMapCoordinate(item.map_url),
-      ).length
-    : 0;
   const current = progress?.current;
   const workspaceResults = data ? searchTripWorkspace(data, searchTerm) : [];
   const workspaceFocusItem =
@@ -5199,340 +5359,18 @@ function App() {
                   )}
                 </>
               )}
-              {tab === "media" && data && story && (
-                <>
-                  <section className="story-hero panel">
-                    <div
-                      className={`story-hero-visual ${story.cover && storyCoverEmbed ? "media-clickable" : ""}`}
-                      onClick={() =>
-                        story.cover &&
-                        storyCoverEmbed &&
-                        setMediaViewerId(story.cover.id)
-                      }
-                      role={
-                        story.cover && storyCoverEmbed ? "button" : undefined
-                      }
-                      tabIndex={story.cover && storyCoverEmbed ? 0 : undefined}
-                      onKeyDown={(event) => {
-                        if (
-                          story.cover &&
-                          storyCoverEmbed &&
-                          (event.key === "Enter" || event.key === " ")
-                        ) {
-                          event.preventDefault();
-                          setMediaViewerId(story.cover.id);
-                        }
-                      }}
-                    >
-                      {storyCoverPreview ? (
-                        <img
-                          src={storyCoverPreview}
-                          alt={story.cover?.title || trip.name}
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="story-hero-placeholder">
-                          <Compass size={42} />
-                          <span>TRIPFLOW MEMORIES</span>
-                        </div>
-                      )}
-                      {story.cover && (
-                        <span className="story-cover-badge">
-                          <Crown size={14} /> Ảnh bìa
-                        </span>
-                      )}
-                    </div>
-                    <div className="story-hero-copy">
-                      <span className="eyebrow">
-                        MEDIA · MEMORIES · STORYTELLING · V1.3.0
-                      </span>
-                      <h2>{story.cover?.title || trip.name}</h2>
-                      <p>
-                        {story.cover?.note ||
-                          `Gom những khoảnh khắc của ${trip.destination} thành một câu chuyện dễ xem lại và chia sẻ.`}
-                      </p>
-                      <div className="story-stats">
-                        <span>
-                          <Images size={15} />
-                          <b>{story.media_total}</b> media
-                        </span>
-                        <span>
-                          <CalendarDays size={15} />
-                          <b>{story.memory_days}</b> ngày kỷ niệm
-                        </span>
-                        <span>
-                          <Sparkles size={15} />
-                          <b>{story.highlights.length}</b> highlight
-                        </span>
-                      </div>
-                      <div className="actions">
-                        {writable && (
-                          <button
-                            className="btn primary"
-                            onClick={() => edit("media")}
-                          >
-                            <Camera size={17} /> Thêm kỷ niệm
-                          </button>
-                        )}
-                        {story.cover && storyCoverEmbed && (
-                          <button
-                            className="btn secondary"
-                            onClick={() => setMediaViewerId(story.cover!.id)}
-                          >
-                            <Images size={17} /> Xem trong TripFlow
-                          </button>
-                        )}
-                        {story.cover && (
-                          <Link url={story.cover.url}>Mở nguồn</Link>
-                        )}
-                      </div>
-                    </div>
-                  </section>
-
-                  <div className="notice">
-                    <Link2 size={20} />
-                    <span>
-                      TripFlow quản lý metadata/câu chuyện; ảnh và video vẫn nằm
-                      tại Google Drive hoặc nguồn HTTPS. Người xem cần quyền tại
-                      nguồn.
-                    </span>
-                  </div>
-
-                  {story.highlights.length > 0 && (
-                    <section className="story-section">
-                      <div className="section-heading">
-                        <div>
-                          <span className="eyebrow">TRIP HIGHLIGHTS</span>
-                          <h2>Khoảnh khắc đáng nhớ</h2>
-                        </div>
-                        <span className="pill">
-                          {story.highlights.length} highlight
-                        </span>
-                      </div>
-                      <div className="highlight-grid">
-                        {story.highlights.map((m) => {
-                          const preview = mediaPreviewUrl(m);
-                          const embed = mediaEmbedUrl(m);
-                          return (
-                            <article className="highlight-card" key={m.id}>
-                              <div
-                                className={`highlight-visual ${embed ? "media-clickable" : ""}`}
-                                onClick={() => embed && setMediaViewerId(m.id)}
-                                role={embed ? "button" : undefined}
-                                tabIndex={embed ? 0 : undefined}
-                                onKeyDown={(event) => {
-                                  if (
-                                    embed &&
-                                    (event.key === "Enter" || event.key === " ")
-                                  ) {
-                                    event.preventDefault();
-                                    setMediaViewerId(m.id);
-                                  }
-                                }}
-                              >
-                                {preview ? (
-                                  <img
-                                    src={preview}
-                                    alt={m.title}
-                                    onError={(event) => {
-                                      event.currentTarget.style.display =
-                                        "none";
-                                    }}
-                                  />
-                                ) : (
-                                  <span>
-                                    <Sparkles size={28} />
-                                  </span>
-                                )}
-                                <div className="highlight-badges">
-                                  {m.is_cover && (
-                                    <em>
-                                      <Crown size={12} /> Cover
-                                    </em>
-                                  )}
-                                  {m.is_highlight && (
-                                    <em>
-                                      <Sparkles size={12} /> Highlight
-                                    </em>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="highlight-copy">
-                                <div className="section-heading">
-                                  <h3>{m.title}</h3>
-                                  {rowTools("media", m)}
-                                </div>
-                                <small>
-                                  {m.taken_on
-                                    ? dateLabel(m.taken_on)
-                                    : "Kỷ niệm chuyến đi"}
-                                </small>
-                                {m.note && <p className="prewrap">{m.note}</p>}
-                                <Link url={m.url}>
-                                  Mở{" "}
-                                  {m.kind === "photo"
-                                    ? "ảnh"
-                                    : m.kind === "video"
-                                      ? "video"
-                                      : m.kind === "album"
-                                        ? "album"
-                                        : "tài liệu"}
-                                </Link>
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  )}
-
-                  <section className="story-section memory-timeline-section">
-                    <div className="section-heading">
-                      <div>
-                        <span className="eyebrow">TRAVEL JOURNAL</span>
-                        <h2>Nhật ký theo ngày</h2>
-                      </div>
-                      <span className="pill">{story.days.length} ngày</span>
-                    </div>
-                    <div className="memory-timeline">
-                      {story.days.map((memoryDay) => (
-                        <article className="memory-day" key={memoryDay.day}>
-                          <div className="memory-day-marker">
-                            <span />
-                          </div>
-                          <div className="memory-day-content">
-                            <div className="memory-day-head">
-                              <div>
-                                <span className="eyebrow">
-                                  {memoryDay.title}
-                                </span>
-                                <h3>
-                                  {memoryDay.items[0]?.location ||
-                                    trip.destination}
-                                </h3>
-                              </div>
-                              <small>
-                                {memoryDay.items.length} hoạt động ·{" "}
-                                {memoryDay.media.length} media
-                              </small>
-                            </div>
-                            {memoryDay.items.length > 0 && (
-                              <div className="memory-activities">
-                                {memoryDay.items.slice(0, 4).map((item) => (
-                                  <span key={item.id}>
-                                    <MapPin size={13} /> {item.title}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {memoryDay.media.length > 0 ? (
-                              <div className="memory-media-grid">
-                                {memoryDay.media.map((m) => {
-                                  const preview = mediaPreviewUrl(m);
-                                  const embed = mediaEmbedUrl(m);
-                                  return (
-                                    <section
-                                      className={`memory-media-card ${m.is_highlight ? "highlighted" : ""}`}
-                                      key={m.id}
-                                    >
-                                      <div
-                                        className={`memory-media-preview ${embed ? "media-clickable" : ""}`}
-                                        onClick={() =>
-                                          embed && setMediaViewerId(m.id)
-                                        }
-                                        role={embed ? "button" : undefined}
-                                        tabIndex={embed ? 0 : undefined}
-                                        onKeyDown={(event) => {
-                                          if (
-                                            embed &&
-                                            (event.key === "Enter" ||
-                                              event.key === " ")
-                                          ) {
-                                            event.preventDefault();
-                                            setMediaViewerId(m.id);
-                                          }
-                                        }}
-                                      >
-                                        {preview ? (
-                                          <img
-                                            src={preview}
-                                            alt={m.title}
-                                            onError={(event) => {
-                                              event.currentTarget.style.display =
-                                                "none";
-                                            }}
-                                          />
-                                        ) : m.kind === "document" ? (
-                                          <FileText size={28} />
-                                        ) : (
-                                          <Images size={28} />
-                                        )}
-                                        <span>
-                                          {
-                                            (
-                                              {
-                                                album: "ALBUM",
-                                                photo: "ẢNH",
-                                                video: "VIDEO",
-                                                document: "TÀI LIỆU",
-                                              } as const
-                                            )[m.kind]
-                                          }
-                                        </span>
-                                      </div>
-                                      <div className="memory-media-body">
-                                        <div className="section-heading">
-                                          <h3>{m.title}</h3>
-                                          {rowTools("media", m)}
-                                        </div>
-                                        <div className="memory-meta">
-                                          {m.is_highlight && (
-                                            <span>
-                                              <Sparkles size={12} /> Highlight
-                                            </span>
-                                          )}
-                                          {m.is_cover && (
-                                            <span>
-                                              <Crown size={12} /> Cover
-                                            </span>
-                                          )}
-                                          {(m.story_order || 0) > 0 && (
-                                            <span>#{m.story_order}</span>
-                                          )}
-                                        </div>
-                                        {m.note && (
-                                          <p className="prewrap">{m.note}</p>
-                                        )}
-                                        <Link url={m.url}>Mở media</Link>
-                                      </div>
-                                    </section>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <p className="muted memory-empty-day">
-                                Chưa gắn kỷ niệm cho ngày này.
-                              </p>
-                            )}
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-
-                  {!data.media.length && (
-                    <section className="panel">
-                      <Empty
-                        title="Bắt đầu câu chuyện chuyến đi"
-                        text="Gắn ảnh, video hoặc album; chọn ảnh bìa và Trip Highlight để TripFlow tự dựng nhật ký theo ngày."
-                        onAdd={writable ? () => edit("media") : undefined}
-                        label="Thêm kỷ niệm"
-                      />
-                    </section>
-                  )}
-                </>
+              {tab === "media" && data && trip && story && (
+                <MediaModule
+                  data={data}
+                  trip={trip}
+                  story={story}
+                  storyCoverEmbed={storyCoverEmbed}
+                  storyCoverPreview={storyCoverPreview}
+                  setMediaViewerId={setMediaViewerId}
+                  writable={writable}
+                  edit={edit}
+                  rowTools={rowTools}
+                />
               )}
               {tab === "more" && data && (
                 <>
@@ -5910,343 +5748,14 @@ function App() {
                       <ChevronDown size={19} className="module-chevron" />
                     </summary>
                     <div className="module-block-content">
-                      {analytics && financeReport && (
-                        <section
-                          className="panel analytics-panel"
-                          id="trip-analytics"
-                        >
-                          <div className="section-heading analytics-heading">
-                            <div>
-                              <span className="eyebrow">
-                                TRIP ANALYTICS & POST-TRIP REPORT · V0.8.0
-                              </span>
-                              <h2>Tổng kết chuyến đi</h2>
-                              <p className="muted">
-                                Báo cáo tổng hợp lịch trình, tài chính và media
-                                từ dữ liệu hiện tại của chuyến đi.
-                              </p>
-                            </div>
-                            <span
-                              className={`status-chip ${analytics.readiness === "ready" ? "active" : ""}`}
-                            >
-                              {analytics.report_state === "post_trip"
-                                ? analytics.readiness === "ready"
-                                  ? "Báo cáo hoàn chỉnh"
-                                  : "Sau chuyến · cần rà soát"
-                                : "Báo cáo tạm thời"}
-                            </span>
-                          </div>
-
-                          <div className="analytics-actions">
-                            <button
-                              className="btn secondary"
-                              onClick={() =>
-                                download(
-                                  "TripFlow-PostTrip.csv",
-                                  postTripCsv(data),
-                                  "text/csv;charset=utf-8",
-                                )
-                              }
-                            >
-                              <Download size={16} /> CSV
-                            </button>
-                            <button
-                              className="btn secondary"
-                              onClick={() =>
-                                download(
-                                  "TripFlow-PostTrip.json",
-                                  postTripJson(data),
-                                  "application/json;charset=utf-8",
-                                )
-                              }
-                            >
-                              <FileText size={16} /> JSON
-                            </button>
-                            <button
-                              className="btn primary"
-                              onClick={() =>
-                                openPrintableReport(
-                                  "TripFlow-PostTrip.html",
-                                  postTripHtml(data),
-                                )
-                              }
-                            >
-                              <FileText size={16} /> Bản in
-                            </button>
-                          </div>
-
-                          <div className="analytics-kpis">
-                            <article>
-                              <span>Hoàn thành lịch trình</span>
-                              <b>{analytics.itinerary.completion_rate}%</b>
-                              <small>
-                                {analytics.itinerary.done}/
-                                {analytics.itinerary.total} hoạt động
-                              </small>
-                              <Bar
-                                value={analytics.itinerary.done}
-                                max={analytics.itinerary.total}
-                              />
-                            </article>
-                            <article>
-                              <span>Thực chi ròng</span>
-                              <b>{money(analytics.finance.net_actual)}</b>
-                              <small>
-                                {analytics.finance.budget_usage_percent == null
-                                  ? "Chưa có dự toán"
-                                  : `${analytics.finance.budget_usage_percent}% dự toán hiện tại`}
-                              </small>
-                              <Bar
-                                value={analytics.finance.net_actual}
-                                max={Math.max(
-                                  analytics.finance.current_budget,
-                                  analytics.finance.net_actual,
-                                  1,
-                                )}
-                                over={analytics.finance.current_variance < 0}
-                              />
-                            </article>
-                            <article>
-                              <span>Chi phí / người</span>
-                              <b>{money(analytics.finance.per_person)}</b>
-                              <small>
-                                {trip.people} người · {analytics.trip_days} ngày
-                              </small>
-                            </article>
-                            <article>
-                              <span>Media & tài liệu</span>
-                              <b>{analytics.media.total}</b>
-                              <small>
-                                {analytics.media.linked_to_activity} mục gắn
-                                hoạt động
-                              </small>
-                            </article>
-                          </div>
-
-                          <div className="analytics-two-col">
-                            <div className="analytics-summary-card">
-                              <div className="section-heading">
-                                <h3>Điểm nổi bật</h3>
-                                <CheckCircle2 size={20} />
-                              </div>
-                              <ul className="analytics-list good">
-                                {analytics.highlights.map((text) => (
-                                  <li key={text}>{text}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div className="analytics-summary-card">
-                              <div className="section-heading">
-                                <h3>Cần rà soát</h3>
-                                {analytics.warnings.length ? (
-                                  <AlertTriangle size={20} />
-                                ) : (
-                                  <ShieldCheck size={20} />
-                                )}
-                              </div>
-                              {analytics.warnings.length ? (
-                                <ul className="analytics-list warning">
-                                  {analytics.warnings.map((text) => (
-                                    <li key={text}>{text}</li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <p className="analytics-ready">
-                                  Dữ liệu đã sẵn sàng để lưu trữ báo cáo sau
-                                  chuyến đi.
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="analytics-two-col analytics-detail-grid">
-                            <div>
-                              <div className="section-heading">
-                                <h3>Lịch trình</h3>
-                                <span className="pill">
-                                  {analytics.itinerary.processed_rate}% đã xử lý
-                                </span>
-                              </div>
-                              <div className="analytics-metrics">
-                                <div>
-                                  <span>Hoàn thành</span>
-                                  <b>{analytics.itinerary.done}</b>
-                                </div>
-                                <div>
-                                  <span>Bỏ qua</span>
-                                  <b>{analytics.itinerary.skipped}</b>
-                                </div>
-                                <div>
-                                  <span>Check-in</span>
-                                  <b>{analytics.itinerary.checked_in}</b>
-                                </div>
-                                <div>
-                                  <span>Check-in trễ</span>
-                                  <b>{analytics.itinerary.late_checkins}</b>
-                                </div>
-                                <div>
-                                  <span>Trễ trung bình</span>
-                                  <b>
-                                    {minutesText(
-                                      analytics.itinerary
-                                        .average_checkin_delay_minutes,
-                                    ) || "0 phút"}
-                                  </b>
-                                </div>
-                                <div>
-                                  <span>Trễ nhiều nhất</span>
-                                  <b>
-                                    {minutesText(
-                                      analytics.itinerary
-                                        .max_checkin_delay_minutes,
-                                    ) || "0 phút"}
-                                  </b>
-                                </div>
-                              </div>
-                            </div>
-                            <div>
-                              <div className="section-heading">
-                                <h3>Tài chính</h3>
-                                <span
-                                  className={`pill ${analytics.finance.current_variance < 0 ? "negative" : ""}`}
-                                >
-                                  {analytics.finance.current_variance < 0
-                                    ? "Vượt dự toán"
-                                    : "Trong dự toán"}
-                                </span>
-                              </div>
-                              <div className="analytics-metrics">
-                                <div>
-                                  <span>Dự toán hiện tại</span>
-                                  <b>
-                                    {money(analytics.finance.current_budget)}
-                                  </b>
-                                </div>
-                                <div>
-                                  <span>Chênh lệch</span>
-                                  <b>
-                                    {money(analytics.finance.current_variance)}
-                                  </b>
-                                </div>
-                                <div>
-                                  <span>Ngoài dự toán</span>
-                                  <b>
-                                    {money(analytics.finance.unlinked_actual)}
-                                  </b>
-                                </div>
-                                <div>
-                                  <span>Giao dịch chi</span>
-                                  <b>{analytics.finance.expense_count}</b>
-                                </div>
-                                <div>
-                                  <span>Hoàn tiền</span>
-                                  <b>{analytics.finance.refund_count}</b>
-                                </div>
-                                <div>
-                                  <span>Nhóm chi nhiều nhất</span>
-                                  <b>{analytics.finance.top_category || "—"}</b>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="analytics-section">
-                            <div className="section-heading">
-                              <h3>Chi phí theo nhóm</h3>
-                              <small className="muted">
-                                {analytics.finance.over_budget_categories} nhóm
-                                vượt dự toán
-                              </small>
-                            </div>
-                            <div className="analytics-category-bars">
-                              {financeReport.categories
-                                .filter(
-                                  (row) =>
-                                    Number(row.current) || Number(row.actual),
-                                )
-                                .map((row) => {
-                                  const max = Math.max(
-                                    Number(row.current),
-                                    Number(row.actual),
-                                    1,
-                                  );
-                                  return (
-                                    <div key={row.category}>
-                                      <div className="progress-label">
-                                        <span>{row.category}</span>
-                                        <b>{money(Number(row.actual))}</b>
-                                      </div>
-                                      <Bar
-                                        value={Number(row.actual)}
-                                        max={max}
-                                        over={
-                                          Number(row.actual) >
-                                          Number(row.current)
-                                        }
-                                      />
-                                      <small className="muted">
-                                        Dự toán {money(Number(row.current))} ·
-                                        Chênh lệch {money(Number(row.variance))}
-                                      </small>
-                                    </div>
-                                  );
-                                })}
-                              {!financeReport.categories.some(
-                                (row) =>
-                                  Number(row.current) || Number(row.actual),
-                              ) && (
-                                <p className="muted">
-                                  Chưa có dữ liệu chi phí để phân tích.
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="analytics-section">
-                            <div className="section-heading">
-                              <h3>Tổng kết theo ngày</h3>
-                              <small className="muted">
-                                {analytics.days.length} ngày có dữ liệu
-                              </small>
-                            </div>
-                            {analytics.days.length ? (
-                              <div className="table-scroll">
-                                <table>
-                                  <thead>
-                                    <tr>
-                                      <th>Ngày</th>
-                                      <th>Hoạt động</th>
-                                      <th>Hoàn thành</th>
-                                      <th>Bỏ qua</th>
-                                      <th>Thực chi</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {analytics.days.map((row) => (
-                                      <tr key={row.day}>
-                                        <td>{dateLabel(row.day)}</td>
-                                        <td>{row.item_count}</td>
-                                        <td>{row.done}</td>
-                                        <td>{row.skipped}</td>
-                                        <td>{money(row.actual)}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            ) : (
-                              <p className="muted">
-                                Chưa có lịch trình hoặc chi tiêu để tổng hợp.
-                              </p>
-                            )}
-                          </div>
-                          <p className="hint analytics-footnote">
-                            Báo cáo V0.8.0 được tính lại từ dữ liệu nguồn mỗi
-                            lần mở hoặc export, không lưu thêm một “tổng” độc
-                            lập nên tránh lệch số liệu khi lịch trình hay chi
-                            phí được chỉnh sửa.
-                          </p>
-                        </section>
+                      {analytics && financeReport && data && trip && (
+                        <AnalyticsModule
+                          analytics={analytics}
+                          financeReport={financeReport}
+                          data={data}
+                          trip={trip}
+                          minutesText={minutesText}
+                        />
                       )}
                     </div>
                   </details>

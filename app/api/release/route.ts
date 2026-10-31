@@ -78,7 +78,7 @@ export async function GET() {
       ...state,
       app_version: VERSION,
       database_required_version: DATABASE_VERSION,
-      ui_release: "travel-reliability-permissions-theme",
+      ui_release: "performance-loading-app-update",
     });
   } catch (error) {
     console.error(

@@ -1,10 +1,21 @@
-# TripFlow 2.4.1 · Travel Reliability Fix
+# TripFlow 2.5.0 · Performance, Loading & Perceived Speed
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.5.0 — Performance, Loading & Perceived Speed
+
+- Tải riêng Editor, viewer ảnh, quản trị, roadmap, readiness, Media và Analytics khi mở; có skeleton theo khu vực.
+- Ghi nhận kết quả lưu ngay sau khi server chấp nhận, cập nhật cache/local rồi đối chiếu nền. Sửa chi tiêu không tải lại danh sách chuyến; gộp Realtime và lượt đọc sau lưu, giữ polling dự phòng.
+- Memo hóa báo cáo, lịch và dữ liệu suy ra; chỉ dựng nhật ký khi mở Media, analytics khi mở Thêm; bỏ thời gian chờ splash tối thiểu. API vẫn xác thực người dùng và quyền tại server.
+- Popup **Có phiên bản mới → Cập nhật / Để sau**, kiểm tra mỗi phút khi app hiển thị, khi focus/online và khi worker mới sẵn sàng. Nút Cập nhật tự chuyển worker rồi tải lại bình thường; không cần hard reload hoặc đóng app.
+- Không cập nhật khi đang lưu hoặc có biểu mẫu chưa lưu. Giữ queue offline, chuyến/tab/bộ lọc/vị trí đang xem; tab khác không bị ép tải lại. Nếu mạng lỗi, giữ trang hiện tại và cho thử lại.
+- Build tự tạo manifest cache cho cả các module tải riêng, giữ offline và một shell trước đó cho tab cũ.
+- **Không migration mới:** App **2.5.0**, database tiếp tục **2.4.1**. Hướng dẫn tại [docs/UPGRADE-V2.5.0.md](docs/UPGRADE-V2.5.0.md).
+- Phiên bản kế tiếp: **V2.6.0 — UI/UX Motion & Visual Polish** theo roadmap hiện có.
 
 ## V2.4.1 — Travel Reliability Fix
 
@@ -93,7 +104,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.4.1 đều được đánh dấu ✅.
+- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.5.0 đều được đánh dấu ✅.
 
 **Phạm vi offline V2.4.0:** cho phép tạo/sửa/xóa lịch trình, dự toán, chi tiêu, người tham gia, media và sửa chuyến hiện tại; optimistic UI + queue tự đồng bộ. Phân quyền, lời mời, snapshot/chốt dự toán, xóa chuyến và Master Admin vẫn yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -334,7 +345,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap hiện đã hoàn thành đến V2.4.1 – Travel Reliability Fix; phiên bản tiếp theo là V2.5.0 – Performance, Loading & Perceived Speed.
+- Roadmap hiện đã hoàn thành đến V2.5.0 – Performance, Loading & Perceived Speed; phiên bản tiếp theo là V2.6.0 – UI/UX Motion & Visual Polish.
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
 
@@ -371,4 +382,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **2.4.1**; Database version yêu cầu: **2.4.1**; cần migration V2.4.1 sau V1.4.0.
+- App version: **2.5.0**; Database version yêu cầu: **2.4.1**; V2.5.0 không có migration mới.

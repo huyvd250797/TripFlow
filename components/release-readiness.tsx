@@ -90,10 +90,9 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V2.4.1 sửa ví offline, hoạt động qua đêm, số ngày và tuyến nhiều
-            điểm; bổ sung năm quyền độc lập và giao diện sáng/tối. Database yêu
-            cầu V{DATABASE_VERSION}. Hệ thống kiểm tra RLS, tài chính, Live
-            Trip, phân quyền và backup/restore.
+            V2.5.0 giảm tải ban đầu, gộp đọc dữ liệu và bổ sung popup cập nhật
+            trong app. Database tiếp tục V{DATABASE_VERSION}; giữ năm quyền độc
+            lập và các guard dữ liệu hiện có.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

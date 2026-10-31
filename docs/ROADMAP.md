@@ -243,11 +243,13 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Sáng/Tối/Thiết bị có lưu lựa chọn; palette tối giữ nguyên màu ảnh.
 - Migration tăng dần V2.4.1 sau V1.4.0, kiểm thử RLS/RPC, idempotency và phân quyền.
 
-## ⬜ V2.5.0 — Performance, Loading & Perceived Speed
+## ✅ V2.5.0 — Performance, Loading & Perceived Speed
 
 - Lazy loading/code splitting cho vùng nặng, giảm request/refetch thừa và tận dụng cache đúng ngữ cảnh.
 - Skeleton/loading state theo module thay spinner toàn màn hình khi không cần.
 - Optimistic UI cho thao tác an toàn và đo các điểm chậm thực tế trên mobile để tối ưu theo dữ liệu.
+
+- Popup phiên bản mới và cập nhật một lần bấm, có bảo vệ bản nháp/queue offline. Cache build bao gồm các module lazy.
 
 ## ⬜ V2.6.0 — UI/UX Motion & Visual Polish
 
@@ -260,4 +262,4 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Giữ context/scroll khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm.
 - Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
 
-**Phiên bản tiếp theo:** **V2.5.0 – Performance, Loading & Perceived Speed**.
+**Phiên bản tiếp theo:** **V2.6.0 – UI/UX Motion & Visual Polish**.

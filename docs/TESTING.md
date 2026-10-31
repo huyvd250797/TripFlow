@@ -1,4 +1,14 @@
-# Kiểm tra bản 1.0.0
+# Kiểm tra TripFlow
+
+## V2.5.0 Performance, Loading & Perceived Speed
+
+Kết quả và giới hạn kiểm tra: [VALIDATION-V2.5.0.md](VALIDATION-V2.5.0.md).
+
+- Chạy `npm test`, `npm run typecheck`, `npm run build`; postbuild phải báo đã tạo Service Worker manifest.
+- `npm run test:update:ui`: tự khởi động production server trên port trống. Cần build trước bằng các biến test như hướng dẫn browser phía dưới; dùng `TRIPFLOW_UI_TEST=1` cho cả build và test nếu build vào `.next-ui`. `CHROMIUM_PATH` là tùy chọn. Test mô phỏng phiên bản kế tiếp, dùng Service Worker thật và không kết nối production.
+- Kiểm tra first install không tự reload; bản mới hiện popup; Để sau mở lại được; bản nháp/đang ghi chặn update; mất mạng thử lại được; cập nhật giữ queue, theme và session view; tab khác không tự tải lại.
+- `npm run measure:bundle -- .next-ui` đo JS ban đầu của build test; bỏ tham số để đo `.next`.
+- Cần UAT thêm trên iPhone/PWA thật, nhiều tab qua hai lần phát hành, và Supabase Realtime trên staging.
 
 ## Bộ kiểm thử và phạm vi cần chạy
 
