@@ -310,6 +310,15 @@ V2.7.0 đã hoàn thành; xem các bản bổ sung bên dưới.
 - Tên module hiển thị đầy đủ và được xuống dòng. Nút hành động nhỏ giữ một dòng; Hủy/Đóng bên trái, Lưu/Xác nhận bên phải.
 - Không cần chạy migration mới. App 2.9.4 / DB 2.9.0. Giữ các migration hiện có; không chạy lại SQL đã áp dụng.
 
-## Đề xuất V2.10.0 — Travel Readiness & Reminders
+## ✅ V2.10.0 — Custom Cost Sharing
+
+- Dự toán có đúng hai cách chia: chia đều toàn bộ danh sách người tham gia (không chọn người), hoặc cố định một phần rồi chia đều phần còn lại cho những người được chọn. Có xem trước, làm tròn VNĐ bảo toàn tổng tiền, kiểm tra danh sách và phần cố định.
+- Đối chiếu hiển thị phần phải chịu, thanh toán theo người, tổng đã trả và còn trả nhà cung cấp theo khoản dự toán. Cọc nhiều lần cùng khoản không làm thay đổi thỏa thuận chia.
+- Cá nhân thanh toán chọn hình thức trả phần phải chịu hoặc ứng trước cần hoàn. Khoản trả trực tiếp không tự thành đóng quỹ/hoàn ứng. Chọn Quỹ chuyến đi ẩn người thanh toán và lưu người trả rỗng ở server.
+- Bottom sheet dùng một khung portal fixed bám đáy; chỉ dùng kích thước visual viewport khi bàn phím mở. Mở trượt lên, đóng trượt xuống cả khi lưu/hủy/Back; kéo tay nắm hoặc header theo tay, kéo ngắn trả về, bảo vệ dữ liệu chưa lưu và thao tác đang xử lý. Giảm chuyển động được tôn trọng.
+- Thêm: một danh sách module hai cột theo mẫu Mẹ Yêu Bé, màu TripFlow, tên đầy đủ và mô tả từng chức năng; không có menu trùng ở trang nền. Popup cập nhật/xác nhận nhỏ căn giữa, desktop giữ hộp thoại giữa màn hình.
+- Bắt buộc chạy `202611010003_v2100_custom_cost_sharing.sql` sau database V2.9.0, trước deploy V2.10.0. App/DB 2.10.0. Không reset hoặc chạy lại SQL cũ. TXT được bàn giao riêng.
+
+## Đề xuất V2.11.0 — Travel Readiness & Reminders
 
 Checklist trước đi, phân công chuẩn bị theo thành viên, nhắc hạn thanh toán/hủy và giờ sử dụng đặt chỗ. Ưu tiên cảnh báo trong ứng dụng trước; push notification cần thiết kế quyền và vận hành riêng. Chưa triển khai.

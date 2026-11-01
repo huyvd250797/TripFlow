@@ -90,6 +90,12 @@ export function inferExpenseCategory(
 }
 
 function expensePayer(expense: Expense, byId: Map<string, Expense>) {
+  if (
+    expense.payment_source === "fund" ||
+    (expense.refund_of &&
+      byId.get(expense.refund_of)?.payment_source === "fund")
+  )
+    return "Quỹ chuyến đi";
   if (expense.payer?.trim()) return expense.payer.trim();
   if (expense.kind === "refund" && expense.refund_of)
     return byId.get(expense.refund_of)?.payer?.trim() || "Chưa ghi người trả";

@@ -1,5 +1,6 @@
-export const VERSION = "2.9.4";
-export const DATABASE_VERSION = "2.9.0";
+import type { CostSharing } from "./cost-sharing";
+export const VERSION = "2.10.0";
+export const DATABASE_VERSION = "2.10.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -75,6 +76,7 @@ export type Item = Row & {
   completed_at: string | null;
 };
 export type Budget = Row & {
+  cost_sharing?: CostSharing | null;
   title: string;
   category: string;
   quantity: number;
@@ -93,6 +95,8 @@ export type Expense = Row & {
   refund_of: string | null;
   payment_source?: "personal" | "fund";
   payer: string;
+  payer_participant_id?: string | null;
+  settlement_type?: "advance" | "direct";
   note: string;
   receipt_url: string;
 };

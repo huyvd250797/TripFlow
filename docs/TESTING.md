@@ -1,3 +1,14 @@
+# Kiểm thử hiện tại V2.10.0
+
+- `npm ci`, `npm test`, `npm run build`.
+- SQL: `tests/cost-sharing.test.ts` kiểm tra mẫu 10.740.000 / 7.000.000 / 3 người, làm tròn, loại người không được chọn, chia đều không chọn, rollback dữ liệu sai, quyền, chống replay khác nội dung, trả trực tiếp không có hoàn ứng và backup/restore ánh xạ ID.
+- Với production server ở UI_BASE_URL, chạy `TRIPFLOW_COST_TEST=1 npm run test:ui`: tạo dự toán/chọn ba người/ghi cọc, kiểm tra Đối chiếu, ẩn người trả khi dùng quỹ, mô phỏng visual viewport thiếu 60px, kéo theo tay và exit animation.
+- Nhánh `TRIPFLOW_FUND_TEST=1`: quỹ, hai vòng bàn phím 420px + offset 55px rồi phục hồi, header/footer/input trong khung và từ chối đóng dirty form.
+- Nhánh `TRIPFLOW_BOOKINGS_TEST=1`: một menu module, tên đầy đủ, Back, đặt chỗ/tài liệu/offline; `TRIPFLOW_POLISH_TEST=1`: motion, busy/error/retry, focus và desktop. Chỉ bật một nhánh mỗi lần.
+- Không bật nhánh: hồi quy phân quyền, ví offline và 40 bố cục. `npm run test:update:ui` kiểm tra service worker thật và popup cập nhật nhỏ ở 320/390/430px.
+- Browser suite dùng Chromium + PGlite, HTTP/Auth được mô phỏng; cần env Supabase local mẫu và CHROMIUM_PATH nếu khác Chromium mặc định của Playwright. Xem hướng dẫn cũ bên dưới.
+- Chưa kiểm tra Safari/iPhone thật hoặc Supabase/Vercel production. Các ảnh là QA nội bộ, không kèm source ZIP.
+
 # Kiểm thử hiện tại V2.9.4
 
 - `npm ci`, `npm test`, `npm run build`.

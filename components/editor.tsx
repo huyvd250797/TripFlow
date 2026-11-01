@@ -8,6 +8,8 @@ import {
   ChevronDown,
   SlidersHorizontal,
 } from "lucide-react";
+import { CostSharingFields } from "./cost-sharing";
+import { allocateCost, type CostSharing } from "@/lib/cost-sharing";
 import { Dialog } from "./ui/dialog";
 import {
   CATEGORIES,
@@ -84,6 +86,8 @@ export function Editor({
     amount: "",
     payment_source: "personal",
     payer: "",
+    settlement_type: row ? String(row.settlement_type || "advance") : "direct",
+    cost_sharing: { mode: "equal" },
     location: "",
     map_url: "",
     receipt_url: "",
@@ -254,10 +258,16 @@ export function Editor({
     f("spent_on", "Ngày chi *", "day", true);
     if (watch("kind") !== "refund")
       sel("payment_source", "Nguồn tiền", [
-        ["personal", "Cá nhân ứng trước"],
+        ["personal", "Cá nhân thanh toán"],
         ["fund", "Quỹ chuyến đi"],
       ]);
-    sel("payer", "Người thanh toán / người thực hiện", payerOptions);
+    if (watch("payment_source") !== "fund" && watch("kind") !== "refund") {
+      sel("payer", "Người thanh toán / người thực hiện", payerOptions);
+      sel("settlement_type", "Hình thức cá nhân thanh toán", [
+        ["direct", "Thanh toán phần chi phí phải chịu"],
+        ["advance", "Ứng trước, cần hoàn ứng"],
+      ]);
+    }
     f("receipt_url", "Link hóa đơn hoặc chứng từ", "url");
   }
   if (spec.entity === "media") {
@@ -311,6 +321,7 @@ export function Editor({
       "category",
       "spent_on",
       "payer",
+      "settlement_type",
       "receipt_url",
       "note",
     ]),
@@ -356,6 +367,41 @@ export function Editor({
       }
       for (const k of ["unit_price", "amount"])
         if (fields.some((f) => f.key === k)) data[k] = parseMoneyInput(data[k]);
+      if (spec.entity === "budget") {
+        data.cost_sharing = (values.cost_sharing || {
+          mode: "equal",
+        }) as CostSharing;
+        allocateCost(
+          Math.round(Number(data.quantity) * Number(data.unit_price)),
+          data.cost_sharing as CostSharing,
+          bundle?.participants || [],
+        );
+      }
+      if (spec.entity === "expense") {
+        if (data.payment_source === "fund") {
+          data.payer = "";
+          data.payer_participant_id = null;
+          data.settlement_type = "direct";
+        } else {
+          const matches =
+            bundle?.participants.filter(
+              (p) => p.name.trim() === String(data.payer || "").trim(),
+            ) || [];
+          if (
+            data.kind === "payment" &&
+            data.payer &&
+            (!row || data.payer !== row.payer) &&
+            matches.length !== 1
+          )
+            throw Error(
+              "Chọn người thanh toán có tên riêng biệt trong danh sách người tham gia.",
+            );
+          data.payer_participant_id =
+            matches.length === 1
+              ? matches[0].id
+              : row?.payer_participant_id || null;
+        }
+      }
       const parsed = schemas[spec.entity].safeParse(data);
       if (!parsed.success) throw Error(parsed.error.issues[0].message);
       const hash = JSON.stringify(parsed.data);
@@ -637,6 +683,19 @@ export function Editor({
               TripFlow V1.8.4 giữ nguyên link bạn dán và chỉ đọc tọa độ ngầm khi
               cần. Ngày/giờ kết thúc có thể để trống.
             </p>
+          )}
+          {spec.entity === "budget" && (
+            <CostSharingFields
+              total={Math.round(
+                Number(watch("quantity") || 0) *
+                  parseMoneyInput(watch("unit_price")),
+              )}
+              participants={bundle?.participants || []}
+              value={watch("cost_sharing") as CostSharing | null}
+              onChange={(value) =>
+                setValue("cost_sharing", value, { shouldDirty: true })
+              }
+            />
           )}
           {spec.entity === "expense" && linkedCategory && (
             <p className="hint full">

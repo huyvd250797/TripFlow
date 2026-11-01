@@ -9,6 +9,15 @@ import {
 } from "@/lib/api-hardening";
 export const dynamic = "force-dynamic";
 const messages: Record<string, string> = {
+  INVALID_COST_SHARING:
+    "Cách chia không hợp lệ. Kiểm tra phần cố định và danh sách người chia.",
+  COST_SHARING_EXCEEDS_TOTAL: "Phần cố định vượt tổng tiền khoản dự toán.",
+  COST_SHARING_NO_PARTICIPANTS:
+    "Hãy thêm người tham gia trước khi chia chi phí.",
+  PARTICIPANT_HAS_COST_SHARES:
+    "Người này đang được phân chia chi phí. Hãy sửa các khoản dự toán liên quan trước khi xóa.",
+  INVALID_PARTICIPANT:
+    "Người đã chọn không còn thuộc chuyến đi. Tải lại và chọn lại.",
   FUND_INSUFFICIENT:
     "Quỹ không đủ tiền. Kiểm tra đóng quỹ hoặc chọn cá nhân ứng trước.",
   REIMBURSEMENT_EXCEEDS_ADVANCE:
@@ -318,6 +327,18 @@ export async function POST(req: NextRequest) {
     const parsed = mutationSchema.safeParse(json);
     if (!parsed.success)
       return reply({ error: parsed.error.issues[0]?.message }, 400);
+    if (parsed.data.entity === "budget" || parsed.data.entity === "expense") {
+      const ready = await a.s.rpc("tf_cost_sharing_ready");
+      if (ready.error || !ready.data)
+        return reply(
+          {
+            error:
+              "Cần chạy migration 202611010003_v2100_custom_cost_sharing.sql trước khi lưu dữ liệu V2.10.0.",
+            code: "V2100_MIGRATION_REQUIRED",
+          },
+          503,
+        );
+    }
     const { data, error } = await a.s.rpc("tf_mutate", { req: parsed.data });
     if (error) {
       const code = Object.keys(messages).find((k) => error.message.includes(k));

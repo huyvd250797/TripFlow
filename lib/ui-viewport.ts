@@ -16,12 +16,16 @@ export function syncDialogViewport() {
     height = window.innerHeight;
     top = 0;
   }
+  const keyboard = Boolean(editing && window.innerHeight - height > 120);
+  // Only the keyboard uses JS dimensions. Closed sheets use the fixed frame's
+  // own edges, so stale iOS offsets cannot leave a bottom gap.
   const style = document.documentElement.style;
   style.setProperty("--tf-viewport-height", `${Math.round(height)}px`);
   style.setProperty("--tf-viewport-top", `${Math.round(top)}px`);
   style.setProperty("--tf-viewport-bottom", `${Math.round(top + height)}px`);
-  document.documentElement.dataset.keyboard =
-    editing && window.innerHeight - height > 120 ? "open" : "closed";
+  style.setProperty("--tf-keyboard-height", `${Math.round(height)}px`);
+  style.setProperty("--tf-keyboard-top", `${Math.round(top)}px`);
+  document.documentElement.dataset.keyboard = keyboard ? "open" : "closed";
 }
 
 export function observeDialogViewport() {

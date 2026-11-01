@@ -461,7 +461,7 @@ export function TripFund({
                   <div className="fund-list">
                     <h3>Cá nhân còn ứng · {money(totals.outstanding)}</h3>
                     <p className="hint">
-                      Ghi chi tiêu với nguồn “Cá nhân ứng trước”, rồi hoàn ứng
+                      Ghi chi tiêu cá nhân với hình thức “Ứng trước, cần hoàn ứng”, rồi hoàn ứng
                       đúng khoản. Tổng thực chi không tăng khi hoàn ứng.
                     </p>
                     {totals.advances.length === 0 && (

@@ -25,6 +25,7 @@ const AnalyticsModule = dynamic(
 import { TripFund, FinanceBanner } from "./trip-fund";
 import { CommandDock } from "./ui/command-dock";
 import { observeDialogViewport } from "@/lib/ui-viewport";
+import { CostSharingReport } from "./cost-sharing";
 import { ModuleHub } from "./ui/module-hub";
 import { ConnectionStatus } from "./connection-status";
 const Bookings = dynamic(() => import("./bookings").then((m) => m.Bookings), {
@@ -4776,6 +4777,7 @@ function App() {
                       </>
                     ) : financeTab === "summary" ? (
                       <>
+                        <CostSharingReport bundle={data} />
                         <section className="panel">
                           <div className="section-heading">
                             <div>
@@ -5162,6 +5164,13 @@ function App() {
                                   {b.quantity} × {money(Number(b.unit_price))}
                                 </small>
                                 {b.note && <p className="prewrap">{b.note}</p>}
+                                <small>
+                                  {b.cost_sharing?.mode === "equal"
+                                    ? "Chia đều tất cả người tham gia"
+                                    : b.cost_sharing
+                                      ? "Cố định + chia phần còn lại"
+                                      : "Chưa khai báo cách chia"}
+                                </small>
                               </div>
                               <b className="ledger-amount">
                                 {money(Number(b.amount))}
@@ -5228,10 +5237,14 @@ function App() {
                                 <h3>{x.title}</h3>
                                 <small>
                                   {dateLabel(x.spent_on)} · {x.category} ·{" "}
-                                  {x.payer || "Chưa ghi người trả"} ·{" "}
+                                  {x.payment_source !== "fund" && (
+                                    <>{x.payer || "Chưa ghi người trả"} · </>
+                                  )}
                                   {x.payment_source === "fund"
                                     ? "Quỹ chuyến đi"
-                                    : "Cá nhân ứng trước"}
+                                    : x.settlement_type === "direct"
+                                      ? "Cá nhân thanh toán"
+                                      : "Cá nhân ứng trước"}
                                 </small>
                                 <small>
                                   {x.kind === "refund" ? "Hoàn tiền · " : ""}

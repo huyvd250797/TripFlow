@@ -295,6 +295,13 @@ export const ROADMAP: RoadmapItem[] = [
   },
   {
     version: "V2.10.0",
+    title: "Custom Cost Sharing",
+    done: true,
+    description:
+      "Hai cách chia theo khoản dự toán, thanh toán phần chịu tách khỏi ứng trước, ẩn người trả khi dùng quỹ; sheet bám đáy, kéo theo tay và trượt mở/đóng.",
+  },
+  {
+    version: "V2.11.0",
     title: "Travel Readiness & Reminders",
     done: false,
     description:

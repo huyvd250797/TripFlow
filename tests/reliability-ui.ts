@@ -122,6 +122,9 @@ async function main() {
   if (process.env.TRIPFLOW_FUND_TEST)
     for (let i = 1; i <= 8; i++)
       await mutate("participant", { name: `Thành viên ${i}`, note: "" });
+  if (process.env.TRIPFLOW_COST_TEST)
+    for (const name of ["A", "B", "C", "D", "Không chia"])
+      await mutate("participant", { name, note: "" });
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
     args: [
@@ -134,6 +137,7 @@ async function main() {
   const context = await browser.newContext({
     viewport: {
       width:
+        process.env.TRIPFLOW_COST_TEST ||
         process.env.TRIPFLOW_FUND_TEST ||
         process.env.TRIPFLOW_BOOKINGS_TEST ||
         process.env.TRIPFLOW_MOBILE_TEST ||
@@ -432,6 +436,166 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_COST_TEST) {
+      await nav("Chi phí");
+      await page
+        .locator(".finance-toolbar")
+        .getByRole("button", { name: "Dự toán", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Thêm dự toán", exact: true })
+        .click();
+      const sheet = page.getByRole("dialog");
+      await page
+        .getByLabel("Tên khoản *", { exact: true })
+        .fill("Tiền phòng 10.740.000");
+      await page.getByLabel("Đơn giá VNĐ *", { exact: true }).fill("10740000");
+      await expect(page.getByLabel("Cách chia", { exact: true })).toHaveValue(
+        "equal",
+      );
+      await expect(sheet.locator(".cost-people")).toHaveCount(0);
+      await expect(sheet.locator(".cost-preview > div")).toHaveCount(5);
+      await page
+        .getByLabel("Cách chia", { exact: true })
+        .selectOption("fixed_remainder");
+      await page
+        .getByLabel("Người chịu phần cố định 1", { exact: true })
+        .selectOption({ label: "A" });
+      await page
+        .getByLabel("Số tiền cố định 1", { exact: true })
+        .fill("7000000");
+      for (const name of ["B", "C", "D"])
+        await sheet.getByRole("checkbox", { name, exact: true }).check();
+      await expect(
+        sheet.getByRole("checkbox", { name: "Không chia", exact: true }),
+      ).not.toBeChecked();
+      await expect(sheet.locator(".cost-preview > div")).toHaveCount(4);
+      for (const width of [320, 390, 430]) {
+        await page.setViewportSize({ width, height: 844 });
+        expect(
+          await sheet.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+        ).toBe(true);
+        const box = (await sheet.boundingBox())!;
+        expect(Math.abs(box.y + box.height - 844)).toBeLessThan(2);
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await sheet
+        .getByRole("button", { name: "Lưu thay đổi", exact: true })
+        .click();
+      await expect(sheet).toHaveCount(0);
+      const saved = (
+        await db.query<any>(
+          "select * from budget_items where title='Tiền phòng 10.740.000'",
+        )
+      ).rows[0];
+      expect(saved.cost_sharing.mode).toBe("fixed_remainder");
+      expect(saved.cost_sharing.participants).toHaveLength(3);
+      await page
+        .getByRole("button", { name: "Ghi chi tiêu", exact: true })
+        .first()
+        .click();
+      await page.getByLabel("Số tiền VNĐ *", { exact: true }).fill("5370000");
+      await page
+        .getByLabel("Nội dung chi *", { exact: true })
+        .fill("Cọc phòng 50%");
+      await sheet.locator(".smart-form-toggle").click();
+      await page
+        .getByLabel("Thuộc khoản dự toán", { exact: true })
+        .selectOption(saved.id);
+      await page.getByLabel("Nguồn tiền", { exact: true }).selectOption("fund");
+      await expect(
+        page.getByLabel("Người thanh toán / người thực hiện", { exact: true }),
+      ).toHaveCount(0);
+      await page
+        .getByLabel("Nguồn tiền", { exact: true })
+        .selectOption("personal");
+      await page
+        .getByLabel("Người thanh toán / người thực hiện", { exact: true })
+        .selectOption({ label: "A" });
+      await expect(
+        page.getByLabel("Hình thức cá nhân thanh toán", { exact: true }),
+      ).toHaveValue("direct");
+      // A small stale iOS visual-viewport gap must not move the closed-keyboard sheet upwards.
+      await page.evaluate(() => {
+        Object.defineProperty(window.visualViewport, "height", {
+          configurable: true,
+          value: 784,
+        });
+        Object.defineProperty(window.visualViewport, "offsetTop", {
+          configurable: true,
+          value: 0,
+        });
+        window.visualViewport!.dispatchEvent(new Event("resize"));
+      });
+      await page.waitForTimeout(100);
+      let bounds = (await sheet.boundingBox())!;
+      expect(Math.abs(bounds.y + bounds.height - 844)).toBeLessThan(2);
+      await page.evaluate(() => {
+        Reflect.deleteProperty(window.visualViewport!, "height");
+        Reflect.deleteProperty(window.visualViewport!, "offsetTop");
+        window.visualViewport!.dispatchEvent(new Event("resize"));
+      });
+      await sheet
+        .getByRole("button", { name: "Lưu thay đổi", exact: true })
+        .click();
+      await expect(sheet).toHaveCount(0);
+      await page
+        .locator(".finance-toolbar")
+        .getByRole("button", { name: "Đối chiếu", exact: true })
+        .click();
+      const report = page.locator(".cost-sharing-report");
+      await report
+        .getByLabel("Khoản dự toán cần đối chiếu", { exact: true })
+        .selectOption(saved.id);
+      await expect(report).toContainText("5.370.000");
+      await expect(report).toContainText("7.000.000");
+      await expect(report).toContainText("1.630.000");
+      await expect(report.locator(".cost-person")).toHaveCount(4);
+      await page.screenshot({
+        path: "test-results/v210-custom-sharing.png",
+        fullPage: true,
+      });
+      const expense = (
+        await db.query<any>(
+          "select * from expenses where title='Cọc phòng 50%'",
+        )
+      ).rows[0];
+      expect(expense.settlement_type).toBe("direct");
+      expect(
+        (await db.query<any>("select count(*)::int n from fund_entries"))
+          .rows[0].n,
+      ).toBe(0);
+      // Real animation and pointer following; reject a dirty close then close an empty picker.
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await nav("Thêm");
+      const picker = page.locator(".module-picker");
+      await expect(picker).toBeVisible();
+      await expect(page.locator(".module-grid")).toHaveCount(1);
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: "test-results/v210-module-picker.png" });
+      const grip = (await picker.locator(".sheet-grip").boundingBox())!;
+      await page.mouse.move(grip.x + grip.width / 2, grip.y + 10);
+      await page.mouse.down();
+      await page.mouse.move(grip.x + grip.width / 2, grip.y + 130, {
+        steps: 10,
+      });
+      expect(
+        await page
+          .locator(".dialog-motion")
+          .evaluate((el) => getComputedStyle(el).transform),
+      ).not.toBe("none");
+      await page.mouse.up();
+      await expect(page.locator(".dialog-exit-layer")).toHaveCount(1);
+      await expect(page.locator(".dialog-exit-layer")).toHaveCount(0);
+      await expect(
+        page.locator(".screen-content[data-screen=money]"),
+      ).toBeVisible();
+      expect(errors).toEqual([]);
+      console.log(
+        "PASS V2.10 custom shares: exact hotel split and deposit, 5 versus 3 selected people, hidden fund payer, direct payment without reimbursement, stale 60px viewport recovery, responsive input containment, drag following and animated exit.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_FUND_TEST) {
       await nav("Chi phí");
       await expect(
@@ -626,21 +790,24 @@ async function main() {
       await expect(
         dialog.getByLabel("Mục tiêu đóng (VNĐ)", { exact: true }),
       ).toHaveValue("1.000.000");
-      expect(
-        await dialog
-          .locator(".fund-form-footer button")
-          .evaluateAll((buttons) =>
-            buttons.every((button) => {
-              const r = button.getBoundingClientRect();
-              return button.contains(
-                document.elementFromPoint(
-                  r.x + r.width / 2,
-                  r.y + r.height / 2,
-                ),
-              );
-            }),
-          ),
-      ).toBe(true);
+      await expect
+        .poll(
+          async () =>
+            await dialog
+              .locator(".fund-form-footer button")
+              .evaluateAll((buttons) =>
+                buttons.every((button) => {
+                  const r = button.getBoundingClientRect();
+                  return button.contains(
+                    document.elementFromPoint(
+                      r.x + r.width / 2,
+                      r.y + r.height / 2,
+                    ),
+                  );
+                }),
+              ),
+        )
+        .toBe(true);
       await page.screenshot({ path: "test-results/v294-target-sheet.png" });
       await expect(dialog.locator(".fund-management")).toHaveCount(0);
       const footer = await dialog.locator(".fund-form-footer").boundingBox();
@@ -837,8 +1004,7 @@ async function main() {
       });
       await picker
         .getByRole("button", {
-          name: "Đặt chỗ & tài liệu Mở quản lý",
-          exact: true,
+          name: /^Đặt chỗ & tài liệu/,
         })
         .click();
       await expect(picker).toHaveCount(0);
@@ -1108,9 +1274,10 @@ async function main() {
       await openExpense.click();
       const dialog = page.getByRole("dialog");
       await expect(dialog).toBeVisible();
-      expect(
-        await dialog.evaluate((el) => getComputedStyle(el).animationName),
-      ).toBe("tf-sheet-fade");
+      await expect(page.locator(".dialog-motion")).toHaveAttribute(
+        "data-enter-motion",
+        "slide-up",
+      );
       await page.getByLabel("Số tiền VNĐ *", { exact: true }).fill("75000");
       await page
         .getByLabel("Nội dung chi *", { exact: true })
@@ -1177,9 +1344,10 @@ async function main() {
           return box ? Math.round(box.y + box.height) : 0;
         })
         .toBe(844);
-      expect(
-        await dialog.evaluate((el) => getComputedStyle(el).animationName),
-      ).toBe("tf-sheet-fade");
+      await expect(page.locator(".dialog-motion")).toHaveAttribute(
+        "data-enter-motion",
+        "slide-up",
+      );
       await page.screenshot({
         path: "test-results/v260-dark-mobile-sheet.png",
         fullPage: true,

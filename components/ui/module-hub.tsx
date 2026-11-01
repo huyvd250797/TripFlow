@@ -8,7 +8,6 @@ import {
 } from "react";
 import {
   ArrowLeft,
-  Compass,
   Users,
   ShieldCheck,
   FileText,
@@ -80,9 +79,39 @@ export function ModuleHub({
               window.scrollTo({ top: 0 });
             }}
           >
-            <Icon size={23} />
-            <strong>{title}</strong>
-            <small>Mở quản lý</small>
+            <div className="module-tile-title">
+              <Icon size={21} />
+              <strong>{title}</strong>
+            </div>
+            <small>
+              {/giao diện/i.test(title)
+                ? "Màu sắc & chế độ hiển thị"
+                : /đặt chỗ/i.test(title)
+                  ? "Vé, lưu trú & giấy tờ chuyến đi"
+                  : /người/i.test(title)
+                    ? "Danh sách người cùng đi"
+                    : /quyền/i.test(title)
+                      ? "Mời thành viên & phân quyền"
+                      : /thông tin/i.test(title)
+                        ? "Điểm đến, ngày đi & kế hoạch"
+                        : /xóa/i.test(title)
+                          ? "Quản lý xóa chuyến đi"
+                          : /mẫu/i.test(title)
+                            ? "Lưu và dùng lại kế hoạch"
+                            : /phân tích/i.test(title)
+                              ? "Chi phí & tổng kết hành trình"
+                              : /dữ liệu/i.test(title)
+                                ? "Đồng bộ, offline & tài khoản"
+                                : /backup|khôi phục/i.test(title)
+                                  ? "Sao lưu & khôi phục dữ liệu"
+                                  : /thiết bị/i.test(title)
+                                    ? "Cài app & sử dụng trên điện thoại"
+                                    : /production/i.test(title)
+                                      ? "Kiểm tra trạng thái hệ thống"
+                                      : /roadmap/i.test(title)
+                                        ? "Tính năng & phiên bản tiếp theo"
+                                        : "Tùy chỉnh & quản lý chuyến đi"}
+            </small>
           </button>
         );
       })}

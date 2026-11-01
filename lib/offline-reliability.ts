@@ -231,6 +231,7 @@ function optimisticBudget(mutation: Mutation, nowIso: string): Budget | null {
     quantity,
     unit_price: unitPrice,
     amount: Math.round(quantity * unitPrice),
+    cost_sharing: data.cost_sharing as Budget["cost_sharing"],
     item_id: data.item_id ? String(data.item_id) : null,
     note: String(data.note || ""),
   };
@@ -249,7 +250,11 @@ function optimisticExpense(mutation: Mutation, nowIso: string): Expense | null {
     budget_id: data.budget_id ? String(data.budget_id) : null,
     refund_of: data.refund_of ? String(data.refund_of) : null,
     payment_source: data.payment_source === "fund" ? "fund" : "personal",
-    payer: String(data.payer || ""),
+    payer: data.payment_source === "fund" ? "" : String(data.payer || ""),
+    payer_participant_id: data.payer_participant_id
+      ? String(data.payer_participant_id)
+      : null,
+    settlement_type: data.settlement_type === "direct" ? "direct" : "advance",
     note: String(data.note || ""),
     receipt_url: String(data.receipt_url || ""),
   };

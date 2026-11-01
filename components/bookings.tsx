@@ -388,7 +388,17 @@ export function Bookings({
                   {bundle.budgets.find((b) => b.id === row.budget_id)?.title ||
                     "Đã xóa"}{" "}
                   · Đã trả ròng: {money(paid)}. Tổng này thuộc khoản dự toán
-                  liên kết.
+                  liên kết. Còn trả:{" "}
+                  {money(
+                    Math.max(
+                      0,
+                      Number(
+                        bundle.budgets.find((b) => b.id === row.budget_id)
+                          ?.amount || 0,
+                      ) - paid,
+                    ),
+                  )}
+                  .
                 </p>
               )}
               <div className="actions">

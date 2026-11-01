@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { costSharingSchema } from "./cost-sharing";
 import { CATEGORIES } from "./types";
 const text = z.string().trim().min(1, "Vui lòng nhập nội dung.").max(200);
 const note = z.string().max(5000).default("");
@@ -70,6 +71,7 @@ export const schemas = {
     ),
   budget: z
     .object({
+      cost_sharing: costSharingSchema.nullable().optional(),
       title: text,
       category: z.enum(CATEGORIES),
       item_id: ref,
@@ -97,7 +99,9 @@ export const schemas = {
     refund_of: ref,
     spent_on: day,
     payment_source: z.enum(["personal", "fund"]).optional(),
-    payer: z.string().max(160),
+    payer: z.string().max(160).default(""),
+    payer_participant_id: ref,
+    settlement_type: z.enum(["advance", "direct"]).optional(),
     note,
     receipt_url: link,
   }),

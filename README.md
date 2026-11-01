@@ -1,10 +1,21 @@
-# TripFlow 2.9.4 · Bottom Sheets & Module Navigation
+# TripFlow 2.10.0 · Custom Cost Sharing
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.10.0 — Custom Cost Sharing
+
+- Dự toán có đúng hai cách chia: chia đều toàn bộ danh sách người tham gia (không chọn người), hoặc cố định một phần rồi chia đều phần còn lại cho những người được chọn. Có xem trước, làm tròn VNĐ bảo toàn tổng tiền, kiểm tra danh sách và phần cố định.
+- Đối chiếu hiển thị phần phải chịu, thanh toán theo người, tổng đã trả và còn trả nhà cung cấp theo khoản dự toán. Cọc nhiều lần cùng khoản không làm thay đổi thỏa thuận chia.
+- Cá nhân thanh toán chọn hình thức trả phần phải chịu hoặc ứng trước cần hoàn. Khoản trả trực tiếp không tự thành đóng quỹ/hoàn ứng. Chọn Quỹ chuyến đi ẩn người thanh toán và lưu người trả rỗng ở server.
+- Bottom sheet dùng một khung portal fixed bám đáy; chỉ dùng kích thước visual viewport khi bàn phím mở. Mở trượt lên, đóng trượt xuống cả khi lưu/hủy/Back; kéo tay nắm hoặc header theo tay, kéo ngắn trả về, bảo vệ dữ liệu chưa lưu và thao tác đang xử lý. Giảm chuyển động được tôn trọng.
+- Thêm: một danh sách module hai cột theo mẫu Mẹ Yêu Bé, màu TripFlow, tên đầy đủ và mô tả từng chức năng; không có menu trùng ở trang nền. Popup cập nhật/xác nhận nhỏ căn giữa, desktop giữ hộp thoại giữa màn hình.
+- Bắt buộc chạy `202611010003_v2100_custom_cost_sharing.sql` sau database V2.9.0, trước deploy V2.10.0. App/DB 2.10.0. Không reset hoặc chạy lại SQL cũ. TXT được bàn giao riêng.
+
+Xem `docs/UPGRADE-V2.10.0.md` và `docs/VALIDATION-V2.10.0.md`.
 
 ## V2.9.4 — Bottom Sheets & Module Navigation
 
@@ -199,6 +210,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202610310001_v241_travel_reliability_permissions.sql` — V2.4.1: năm quyền độc lập, RPC/RLS và schema marker mới.
    - `supabase/migrations/202611010001_v280_bookings_documents.sql` — V2.8.0: đặt chỗ/tài liệu, RLS/RPC và marker 2.8.0; chạy sau V2.4.1.
    - `supabase/migrations/202611010002_v290_trip_fund.sql` — V2.9.0: quỹ, nguồn tiền thực chi, backup quỹ và marker 2.9.0; chạy sau V2.8.0.
+   - `supabase/migrations/202611010003_v2100_custom_cost_sharing.sql` — V2.10.0: chia chi phí và thanh toán cá nhân; chạy sau V2.9.0.
      **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0, V2.0.0, V2.2.0, V2.2.1, V2.3.0 và V2.4.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.4.0 (App V2.4.0), chỉ chạy migration V2.4.1 mới rồi deploy source. Nếu DB V1.3.0, chạy V1.4.0 rồi V2.4.1. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
@@ -292,7 +304,7 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 ## 1.9. Stable Production Release V1.0.0
 
 - Chạy `202609280005_v100_stable_production_release.sql` sau V0.9.0 trước khi deploy source V1.0.0.
-- **Thêm → Trạng thái Production** chỉ báo sẵn sàng khi source, database marker và channel đều là `2.9.0 / stable`, đồng thời các guard server/client đều đạt.
+- **Thêm → Trạng thái Production** chỉ báo sẵn sàng khi source, database marker và channel đều là `2.10.0 / stable`, đồng thời các guard server/client đều đạt.
 - V1.0.0 không thêm bảng nghiệp vụ mới, không sửa dữ liệu chuyến đi và không thay đổi mô hình quyền; đây là bản đóng roadmap 1.0 để vận hành ổn định.
 - Service worker dùng cache `tripflow-shell-v100`; API private tiếp tục `no-store`, same-origin/content-type/payload guard và request-id.
 - Trước deploy production thực tế, hoàn tất `docs/RELEASE-CHECKLIST.md`; sau deploy dùng `docs/PRODUCTION-RUNBOOK.md` để smoke test, backup và rollback.

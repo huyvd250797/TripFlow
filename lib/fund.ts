@@ -94,7 +94,7 @@ export function fundTotals(data: FundData, expenses: Expense[]) {
     .filter((e) => e.payment_source === "fund")
     .reduce((s, e) => s + (e.kind === "refund" ? -1 : 1) * Number(e.amount), 0);
   const advances = expenses
-    .filter((e) => e.kind === "payment" && e.payment_source !== "fund")
+    .filter((e) => e.kind === "payment" && e.payment_source !== "fund" && e.settlement_type !== "direct")
     .map((e) => ({
       expense: e,
       remaining:
