@@ -1,5 +1,5 @@
 /* Generated at build time. Private APIs and auth are never cached here. */
-const VERSION = "2.9.1";
+const VERSION = "2.9.2";
 const CACHE = `tripflow-shell-${VERSION}`;
 const ASSETS = [];
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png", ...ASSETS];

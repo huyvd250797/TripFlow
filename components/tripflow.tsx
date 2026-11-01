@@ -22,7 +22,7 @@ const AnalyticsModule = dynamic(
   () => import("./analytics-module").then((m) => m.AnalyticsModule),
   { loading: () => <ModuleSkeleton label="Đang tải báo cáo" />, ssr: false },
 );
-import { TripFund } from "./trip-fund";
+import { TripFund, FinanceBanner } from "./trip-fund";
 import { ModuleHub } from "./ui/module-hub";
 import { ConnectionStatus } from "./connection-status";
 const Bookings = dynamic(() => import("./bookings").then((m) => m.Bookings), {
@@ -4527,48 +4527,13 @@ function App() {
                 )}
                 {tab === "money" && data && totals && financeReport && (
                   <>
-                    {financeTab !== "wallet" && (
-                      <section className="money-banner finance-v030">
-                        <div>
-                          <span>Dự toán gốc</span>
-                          <strong>
-                            {financeReport.baseline_snapshot_id
-                              ? money(financeReport.totals.original_budget)
-                              : "Chưa chốt"}
-                          </strong>
-                        </div>
-                        <div>
-                          <span>Dự toán hiện tại</span>
-                          <strong>
-                            {money(financeReport.totals.current_budget)}
-                          </strong>
-                        </div>
-                        <div>
-                          <span>Thực chi ròng</span>
-                          <strong>
-                            {money(financeReport.totals.net_actual)}
-                          </strong>
-                        </div>
-                        <div>
-                          <span>
-                            {financeReport.totals.current_variance < 0
-                              ? "Vượt dự toán"
-                              : "Còn lại"}
-                          </span>
-                          <strong
-                            className={
-                              financeReport.totals.current_variance < 0
-                                ? "over-text"
-                                : ""
-                            }
-                          >
-                            {money(
-                              Math.abs(financeReport.totals.current_variance),
-                            )}
-                          </strong>
-                        </div>
-                      </section>
-                    )}
+                    <FinanceBanner
+                      bundle={data}
+                      userId={user.id}
+                      online={online}
+                      budget={financeReport.totals.current_budget}
+                      actual={financeReport.totals.net_actual}
+                    />
                     <div className="finance-toolbar">
                       <div className="segments">
                         {[
@@ -4671,25 +4636,6 @@ function App() {
                             )}
                           </div>
                           <div className="wallet-kpis">
-                            <article
-                              className={
-                                wallet.remaining < 0
-                                  ? "wallet-kpi over"
-                                  : "wallet-kpi"
-                              }
-                            >
-                              <span>
-                                {wallet.remaining < 0
-                                  ? "Đã vượt"
-                                  : "Còn trong ngân sách"}
-                              </span>
-                              <b>{money(Math.abs(wallet.remaining))}</b>
-                              <small>
-                                {wallet.spending_percent == null
-                                  ? "Chưa có dự toán"
-                                  : `Đã dùng ${wallet.spending_percent}%`}
-                              </small>
-                            </article>
                             <article className="wallet-kpi">
                               <span>Bình quân / người</span>
                               <b>{money(wallet.per_person)}</b>

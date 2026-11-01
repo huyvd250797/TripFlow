@@ -1,4 +1,4 @@
-export const VERSION = "2.9.1";
+export const VERSION = "2.9.2";
 export const DATABASE_VERSION = "2.9.0";
 export const CATEGORIES = [
   "Di chuyển",

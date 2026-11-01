@@ -119,6 +119,9 @@ async function main() {
   let viewerCanDelete = false;
   if (process.env.TRIPFLOW_FUND_TEST)
     await mutate("participant", { name: "Mai Phụng", note: "" });
+  if (process.env.TRIPFLOW_FUND_TEST)
+    for (let i = 1; i <= 8; i++)
+      await mutate("participant", { name: `Thành viên ${i}`, note: "" });
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
     args: [
@@ -434,13 +437,34 @@ async function main() {
       await expect(
         page.locator(".finance-toolbar .segments button"),
       ).toHaveCount(3);
-      await expect(page.locator(".money-banner")).toHaveCount(0);
+      await expect(page.locator(".money-banner")).toHaveCount(1);
+      await expect(page.locator(".money-banner")).toContainText(
+        "Chưa thiết lập",
+      );
+      for (const label of ["Dự toán", "Thực chi", "Tổng quan"]) {
+        await page
+          .locator(".finance-toolbar")
+          .getByRole("button", { name: label, exact: true })
+          .click();
+        await expect(page.locator(".money-banner")).toBeVisible();
+        await expect(page.locator(".money-banner > div")).toHaveCount(4);
+      }
+      await expect(page.locator(".travel-wallet-panel")).not.toContainText(
+        "Còn trong ngân sách",
+      );
       await page
         .getByRole("button", { name: "Quản lý quỹ", exact: true })
         .click();
-      const dialog = page.getByRole("dialog", {
-        name: "Quản lý quỹ chuyến đi",
-        exact: true,
+      const dialog = page.locator(".fund-dialog");
+      await expect(dialog.locator(".fund-list")).toBeVisible();
+      expect(
+        await dialog
+          .locator(".fund-list")
+          .evaluate((el) => getComputedStyle(el).overflowY),
+      ).toBe("visible");
+      await page.screenshot({
+        path: "test-results/v292-management.png",
+        fullPage: true,
       });
       await dialog
         .getByRole("button", { name: "Người giữ quỹ", exact: true })
@@ -453,6 +477,11 @@ async function main() {
         .click();
       await expect(dialog.locator(".fund-form")).toHaveCount(0);
       const member = dialog.locator(".fund-list article").first();
+      const firstName = await member.locator("b").first().innerText();
+      await dialog
+        .getByLabel("Tìm thành viên", { exact: true })
+        .fill(firstName);
+      await expect(dialog.locator(".fund-member-row")).toHaveCount(1);
       await member
         .getByRole("button", { name: "Mức đóng", exact: true })
         .click();
@@ -460,17 +489,28 @@ async function main() {
         .getByLabel("Mục tiêu đóng (VNĐ)", { exact: true })
         .fill("1000000");
       await dialog.getByLabel("Hạn đóng", { exact: true }).fill("2026-11-05");
+      await expect(dialog.locator(".fund-management")).toHaveCount(0);
+      const footer = await dialog.locator(".fund-form-footer").boundingBox();
+      expect(footer!.y + footer!.height).toBeGreaterThan(700);
+      await expect(
+        dialog.getByRole("button", { name: "Lưu quỹ", exact: true }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: "test-results/v292-target-form.png",
+        fullPage: true,
+      });
       await dialog
         .getByRole("button", { name: "Lưu quỹ", exact: true })
         .click();
       await expect(member).toContainText("1.000.000");
+      await expect(dialog.locator(".fund-form")).toHaveCount(0);
       await member
         .getByRole("button", { name: "Ghi đóng quỹ", exact: true })
         .click();
       await dialog
         .getByRole("button", { name: "Lưu quỹ", exact: true })
         .click();
-      await expect(dialog.locator(".fund-stats").first()).toContainText(
+      await expect(dialog.locator(".fund-cash-hero")).toContainText(
         "1.000.000",
       );
       await dialog
@@ -547,9 +587,20 @@ async function main() {
         .locator(".finance-toolbar")
         .getByRole("button", { name: "Tổng quan", exact: true })
         .click();
-      await expect(page.locator(".trip-fund-panel .fund-stats")).toContainText(
-        "680.000",
-      );
+      await expect(page.locator(".money-banner")).toContainText("680.000");
+      for (const width of [320, 390, 430, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.evaluate(() => window.scrollTo(0, 0));
+        expect(
+          await page
+            .locator(".money-banner")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+        ).toBe(true);
+        await page.screenshot({
+          path: `test-results/v292-summary-${width}.png`,
+        });
+      }
+
       await page.locator(".theme-compact").click();
       await page.locator(".theme-compact").click();
       await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -1025,9 +1076,7 @@ async function main() {
       .getByRole("button", { name: "Lưu thay đổi", exact: true })
       .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(page.locator(".travel-wallet-panel")).toContainText(
-      "2.830.000",
-    );
+    await expect(page.locator(".money-banner")).toContainText("2.830.000");
     await page.screenshot({
       path: "test-results/v241-light-mobile-offline-wallet.png",
       fullPage: true,

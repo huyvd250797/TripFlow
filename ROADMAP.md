@@ -284,6 +284,13 @@ V2.7.0 đã hoàn thành; xem các bản bổ sung bên dưới.
 - App 2.9.1 / database 2.9.0. Không cần chạy migration mới; nếu chưa chạy migration quỹ V2.9.0 thì vẫn phải hoàn thành trước khi dùng quỹ.
 - Deploy lại source mới, không bật Use existing Build Cache ở lần redeploy kiểm tra này. Install Command: npm ci; Build Command: npm run build; Node 24.x.
 
+## ✅ V2.9.2 — Finance Overview & Fund UX Polish
+
+- Khôi phục block xanh trên toàn bộ ba tab Chi phí: Dự toán hiện tại, Thực chi ròng, Còn/Vượt dự toán và Số dư quỹ thực tế. Quỹ chưa thiết lập/đang tải/offline có nhãn riêng; không nhầm ngân sách với tiền mặt.
+- Giảm lặp: bỏ số dư ở card quỹ Tổng quan và số còn ngân sách trong Ví; giữ Đã thu/Mục tiêu, Cá nhân còn ứng, bình quân/người và mức chi/ngày. Dự toán gốc vẫn ở Đối chiếu dự toán.
+- Quản lý quỹ dùng một vùng cuộn; danh sách gọn, tìm thành viên, hướng dẫn thiết lập, nút primary đúng màu app. Mở thao tác thành màn nhập riêng thay vì đẩy form xuống dưới danh sách; footer Lưu/Hủy bám cuối màn nhập. Chứng từ/ghi chú mở khi cần; tiền VNĐ có dấu phân cách hàng nghìn.
+- Banner và module dùng chung cache truy vấn, tự cập nhật sau giao dịch; API/RLS, version, idempotency và công thức quỹ giữ nguyên. Không cần chạy migration mới, App 2.9.2 / DB 2.9.0.
+
 ## Đề xuất V2.10.0 — Travel Readiness & Reminders
 
 Checklist trước đi, phân công chuẩn bị theo thành viên, nhắc hạn thanh toán/hủy và giờ sử dụng đặt chỗ. Ưu tiên cảnh báo trong ứng dụng trước; push notification cần thiết kế quyền và vận hành riêng. Chưa triển khai.

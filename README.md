@@ -1,10 +1,17 @@
-# TripFlow 2.9.1 · Deployment Lockfile Fix
+# TripFlow 2.9.2 · Finance Overview & Fund UX Polish
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.9.2 — Finance Overview & Fund UX Polish
+
+- Khôi phục block xanh trên toàn bộ ba tab Chi phí: Dự toán hiện tại, Thực chi ròng, Còn/Vượt dự toán và Số dư quỹ thực tế. Quỹ chưa thiết lập/đang tải/offline có nhãn riêng; không nhầm ngân sách với tiền mặt.
+- Giảm lặp: bỏ số dư ở card quỹ Tổng quan và số còn ngân sách trong Ví; giữ Đã thu/Mục tiêu, Cá nhân còn ứng, bình quân/người và mức chi/ngày. Dự toán gốc vẫn ở Đối chiếu dự toán.
+- Quản lý quỹ dùng một vùng cuộn; danh sách gọn, tìm thành viên, hướng dẫn thiết lập, nút primary đúng màu app. Mở thao tác thành màn nhập riêng thay vì đẩy form xuống dưới danh sách; footer Lưu/Hủy bám cuối màn nhập. Chứng từ/ghi chú mở khi cần; tiền VNĐ có dấu phân cách hàng nghìn.
+- Banner và module dùng chung cache truy vấn, tự cập nhật sau giao dịch; API/RLS, version, idempotency và công thức quỹ giữ nguyên. Không cần chạy migration mới, App 2.9.2 / DB 2.9.0.
 
 ## V2.9.1 — Deployment Lockfile Fix
 

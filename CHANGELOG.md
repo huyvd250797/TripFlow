@@ -1,5 +1,12 @@
 # Changelog
 
+## V2.9.2 — Finance Overview & Fund UX Polish
+
+- Khôi phục block xanh trên toàn bộ ba tab Chi phí: Dự toán hiện tại, Thực chi ròng, Còn/Vượt dự toán và Số dư quỹ thực tế. Quỹ chưa thiết lập/đang tải/offline có nhãn riêng; không nhầm ngân sách với tiền mặt.
+- Giảm lặp: bỏ số dư ở card quỹ Tổng quan và số còn ngân sách trong Ví; giữ Đã thu/Mục tiêu, Cá nhân còn ứng, bình quân/người và mức chi/ngày. Dự toán gốc vẫn ở Đối chiếu dự toán.
+- Quản lý quỹ dùng một vùng cuộn; danh sách gọn, tìm thành viên, hướng dẫn thiết lập, nút primary đúng màu app. Mở thao tác thành màn nhập riêng thay vì đẩy form xuống dưới danh sách; footer Lưu/Hủy bám cuối màn nhập. Chứng từ/ghi chú mở khi cần; tiền VNĐ có dấu phân cách hàng nghìn.
+- Banner và module dùng chung cache truy vấn, tự cập nhật sau giao dịch; API/RLS, version, idempotency và công thức quỹ giữ nguyên. Không cần chạy migration mới, App 2.9.2 / DB 2.9.0.
+
 ## V2.9.1 — Deployment Lockfile Fix
 
 - Tạo lại package-lock.json bằng npm; bổ sung tslib 2.9.1 tại nhánh @swc/helpers và các bản ghi dependency thiếu. Giữ các phiên bản dependency trực tiếp, giữ Vercel dùng npm ci.
