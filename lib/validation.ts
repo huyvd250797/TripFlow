@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  routeItemSchema,
+  wishSchema,
+  routeBatchSchema,
+} from "./flexible-planning";
 import { costSharingSchema } from "./cost-sharing";
 import {
   checklistSchema,
@@ -61,19 +66,9 @@ export const schemas = {
       (x) => !x.end_date || x.end_date >= x.start_date,
       "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.",
     ),
-  item: z
-    .object({
-      title: text,
-      location: z.string().max(300),
-      start_at: z.iso.datetime(),
-      end_at: nullableDateTime,
-      map_url: link,
-      note,
-    })
-    .refine(
-      (x) => !x.end_at || x.end_at > x.start_at,
-      "Giờ kết thúc phải sau giờ bắt đầu.",
-    ),
+  item: routeItemSchema,
+  wish: wishSchema,
+  route_batch: routeBatchSchema,
   budget: z
     .object({
       cost_sharing: costSharingSchema.nullable().optional(),
@@ -156,6 +151,8 @@ export const mutationSchema = z
       "checklist",
       "checklist_batch",
       "contact",
+      "wish",
+      "route_batch",
     ]),
     action: z.enum(["create", "update", "delete", "status", "accept"]),
     id: z.uuid().optional(),

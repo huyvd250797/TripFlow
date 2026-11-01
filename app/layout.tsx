@@ -5,6 +5,7 @@ import "./polish.css";
 import "./mobile-fix.css";
 import "./cost-sharing.css";
 import "./preparation.css";
+import "./flexible-planning.css";
 export const metadata: Metadata = {
   title: "TripFlow · Plan. Go. Remember.",
   description:

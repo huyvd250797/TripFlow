@@ -1,14 +1,13 @@
 # TripFlow — Roadmap
 
-Các bản đã phát hành giữ nguyên trong `lib/roadmap.ts` và CHANGELOG. Lịch tiếp theo sau các bản bổ sung UI, quỹ và chia chi phí:
+Các phiên bản đã phát hành được giữ trong `lib/roadmap.ts` và CHANGELOG. Không thay đổi thứ tự các bản đã chốt.
 
-| Phiên bản | Nội dung | Trạng thái |
-| --- | --- | --- |
-| V2.10.1 — Sheet & Cost Sharing UX Fix | Header/scroll bottom sheet, chia đều người được chọn, phân chia trong Báo cáo | Đã phát hành |
-| V2.11.0 — Packing, Checklist & Family Travel | Chuẩn bị chuyến đi, checklist/mẫu hành lý, phân công, gia đình, liên hệ, offline/backup | Đã xây dựng |
-| V2.12.0 — Flexible Itinerary & Route Planning | Mốc giờ cố định/linh hoạt, thời gian di chuyển/buffer, xem trước dời nhiều hoạt động, wishlist/phương án B, phương tiện theo chặng | Tiếp theo |
-| V2.13.0 — Group Expenses & Settlement | Hoàn thiện công nợ cá nhân, chuyển tiền và quyết toán; kế thừa quỹ và custom cost sharing | Dự kiến |
-| V2.14.0 — Travel Reminders & Offline Trip Pack | Nhắc việc/ICS, vé/tài liệu tải offline thật, chia sẻ chỉ đọc có chọn lọc | Dự kiến |
-| V2.15.0 — International Travel | Đa tiền tệ/tỷ giá giao dịch, múi giờ từng chặng, hộ chiếu/visa | Dự kiến |
+| Phiên bản | Mục tiêu | Chức năng chính | Kỹ thuật/dữ liệu | Điều kiện hoàn thành | Phụ thuộc/trạng thái |
+| --- | --- | --- | --- | --- | --- |
+| V2.11.0 — Packing, Checklist & Family Travel | Chuẩn bị trước chuyến đi | Checklist, mẫu hành lý, phân công, gia đình, liên hệ | RLS, offline queue, backup/restore | Theo dõi tiến độ và đồng bộ được | Đã xây dựng |
+| V2.12.0 — Flexible Itinerary & Route Planning | Điều chỉnh lịch theo thực tế | Giờ cố định/linh hoạt, giới hạn giờ, chặng di chuyển/dự phòng, xem trước dời nhiều điểm, wishlist/phương án B; đăng nhập mới | Giao dịch điều chỉnh atomic, snapshot version/context, offline, RLS, backup/template remap | Giữ mốc cố định và lịch sử; không ghi đè lịch vừa đổi; mobile sáng/tối và login không tràn | Sau V2.11.0; đã xây dựng |
+| V2.13.0 — Group Expenses & Settlement | Hoàn thiện quyết toán nhóm | Công nợ cá nhân, chuyển tiền và quyết toán; kế thừa quỹ và custom cost sharing | Liên kết phần chịu/đã trả/chuyển tiền, phân quyền và kiểm tra tổng | Đối chiếu được số phải trả/nhận, không đếm tiền quỹ hai lần | Sau V2.12.0; tiếp theo |
+| V2.14.0 — Travel Reminders & Offline Trip Pack | Dùng tiện khi đang đi | Nhắc việc/ICS, vé/tài liệu tải offline thật, chia sẻ chỉ đọc chọn lọc | Lịch nhắc, cache file, quyền chia sẻ | Nhắc đúng ngữ cảnh, mở tài liệu đã tải khi mất mạng | Dự kiến |
+| V2.15.0 — International Travel | Chuyến đi quốc tế | Đa tiền tệ/tỷ giá giao dịch, múi giờ theo chặng, hộ chiếu/visa | Currency/FX và time zone theo chặng | Tổng tiền và giờ hiển thị nhất quán | Dự kiến |
 
-V2.11.0 không bao gồm push notification, xuất ICS hoặc tải file vé về thiết bị. Ngày hạn checklist dùng múi giờ chuyến đi. Đây là mô tả phạm vi, không cam kết ngày phát hành các bản dự kiến.
+V2.12.0 chưa tích hợp API dẫn đường/giao thông, tự tối ưu thứ tự điểm, push/ICS hoặc tải vé offline. Thời gian di chuyển nhập thủ công. Các bản dự kiến chưa cam kết ngày phát hành.

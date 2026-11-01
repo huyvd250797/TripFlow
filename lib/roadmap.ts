@@ -317,7 +317,7 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V2.12.0",
     title: "Flexible Itinerary & Route Planning",
-    done: false,
+    done: true,
     description:
       "Khung giờ cố định/linh hoạt, thời gian di chuyển và dự phòng; xem trước dời nhiều hoạt động, wishlist/phương án B, phương tiện theo chặng.",
   },

@@ -9,6 +9,12 @@ import {
 } from "@/lib/api-hardening";
 export const dynamic = "force-dynamic";
 const messages: Record<string, string> = {
+  ROUTE_CONTEXT_CHANGED:
+    "Lịch trình đã thay đổi sau khi xem trước. Hãy tải lại và tạo bản xem trước mới.",
+  INVALID_ROUTE:
+    "Điều chỉnh lịch không hợp lệ. Kiểm tra ngày, giờ và danh sách hoạt động.",
+  TIME_BOUND_VIOLATION:
+    "Giờ hoạt động vượt giới hạn sớm nhất/muộn nhất. Giới hạn hoàn tất cần có giờ kết thúc.",
   PARTICIPANT_HAS_CHECKLIST:
     "Người này đang được phân công chuẩn bị. Hãy đổi người phụ trách hoặc xóa mục liên quan trước khi xóa người.",
   INVALID_PREPARATION:
@@ -137,6 +143,16 @@ export async function GET(req: NextRequest) {
       }
       throw Error("LIMIT_REACHED");
     }
+    const flexibleReady = await s.rpc("tf_flexible_ready");
+    if (flexibleReady.error || !flexibleReady.data)
+      return reply(
+        {
+          error:
+            "Cần chạy migration 202611010006_v2120_flexible_itinerary.sql trước khi dùng V2.12.0.",
+          code: "V2120_MIGRATION_REQUIRED",
+        },
+        503,
+      );
     const preparationReady = await s.rpc("tf_preparation_ready");
     if (preparationReady.error || !preparationReady.data)
       return reply(
@@ -148,6 +164,7 @@ export async function GET(req: NextRequest) {
         503,
       );
     const [
+      wishes,
       checklist,
       contacts,
       items,
@@ -164,6 +181,7 @@ export async function GET(req: NextRequest) {
       collaborationResult,
       permissionResult,
     ] = await Promise.all([
+      all("trip_wishes"),
       all("trip_checklist_items"),
       all("trip_contacts"),
       all("itinerary_items"),
@@ -236,6 +254,7 @@ export async function GET(req: NextRequest) {
       trip,
       role,
       permissions: permissionResult.data,
+      wishes,
       checklist,
       contacts,
       items,
@@ -363,6 +382,18 @@ export async function POST(req: NextRequest) {
           503,
         );
     }
+    if (["item", "wish", "route_batch"].includes(parsed.data.entity)) {
+      const ready = await a.s.rpc("tf_flexible_ready");
+      if (ready.error || !ready.data)
+        return reply(
+          {
+            error:
+              "Cần chạy migration 202611010006_v2120_flexible_itinerary.sql trước khi dùng V2.12.0.",
+            code: "V2120_MIGRATION_REQUIRED",
+          },
+          503,
+        );
+    }
     if (parsed.data.entity === "budget" || parsed.data.entity === "expense") {
       const ready = await a.s.rpc("tf_selected_cost_sharing_ready");
       if (ready.error || !ready.data)
@@ -385,7 +416,9 @@ export async function POST(req: NextRequest) {
             : "Không lưu được dữ liệu. Kiểm tra trường nhập và thử lại.",
           code: code || "DATABASE_ERROR",
         },
-        code === "CONFLICT" || code === "ACTIVE_CHANGED"
+        code === "CONFLICT" ||
+          code === "ACTIVE_CHANGED" ||
+          code === "ROUTE_CONTEXT_CHANGED"
           ? 409
           : [
                 "PERMISSION_DENIED",

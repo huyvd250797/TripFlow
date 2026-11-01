@@ -175,3 +175,8 @@ Trong PWA standalone mobile, document không còn là scroll container chính: `
 ## V2.11.0 — Preparation
 
 `lib/preparation.ts` dùng chung schema và phép tính tiến độ. `PreparationModule` lazy-loaded trong Thêm hoặc từ summary Tổng quan, dùng Dialog/Editor shell chung. `checklist`/`contact`/`checklist_batch` chạy qua API tf_mutate, hàng đợi IndexedDB, optimistic overlays và version conflicts hiện có; batch là một operation/transaction để không áp dụng dở dang. GET bundle trả checklist/contacts, client nghe Realtime hai bảng mới. Bộ lọc Của tôi dùng participant do người dùng chọn rõ, lưu theo user/trip/device, không suy đoán account từ tên. Cá nhân là phạm vi phân công, không phải quyền riêng tư. Metadata gia đình không tham gia phép phân chia tài chính. Backup immutable được tạo đủ trường ngay từ đầu; restore remap assignee_id, tương thích payload cũ thiếu các array mới.
+
+
+## V2.12.0 — Flexible Itinerary
+
+`lib/flexible-planning.ts` chứa schema, ràng buộc và preview/diagnostics; `RoutePlanning` mở các bước sheet và `RouteLeg` hiển thị chặng ngay trong timeline. API Bundle thêm wishes, item thêm metadata tùy chọn để đọc cache cũ. `wish`/`route_batch` vào offline queue và optimistic overlay hiện có. `route_batch` chụp trip version và tập ID/version toàn lịch chưa Bỏ qua, kiểm tra dưới advisory lock trước khi ghi. Child item mutations chạy trong cùng transaction, giữ audit/receipt cũ; parent receipt đảm bảo replay. Dữ liệu ràng buộc nhập theo múi giờ chuyến, gửi UTC ISO; SQL so sánh timestamptz. Chặng tham chiếu ID xuất phát, wishlist tham chiếu Plan B; backup/template remap sau khi lập đầy đủ item map.

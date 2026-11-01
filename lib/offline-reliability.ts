@@ -11,6 +11,8 @@ import type {
 } from "./types";
 
 const CORE_OFFLINE_ACTIONS: Record<string, Set<string>> = {
+  wish: new Set(["create", "update", "delete"]),
+  route_batch: new Set(["create"]),
   checklist: new Set(["create", "update", "delete"]),
   checklist_batch: new Set(["create"]),
   contact: new Set(["create", "update", "delete"]),
@@ -214,6 +216,14 @@ function optimisticItem(mutation: Mutation, nowIso: string): Item | null {
     location: String(data.location || ""),
     start_at: String(data.start_at || nowIso),
     end_at: data.end_at ? String(data.end_at) : null,
+    time_mode: (data.time_mode || "flexible") as Item["time_mode"],
+    earliest_at: data.earliest_at ? String(data.earliest_at) : null,
+    latest_at: data.latest_at ? String(data.latest_at) : null,
+    travel_mode: (data.travel_mode || "other") as Item["travel_mode"],
+    travel_minutes:
+      data.travel_minutes == null ? null : Number(data.travel_minutes),
+    buffer_minutes: Number(data.buffer_minutes || 0),
+    leg_from_id: data.leg_from_id ? String(data.leg_from_id) : null,
     status: "planned",
     map_url: String(data.map_url || ""),
     note: String(data.note || ""),
@@ -353,6 +363,107 @@ export function applyOptimisticMutation(
     };
     return next;
   }
+  if (mutation.entity === "wish") {
+    const rows = [...(next.wishes || [])];
+    if (
+      mutation.action === "create" &&
+      mutation.id &&
+      !rows.some((x) => x.id === mutation.id)
+    )
+      rows.push({
+        ...baseRow(mutation.id, nowIso),
+        trip_id: mutation.tripId,
+        ...data,
+      } as NonNullable<Bundle["wishes"]>[number]);
+    next.wishes =
+      mutation.action === "delete"
+        ? rows.filter((x) => x.id !== mutation.id)
+        : rows.map((x) =>
+            x.id === mutation.id && mutation.action === "update"
+              ? bumped(x, data, nowIso)
+              : x,
+          );
+    return next;
+  }
+  if (mutation.entity === "route_batch") {
+    for (const patch of (data.updates || []) as Record<string, unknown>[])
+      next = applyOptimisticMutation(
+        next,
+        {
+          ...mutation,
+          entity: "item",
+          action: "update",
+          id: String(patch.id),
+          data: patch,
+        },
+        nowIso,
+      );
+    const replaced = data.replace_item as
+      { id: string; keep_old: boolean; wish_id: string } | undefined;
+    if (replaced) {
+      const row = next.items.find((x) => x.id === replaced.id);
+      if (row && replaced.keep_old)
+        next = applyOptimisticMutation(
+          next,
+          {
+            ...mutation,
+            entity: "wish",
+            action: "create",
+            id: replaced.wish_id,
+            data: {
+              title: row.title,
+              location: row.location,
+              duration_minutes: row.end_at
+                ? Math.min(
+                    2880,
+                    Math.max(
+                      5,
+                      Math.ceil(
+                        (Date.parse(row.end_at) - Date.parse(row.start_at)) /
+                          60000,
+                      ),
+                    ),
+                  )
+                : 60,
+              map_url: row.map_url,
+              note: row.note,
+              backup_for_id: null,
+            },
+          },
+          nowIso,
+        );
+      next = applyOptimisticMutation(
+        next,
+        {
+          ...mutation,
+          entity: "item",
+          action: "status",
+          id: replaced.id,
+          data: { status: "skipped" },
+        },
+        nowIso,
+      );
+    }
+    const created = data.create_item as
+      { id: string; data: Record<string, unknown> } | undefined;
+    if (created)
+      next = applyOptimisticMutation(
+        next,
+        {
+          ...mutation,
+          entity: "item",
+          action: "create",
+          id: created.id,
+          data: created.data,
+        },
+        nowIso,
+      );
+    const consumed = data.consume_wish as { id: string } | undefined;
+    if (consumed)
+      next.wishes = (next.wishes || []).filter((x) => x.id !== consumed.id);
+    next.finance_report = undefined;
+    return next;
+  }
   // Never combine a cloud aggregate with locally modified rows. Rebuild reports from
   // the visible arrays until a fresh server bundle replaces the optimistic cache.
   if (["expense", "budget", "item", "trip"].includes(mutation.entity))
@@ -412,6 +523,11 @@ export function applyOptimisticMutation(
       });
     } else if (mutation.action === "delete" && mutation.id) {
       next.items = next.items.filter((item) => item.id !== mutation.id);
+      next.wishes = (next.wishes || []).map((wish) =>
+        wish.backup_for_id === mutation.id
+          ? bumped(wish, { backup_for_id: null }, nowIso)
+          : wish,
+      );
       next.budgets = next.budgets.map((budget) =>
         budget.item_id === mutation.id
           ? bumped(budget, { item_id: null } as Partial<Budget>, nowIso)
@@ -610,6 +726,8 @@ export function currentVersionForMutation(bundle: Bundle, mutation: Mutation) {
     return bundle.checklist?.find((x) => x.id === mutation.id)?.version;
   if (mutation.entity === "contact")
     return bundle.contacts?.find((x) => x.id === mutation.id)?.version;
+  if (mutation.entity === "wish")
+    return bundle.wishes?.find((x) => x.id === mutation.id)?.version;
   if (mutation.entity === "trip") return bundle.trip.version;
   const id = mutation.id;
   if (!id) return undefined;

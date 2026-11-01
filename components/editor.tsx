@@ -91,6 +91,9 @@ export function Editor({
     needs_note: "",
     settlement_type: row ? String(row.settlement_type || "advance") : "direct",
     cost_sharing: { mode: "equal" },
+    time_mode: "flexible",
+    earliest_at: "",
+    latest_at: "",
     location: "",
     map_url: "",
     receipt_url: "",
@@ -122,7 +125,7 @@ export function Editor({
   if (source) {
     for (const k of ["start_date", "end_date", "spent_on", "taken_on"])
       if (source[k]) initial[k] = dateLabel(String(source[k]));
-    for (const k of ["start_at", "end_at"])
+    for (const k of ["start_at", "end_at", "earliest_at", "latest_at"])
       if (source[k]) initial[k] = localTime(String(source[k]), zone);
   }
   for (const k of ["unit_price", "amount"])
@@ -209,6 +212,12 @@ export function Editor({
     f("location", "Địa điểm");
     f("start_at", "Bắt đầu *", "datetime-local", true);
     f("end_at", "Kết thúc (không bắt buộc)", "datetime-local");
+    sel("time_mode", "Khung giờ", [
+      ["flexible", "Linh hoạt"],
+      ["fixed", "Giờ cố định"],
+    ]);
+    f("earliest_at", "Không bắt đầu trước (tùy chọn)", "datetime-local");
+    f("latest_at", "Phải hoàn tất trước (tùy chọn)", "datetime-local");
     f("map_url", "Link Google Maps", "url");
   }
   if (spec.entity === "budget") {
@@ -323,7 +332,7 @@ export function Editor({
 
   const advancedKeys: Partial<Record<Entity, Set<string>>> = {
     trip: new Set(["end_date", "timezone", "status", "note"]),
-    item: new Set(["end_at", "map_url", "note"]),
+    item: new Set(["end_at", "map_url", "note", "earliest_at", "latest_at"]),
     budget: new Set(["category", "item_id", "note"]),
     expense: new Set([
       "kind",
@@ -354,6 +363,8 @@ export function Editor({
     invitation: "lời mời",
     member: "quyền thành viên",
     snapshot: "lần chốt dự toán",
+    wish: "địa điểm muốn đi",
+    route_batch: "điều chỉnh lịch",
     checklist: "mục chuẩn bị",
     checklist_batch: "mẫu chuẩn bị",
     contact: "liên hệ",
@@ -374,10 +385,10 @@ export function Editor({
         if (data[k]) data[k] = parseDate(String(data[k]));
         else if (k === "end_date") data[k] = null;
       }
-      for (const k of ["start_at", "end_at"]) {
+      for (const k of ["start_at", "end_at", "earliest_at", "latest_at"]) {
         if (!fields.some((f) => f.key === k)) continue;
         if (data[k]) data[k] = utcTime(String(data[k]), zone);
-        else if (k === "end_at") data[k] = null;
+        else data[k] = null;
       }
       for (const k of ["unit_price", "amount"])
         if (fields.some((f) => f.key === k)) data[k] = parseMoneyInput(data[k]);

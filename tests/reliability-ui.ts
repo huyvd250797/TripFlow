@@ -138,6 +138,24 @@ async function main() {
         family_group: "Gia đình",
         needs_note: age_group === "infant" ? "Mang bình sữa" : "",
       });
+  if (process.env.TRIPFLOW_ROUTE_TEST) {
+    for (const [title, hour, mode] of [
+      ["Ăn sáng linh hoạt", 0, "flexible"],
+      ["Tham quan linh hoạt", 2, "flexible"],
+      ["Tour cố định", 4, "fixed"],
+    ] as const)
+      await mutate("item", {
+        title,
+        location: title + ", Đà Lạt",
+        start_at: `2026-09-26T${String(hour).padStart(2, "0")}:00:00Z`,
+        end_at: `2026-09-26T${String(hour + 1).padStart(2, "0")}:00:00Z`,
+        time_mode: mode,
+        earliest_at: mode === "fixed" ? "2026-09-26T04:00:00Z" : null,
+        latest_at: mode === "fixed" ? "2026-09-26T05:00:00Z" : null,
+        map_url: "",
+        note: "",
+      });
+  }
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
     args: [
@@ -150,6 +168,7 @@ async function main() {
   const context = await browser.newContext({
     viewport: {
       width:
+        process.env.TRIPFLOW_ROUTE_TEST ||
         process.env.TRIPFLOW_PREPARATION_TEST ||
         process.env.TRIPFLOW_COST_TEST ||
         process.env.TRIPFLOW_FUND_TEST ||
@@ -217,6 +236,7 @@ async function main() {
     });
   });
   const tables = {
+    wishes: "trip_wishes",
     checklist: "trip_checklist_items",
     contacts: "trip_contacts",
     items: "itinerary_items",
@@ -308,7 +328,7 @@ async function main() {
         for (const [key, table] of Object.entries(tables)) {
           body[key] = (
             await db.query(
-              `select * from ${table} where trip_id=$1 ${["items", "budgets", "expenses", "media", "participants", "checklist", "contacts"].includes(key) ? "and deleted_at is null" : ""} order by ${key === "audits" ? "created_at desc" : "id"}`,
+              `select * from ${table} where trip_id=$1 ${["items", "budgets", "expenses", "media", "participants", "checklist", "contacts", "wishes"].includes(key) ? "and deleted_at is null" : ""} order by ${key === "audits" ? "created_at desc" : "id"}`,
               [tid],
             )
           ).rows;
@@ -335,7 +355,9 @@ async function main() {
       await route.fulfill({ json: normalized });
     } catch (e) {
       await route.fulfill({
-        status: 400,
+        status: /CONFLICT|ROUTE_CONTEXT_CHANGED/.test((e as Error).message)
+          ? 409
+          : 400,
         json: { error: (e as Error).message },
       });
     }
@@ -430,6 +452,36 @@ async function main() {
   await mkdir("test-results", { recursive: true });
   try {
     await page.goto(process.env.UI_BASE_URL || "http://127.0.0.1:3000");
+    if (process.env.TRIPFLOW_ROUTE_TEST) {
+      for (const width of [320, 390, 430, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        for (const theme of ["Sáng", "Tối"]) {
+          await page.getByRole("button", { name: theme, exact: true }).click();
+          const auth = page.locator(".auth-card");
+          await expect(auth).toBeVisible();
+          expect(
+            await auth.evaluate((el) => getComputedStyle(el).borderTopWidth),
+          ).toBe("0px");
+          expect(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth + 1,
+            ),
+          ).toBe(true);
+          expect(
+            await auth.locator("input").evaluateAll((inputs) =>
+              inputs.every((el) => {
+                const r = el.getBoundingClientRect();
+                return r.left >= 0 && r.right <= innerWidth + 1;
+              }),
+            ),
+          ).toBe(true);
+          await page.screenshot({
+            path: `test-results/v212-auth-${width}-${theme === "Tối" ? "dark" : "light"}.png`,
+          });
+        }
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+    }
     await page.getByRole("button", { name: "Tối", exact: true }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.getByLabel("Email", { exact: true }).fill(user.email);
@@ -453,6 +505,299 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_ROUTE_TEST) {
+      await nav("Lịch trình");
+      const planner = page.getByRole("region", {
+        name: "Điều phối lịch trình",
+      });
+      // section without labelled-by is found through its explicit aria-label.
+      const region = page.locator(".route-planner");
+      await expect(region).toBeVisible();
+      await page
+        .getByRole("button", { name: "26/09/2026", exact: true })
+        .click();
+      const breakfast = (
+        await db.query<any>(
+          "select * from itinerary_items where trip_id=$1 and title='Ăn sáng linh hoạt'",
+          [tid],
+        )
+      ).rows[0];
+      const visit = (
+        await db.query<any>(
+          "select * from itinerary_items where trip_id=$1 and title='Tham quan linh hoạt'",
+          [tid],
+        )
+      ).rows[0];
+      await page
+        .getByLabel("Hoạt động cần điều chỉnh", { exact: true })
+        .selectOption(breakfast.id);
+      await region
+        .getByRole("button", { name: "Điều chỉnh", exact: true })
+        .click();
+      let sheet = page.getByRole("dialog");
+      await sheet.getByLabel("Thời lượng (phút)", { exact: true }).fill("90");
+      await sheet
+        .getByLabel("Dời các điểm linh hoạt phía sau trong ngày")
+        .check();
+      await sheet
+        .getByRole("button", { name: "Xem trước", exact: true })
+        .click();
+      await expect(sheet).toContainText("Tham quan linh hoạt");
+      await expect(sheet.locator(".route-preview-list")).not.toContainText(
+        "Tour cố định",
+      );
+      if (
+        await sheet
+          .getByLabel("Tôi đã xem các cảnh báo và vẫn muốn lưu.")
+          .isVisible()
+      )
+        await sheet
+          .getByLabel("Tôi đã xem các cảnh báo và vẫn muốn lưu.")
+          .check();
+      await sheet
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(sheet).toHaveCount(0);
+      await expect
+        .poll(async () =>
+          new Date(
+            (
+              await db.query<any>(
+                "select start_at from itinerary_items where id=$1",
+                [visit.id],
+              )
+            ).rows[0].start_at,
+          ).toISOString(),
+        )
+        .toBe("2026-09-26T02:30:00.000Z");
+      await page
+        .getByRole("button", {
+          name: "Chặng đến Tham quan linh hoạt",
+          exact: true,
+        })
+        .click();
+      sheet = page.getByRole("dialog");
+      await sheet
+        .getByLabel("Phương tiện", { exact: true })
+        .selectOption("car");
+      await sheet.getByLabel("Di chuyển (phút)", { exact: true }).fill("20");
+      await sheet.getByLabel("Dự phòng (phút)", { exact: true }).fill("10");
+      await sheet
+        .getByRole("button", { name: "Lưu chặng", exact: true })
+        .click();
+      await expect(sheet).toHaveCount(0);
+      const visitRow = page.locator(".timeline-row").filter({
+        has: page.getByRole("heading", {
+          name: "Tham quan linh hoạt",
+          exact: true,
+        }),
+      });
+      await expect(visitRow).toContainText("20′ + 10′");
+      await expect(
+        visitRow.getByRole("link", { name: "Chỉ đường", exact: true }),
+      ).toHaveAttribute("href", /google.com\/maps\/dir/);
+      await region.getByRole("button", { name: /Muốn đi/ }).click();
+      sheet = page.getByRole("dialog");
+      await sheet
+        .getByRole("button", { name: "Thêm địa điểm", exact: true })
+        .click();
+      sheet = page.getByRole("dialog");
+      await sheet
+        .getByLabel("Tên địa điểm", { exact: true })
+        .fill("Khu vui chơi trong nhà");
+      await sheet
+        .getByLabel("Địa chỉ", { exact: true })
+        .fill("Trung tâm Đà Lạt");
+      await sheet
+        .getByLabel("Thời lượng dự kiến (phút)", { exact: true })
+        .fill("45");
+      await sheet
+        .getByLabel("Phương án B cho hoạt động", { exact: true })
+        .selectOption(visit.id);
+      await sheet
+        .getByRole("button", { name: "Lưu địa điểm", exact: true })
+        .click();
+      await expect(page.getByRole("dialog")).toContainText(
+        "Khu vui chơi trong nhà",
+      );
+      await page
+        .getByRole("button", { name: "Dùng phương án B", exact: true })
+        .click();
+      sheet = page.getByRole("dialog");
+      await sheet
+        .getByRole("button", { name: "Xem trước", exact: true })
+        .click();
+      await expect(sheet).toContainText(
+        "đặt chỗ và chi phí vẫn gắn với điểm cũ",
+      );
+      if (
+        await sheet
+          .getByLabel("Tôi đã xem các cảnh báo và vẫn muốn lưu.")
+          .isVisible()
+      )
+        await sheet
+          .getByLabel("Tôi đã xem các cảnh báo và vẫn muốn lưu.")
+          .check();
+      await sheet
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(
+        page
+          .getByRole("dialog")
+          .getByRole("heading", { name: "Danh sách muốn đi", exact: true }),
+      ).toBeVisible();
+      await expect(page.getByRole("dialog")).toContainText(
+        "Tham quan linh hoạt",
+      );
+      expect(
+        (
+          await db.query<any>(
+            "select status from itinerary_items where id=$1",
+            [visit.id],
+          )
+        ).rows[0].status,
+      ).toBe("skipped");
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Đóng", exact: true })
+        .first()
+        .click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      // Stale preview must not overwrite a concurrent itinerary update.
+      await region
+        .getByRole("button", { name: "Điều chỉnh", exact: true })
+        .click();
+      sheet = page.getByRole("dialog");
+      await sheet
+        .getByRole("button", { name: "Xem trước", exact: true })
+        .click();
+      if (
+        await sheet
+          .getByLabel("Tôi đã xem các cảnh báo và vẫn muốn lưu.")
+          .isVisible()
+      )
+        await sheet
+          .getByLabel("Tôi đã xem các cảnh báo và vẫn muốn lưu.")
+          .check();
+      const tour = (
+        await db.query<any>(
+          "select * from itinerary_items where trip_id=$1 and title='Tour cố định'",
+          [tid],
+        )
+      ).rows[0];
+      await mutate(
+        "item",
+        {
+          ...tour,
+          start_at: new Date(tour.start_at).toISOString(),
+          end_at: new Date(tour.end_at).toISOString(),
+          note: "Concurrent change",
+        },
+        "update",
+        { id: tour.id, version: tour.version },
+      );
+      await sheet
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(sheet.locator(".error")).toBeVisible();
+      await sheet
+        .getByRole("button", { name: "Quay lại", exact: true })
+        .click();
+      await sheet.getByRole("button", { name: "Hủy", exact: true }).click();
+      await page.reload();
+      await expect(region).toBeVisible();
+      await page
+        .getByLabel("Hoạt động cần điều chỉnh", { exact: true })
+        .selectOption(breakfast.id);
+      await context.setOffline(true);
+      await region
+        .getByRole("button", { name: "Điều chỉnh", exact: true })
+        .click();
+      sheet = page.getByRole("dialog");
+      await sheet
+        .getByLabel("Bắt đầu mới", { exact: true })
+        .fill("2026-09-26T07:15");
+      await sheet
+        .getByRole("button", { name: "Xem trước", exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "Xem trước thay đổi", exact: true }),
+      ).toBeVisible();
+      if (
+        await sheet
+          .getByLabel("Tôi đã xem các cảnh báo và vẫn muốn lưu.")
+          .isVisible()
+      )
+        await sheet
+          .getByLabel("Tôi đã xem các cảnh báo và vẫn muốn lưu.")
+          .check();
+      await sheet
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(sheet).toHaveCount(0);
+      await context.setOffline(false);
+      await expect
+        .poll(
+          async () =>
+            new Date(
+              (
+                await db.query<any>(
+                  "select start_at from itinerary_items where id=$1",
+                  [breakfast.id],
+                )
+              ).rows[0].start_at,
+            ).toISOString(),
+          { timeout: 15000 },
+        )
+        .toBe("2026-09-26T00:15:00.000Z");
+      for (const width of [320, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        await expect(region).toBeVisible();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth + 1,
+          ),
+        ).toBe(true);
+        await page
+          .getByLabel("Hoạt động cần điều chỉnh", { exact: true })
+          .selectOption(breakfast.id);
+        await region
+          .getByRole("button", { name: "Điều chỉnh", exact: true })
+          .click();
+        sheet = page.getByRole("dialog");
+        expect(
+          await sheet.evaluate((el) =>
+            Array.from(el.querySelectorAll("input,select"))
+              .filter((x) => getComputedStyle(x).display !== "none")
+              .every((x) => {
+                const r = x.getBoundingClientRect(),
+                  p = el.getBoundingClientRect();
+                return r.left >= p.left - 1 && r.right <= p.right + 1;
+              }),
+          ),
+        ).toBe(true);
+        await page.screenshot({ path: `test-results/v212-shift-${width}.png` });
+        await sheet.getByRole("button", { name: "Hủy", exact: true }).click();
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      viewRole = "viewer";
+      await page.reload();
+      await expect(region).toBeVisible();
+      await expect(
+        region.getByRole("button", { name: "Điều chỉnh", exact: true }),
+      ).toHaveCount(0);
+      await region.getByRole("button", { name: /Muốn đi/ }).click();
+      await expect(
+        page
+          .getByRole("dialog")
+          .getByRole("button", { name: "Thêm địa điểm", exact: true }),
+      ).toHaveCount(0);
+      if (errors.length) throw new Error(errors.join("\n"));
+      console.log(
+        "PASS V2.12 auth light/dark 320-1280, fixed/flexible preview, duration propagation, leg estimates, Plan B/history, concurrent conflict, offline batch/sync, responsive sheets and Viewer.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_PREPARATION_TEST) {
       const openPreparation = async () => {
         await nav("Thêm");
@@ -471,7 +816,9 @@ async function main() {
       await sheet
         .getByLabel("Người phụ trách")
         .selectOption({ label: "Mai Phụng" });
-      await sheet.getByLabel("Hạn chuẩn bị", { exact: true }).fill("24/09/2026");
+      await sheet
+        .getByLabel("Hạn chuẩn bị", { exact: true })
+        .fill("24/09/2026");
       await sheet.getByRole("button", { name: "Áp dụng mẫu" }).click();
       await expect(sheet).toHaveCount(0);
       await expect(prep.locator(".prep-item")).toHaveCount(11);

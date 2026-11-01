@@ -1,6 +1,6 @@
 import type { CostSharing } from "./cost-sharing";
-export const VERSION = "2.11.0";
-export const DATABASE_VERSION = "2.11.0";
+export const VERSION = "2.12.0";
+export const DATABASE_VERSION = "2.12.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -48,7 +48,9 @@ export type Entity =
   | "snapshot"
   | "checklist"
   | "checklist_batch"
-  | "contact";
+  | "contact"
+  | "wish"
+  | "route_batch";
 export type Row = {
   id: string;
   version: number;
@@ -66,7 +68,23 @@ export type Trip = Row & {
   status: keyof typeof TRIP_STATUS;
   note: string;
 };
+export type TravelWish = Row & {
+  trip_id: string;
+  title: string;
+  location: string;
+  duration_minutes: number;
+  map_url: string;
+  note: string;
+  backup_for_id: string | null;
+};
 export type Item = Row & {
+  time_mode?: "flexible" | "fixed";
+  earliest_at?: string | null;
+  latest_at?: string | null;
+  travel_mode?: "walk" | "motorbike" | "car" | "taxi" | "transit" | "other";
+  travel_minutes?: number | null;
+  buffer_minutes?: number;
+  leg_from_id?: string | null;
   trip_id: string;
   title: string;
   location: string;
@@ -334,6 +352,7 @@ export type Bundle = {
   participants: Participant[];
   checklist?: ChecklistItem[];
   contacts?: TravelContact[];
+  wishes?: TravelWish[];
   members: Member[];
   invitations: Invitation[];
   snapshots: Snapshot[];

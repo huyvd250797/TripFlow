@@ -1,5 +1,18 @@
 # Changelog
 
+## V2.12.0 — Flexible Itinerary & Route Planning
+
+- Lịch trình có giờ cố định/linh hoạt, giới hạn không bắt đầu trước và phải hoàn tất trước. Các trường mới nằm trong form hoạt động; giới hạn giờ nằm trong Thêm chi tiết khi tạo mới.
+- Chặng đến từng điểm có phương tiện, phút di chuyển, phút dự phòng và nút chỉ đường. Dữ liệu do người dùng khai báo; chưa gọi API tính quãng đường/thời gian hoặc giao thông trực tiếp.
+- Điều chỉnh một điểm hoặc nhóm điểm linh hoạt phía sau trong ngày, đến trước mốc cố định tiếp theo. Xem trước giờ cũ/mới, cảnh báo xung đột rồi xác nhận trong một transaction. Không tự đổi mốc cố định, lịch sử đã diễn ra, đặt chỗ hoặc chi phí.
+- Muốn đi/phương án B nằm trong Lịch trình, không thêm tab chính. Đưa điểm vào lịch có xem trước. Khi dùng phương án B, điểm cũ chuyển sang Bỏ qua để giữ liên kết booking/chi phí; tùy chọn lưu bản sao điểm cũ vào Muốn đi.
+- Offline queue, optimistic UI, chống gửi trùng, version/context conflict, RLS Owner/Editor/Viewer; backup/restore và mẫu kế hoạch giữ các ràng buộc, ánh xạ ID chặng.
+- Đăng nhập được thiết kế lại: bỏ khung thô trên mobile, chỉnh logo/typography/input, thu gọn bộ chọn sáng/tối, bố cục desktop cân đối. Sửa khôi phục tab trong history để chuyển bước bottom sheet sau reload không nhảy về Tổng quan.
+- App/DB **2.12.0**. Từ V2.11.0 chỉ chạy `202611010006_v2120_flexible_itinerary.sql` trong TXT đi kèm, trước deploy. Không reset database hoặc chạy lại SQL cũ.
+
+Xem `docs/UPGRADE-V2.12.0.md` và `docs/VALIDATION-V2.12.0.md`.
+
+
 ## V2.11.0 — Packing, Checklist & Family Travel
 
 - Thêm → **Chuẩn bị chuyến đi**, không thêm tab điều hướng chính. Checklist chung/cá nhân, sáu nhóm gấp/mở, bộ lọc Tất cả / Của tôi / Chưa xong / Chưa phân công.

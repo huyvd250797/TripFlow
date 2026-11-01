@@ -26,6 +26,7 @@ import { TripFund, FinanceBanner } from "./trip-fund";
 import { CommandDock } from "./ui/command-dock";
 import { observeDialogViewport } from "@/lib/ui-viewport";
 import { CostSharingReport } from "./cost-sharing";
+import { RoutePlanning, RouteLeg } from "./route-planning";
 import { PreparationSummary } from "./preparation-summary";
 const PreparationModule = dynamic(
   () => import("./preparation-module").then((m) => m.PreparationModule),
@@ -525,7 +526,7 @@ function App() {
     };
     window.addEventListener("popstate", back);
     return () => window.removeEventListener("popstate", back);
-  }, [user?.id, selectedId]);
+  }, [user?.id, selectedId, tab]);
   useEffect(() => {
     if (!user || !selectedId) return;
     const restoreKey = `${user.id}:${selectedId}`;
@@ -914,6 +915,16 @@ function App() {
     const refreshTripAndList = () => refresh.schedule(true);
     const channel = s
       .channel("trip-live:" + selectedId)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trip_wishes",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
       .on(
         "postgres_changes",
         {
@@ -1380,6 +1391,7 @@ function App() {
             expense: "expenses",
             media: "media",
             participant: "participants",
+            wish: "wishes",
             checklist: "checklist",
             contact: "contacts",
           } as const
@@ -1392,6 +1404,7 @@ function App() {
             | "participant"
             | "checklist"
             | "contact"
+            | "wish"
         ];
         if (field && m.action !== "delete" && result.result.id) {
           visible = {
@@ -2553,36 +2566,12 @@ function App() {
     item: Item,
     change: { day?: string; minutes?: number },
   ) => {
-    if (!trip || !writable || planningBusyId) return;
-    try {
-      setPlanningBusyId(item.id);
-      const next = change.day
-        ? moveItemToDay(item, change.day, trip.timezone)
-        : shiftItemMinutes(item, change.minutes || 0);
-      await save({
-        operationId: crypto.randomUUID(),
-        tripId: trip.id,
-        entity: "item",
-        action: "update",
-        id: item.id,
-        version: item.version,
-        data: {
-          title: item.title,
-          location: item.location,
-          start_at: next.start_at,
-          end_at: next.end_at,
-          map_url: item.map_url,
-          note: item.note,
-        },
-      });
-      if (change.day) setDay(change.day);
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Không đổi được lịch hoạt động.",
-      );
-    } finally {
-      setPlanningBusyId("");
-    }
+    if (!trip || !writable) return;
+    window.dispatchEvent(
+      new CustomEvent("tripflow:adjust-itinerary", {
+        detail: { id: item.id, ...change },
+      }),
+    );
   };
   const openQuickEntryInEditor = () => {
     if (!quickPreview || !quickPreview.valid) return;
@@ -3738,6 +3727,7 @@ function App() {
                 {tab === "route" && data && progress && (
                   <>
                     {liveCard()}
+                    <RoutePlanning bundle={data} onSave={save} />
                     <div className="section-heading roadmap-heading">
                       <div>
                         <h2>Roadmap chuyến đi</h2>
@@ -3933,6 +3923,11 @@ function App() {
                                         ).slice(11)}
                                       </small>
                                     )}
+                                    <RouteLeg
+                                      item={x}
+                                      items={data.items}
+                                      zone={trip.timezone}
+                                    />
                                     <div className="stop-summary">
                                       Dự toán{" "}
                                       {money(
