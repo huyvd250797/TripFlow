@@ -9,7 +9,7 @@ import {
   type BookingData,
 } from "@/lib/bookings";
 import type { Bundle } from "@/lib/types";
-import { localTime, utcTime, money } from "@/lib/domain";
+import { localTime, utcTime, money, dateLabel } from "@/lib/domain";
 import {
   cacheBookings,
   readCachedBookings,
@@ -19,6 +19,10 @@ import { beginAppWrite, setUpdateBlocker } from "@/lib/update-safety";
 import { Dialog } from "./ui/dialog";
 import { Empty, Link, download } from "./ui/travel-ui";
 import { BusyIndicator } from "./ui/feedback";
+function bookingTime(value: string, zone: string) {
+  const t = localTime(value, zone);
+  return `${dateLabel(t.slice(0, 10))} · ${t.slice(11, 16)}`;
+}
 export function Bookings({
   bundle,
   userId,
@@ -321,10 +325,12 @@ export function Bookings({
                 </button>
               )}
               {d.start_at && (
-                <p>
-                  <b>{localTime(d.start_at, d.timezone).replace("T", " ")}</b>
+                <p className="booking-times">
+                  <b>Nhận / bắt đầu: {bookingTime(d.start_at, d.timezone)}</b>
                   {d.end_at && (
-                    <> → {localTime(d.end_at, d.timezone).replace("T", " ")}</>
+                    <span>
+                      Trả / kết thúc: {bookingTime(d.end_at, d.timezone)}
+                    </span>
                   )}
                   <small> · {d.timezone}</small>
                 </p>
@@ -339,11 +345,11 @@ export function Bookings({
                     ["Liên hệ", d.contact],
                     [
                       "Hạn thanh toán",
-                      d.deadline && localTime(d.deadline, d.timezone),
+                      d.deadline && bookingTime(d.deadline, d.timezone),
                     ],
                     [
                       "Hạn hủy miễn phí",
-                      d.cancel_by && localTime(d.cancel_by, d.timezone),
+                      d.cancel_by && bookingTime(d.cancel_by, d.timezone),
                     ],
                     [
                       "Lịch trình",

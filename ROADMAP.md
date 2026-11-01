@@ -264,7 +264,7 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Giữ context/scroll khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm.
 - Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
 
-**Roadmap đã hoàn thành đến V2.7.0.** Đề xuất tiếp theo để Boss chọn: V2.8.0 — Bookings & Travel Documents (đặt chỗ, mã xác nhận và giấy tờ chuyến đi). Chưa triển khai.
+V2.7.0 đã hoàn thành; xem các bản bổ sung bên dưới.
 
 ## ✅ V2.8.0 — Bookings & Travel Documents
 
@@ -272,4 +272,12 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Lưới module mobile mở màn hình quản lý riêng; chấm trạng thái kết nối.
 - Migration V2.8.0 tăng dần sau V2.4.1.
 
-**Đề xuất để Boss chọn:** V2.9.0 — Travel Readiness & Reminders: checklist trước đi và cảnh báo hạn/giờ sử dụng. Chưa triển khai.
+## ✅ V2.9.0 — Trip Fund & Settlement
+
+- Ba tab Chi phí; quỹ thực thu riêng với dự toán, mức đóng và hạn theo người.
+- Chi từ quỹ / cá nhân ứng, hoàn ứng và trả quỹ; chống ghi trùng, không âm quỹ, giữ audit và backup/restore.
+- Sửa bố cục chi tiết đặt chỗ mobile; ngày/giờ dễ đọc.
+
+## Đề xuất V2.10.0 — Travel Readiness & Reminders
+
+Checklist trước đi, phân công chuẩn bị theo thành viên, nhắc hạn thanh toán/hủy và giờ sử dụng đặt chỗ. Ưu tiên cảnh báo trong ứng dụng trước; push notification cần thiết kế quyền và vận hành riêng. Chưa triển khai.

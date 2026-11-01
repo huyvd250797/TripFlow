@@ -117,6 +117,8 @@ async function main() {
   );
   let viewRole: "owner" | "viewer" = "owner";
   let viewerCanDelete = false;
+  if (process.env.TRIPFLOW_FUND_TEST)
+    await mutate("participant", { name: "Mai Phụng", note: "" });
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
     args: [
@@ -129,6 +131,7 @@ async function main() {
   const context = await browser.newContext({
     viewport: {
       width:
+        process.env.TRIPFLOW_FUND_TEST ||
         process.env.TRIPFLOW_BOOKINGS_TEST ||
         process.env.TRIPFLOW_MOBILE_TEST ||
         process.env.TRIPFLOW_POLISH_TEST
@@ -208,7 +211,7 @@ async function main() {
       json: {
         app_version: VERSION,
         channel: "stable",
-        database_version: "2.8.0",
+        database_version: VERSION,
         checked_at: new Date().toISOString(),
         ready: true,
         checks: [
@@ -313,6 +316,44 @@ async function main() {
       });
     }
   });
+  await page.route("**/api/fund*", async (route) => {
+    try {
+      if (route.request().method() === "POST") {
+        const r = (
+          await db.query<any>("select tf_fund_mutate($1::jsonb) r", [
+            JSON.stringify(route.request().postDataJSON()),
+          ])
+        ).rows[0].r;
+        await route.fulfill({ json: { result: r } });
+      } else {
+        const tables = await Promise.all(
+          ["trip_funds", "fund_targets", "fund_entries"].map((table) =>
+            db.query<any>(
+              `select * from ${table} where trip_id=$1 order by id`,
+              [tid],
+            ),
+          ),
+        );
+        const json = JSON.parse(
+          JSON.stringify({
+            fund: tables[0].rows[0] || null,
+            targets: tables[1].rows,
+            entries: tables[2].rows,
+          }),
+          (key, value) =>
+            ["due_on", "occurred_on"].includes(key) && typeof value === "string"
+              ? value.slice(0, 10)
+              : value,
+        );
+        await route.fulfill({ json });
+      }
+    } catch (e) {
+      await route.fulfill({
+        status: 400,
+        json: { error: (e as Error).message },
+      });
+    }
+  });
   await page.route("**/api/bookings*", async (route) => {
     try {
       if (route.request().method() === "POST") {
@@ -388,6 +429,140 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_FUND_TEST) {
+      await nav("Chi phí");
+      await expect(
+        page.locator(".finance-toolbar .segments button"),
+      ).toHaveCount(3);
+      await expect(page.locator(".money-banner")).toHaveCount(0);
+      await page
+        .getByRole("button", { name: "Quản lý quỹ", exact: true })
+        .click();
+      const dialog = page.getByRole("dialog", {
+        name: "Quản lý quỹ chuyến đi",
+        exact: true,
+      });
+      await dialog
+        .getByRole("button", { name: "Người giữ quỹ", exact: true })
+        .click();
+      await dialog
+        .getByLabel("Người giữ quỹ", { exact: true })
+        .fill("Mai Phụng");
+      await dialog
+        .getByRole("button", { name: "Lưu quỹ", exact: true })
+        .click();
+      await expect(dialog.locator(".fund-form")).toHaveCount(0);
+      const member = dialog.locator(".fund-list article").first();
+      await member
+        .getByRole("button", { name: "Mức đóng", exact: true })
+        .click();
+      await dialog
+        .getByLabel("Mục tiêu đóng (VNĐ)", { exact: true })
+        .fill("1000000");
+      await dialog.getByLabel("Hạn đóng", { exact: true }).fill("2026-11-05");
+      await dialog
+        .getByRole("button", { name: "Lưu quỹ", exact: true })
+        .click();
+      await expect(member).toContainText("1.000.000");
+      await member
+        .getByRole("button", { name: "Ghi đóng quỹ", exact: true })
+        .click();
+      await dialog
+        .getByRole("button", { name: "Lưu quỹ", exact: true })
+        .click();
+      await expect(dialog.locator(".fund-stats").first()).toContainText(
+        "1.000.000",
+      );
+      await dialog
+        .getByRole("button", { name: "Hoàn / trả", exact: true })
+        .click();
+      await dialog
+        .getByRole("button", { name: "Hoàn ứng", exact: true })
+        .first()
+        .click();
+      await dialog
+        .getByRole("button", { name: "Lưu quỹ", exact: true })
+        .click();
+      await expect(dialog.locator(".fund-form")).toHaveCount(0);
+      await dialog
+        .getByRole("button", { name: "Trả quỹ", exact: true })
+        .first()
+        .click();
+      await dialog.getByLabel("Số tiền (VNĐ)", { exact: true }).fill("50000");
+      await dialog
+        .getByRole("button", { name: "Lưu quỹ", exact: true })
+        .click();
+      await expect(dialog.locator(".fund-form")).toHaveCount(0);
+      await dialog.getByRole("button", { name: "Sổ quỹ", exact: true }).click();
+      await expect(dialog.locator(".fund-list article")).toHaveCount(3);
+      await page.screenshot({
+        path: "test-results/v290-fund-mobile-dark.png",
+        fullPage: true,
+      });
+      for (const width of [320, 390, 430, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        expect(
+          await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+        ).toBe(true);
+        await page.screenshot({
+          path: `test-results/v290-fund-${width}.png`,
+          fullPage: true,
+        });
+      }
+      await context.setOffline(true);
+      await dialog
+        .getByRole("button", { name: "Tải lại quỹ", exact: true })
+        .click();
+      await expect(dialog).toContainText("Bản đã lưu: chỉ xem");
+      await expect(
+        dialog.getByRole("button", { name: "Người giữ quỹ", exact: true }),
+      ).toBeDisabled();
+      await context.setOffline(false);
+      await dialog
+        .getByRole("button", { name: "Tải lại quỹ", exact: true })
+        .click();
+      await expect(
+        dialog.getByRole("button", { name: "Người giữ quỹ", exact: true }),
+      ).toBeEnabled();
+      await dialog.getByRole("button", { name: "Đóng", exact: true }).click();
+      await expect(dialog).toHaveCount(0);
+      await page.getByRole("button", { name: "Thực chi", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Ghi chi tiêu", exact: true })
+        .first()
+        .click();
+      await page.getByLabel("Số tiền VNĐ *", { exact: true }).fill("150000");
+      await page
+        .getByLabel("Nội dung chi *", { exact: true })
+        .fill("Taxi chi từ quỹ");
+      await page.getByLabel("Nguồn tiền", { exact: true }).selectOption("fund");
+      await page
+        .getByRole("button", { name: "Lưu thay đổi", exact: true })
+        .click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(
+        page.locator(".ledger-row").filter({ hasText: "Taxi chi từ quỹ" }),
+      ).toContainText("Quỹ chuyến đi");
+      await page
+        .locator(".finance-toolbar")
+        .getByRole("button", { name: "Tổng quan", exact: true })
+        .click();
+      await expect(page.locator(".trip-fund-panel .fund-stats")).toContainText(
+        "680.000",
+      );
+      await page.locator(".theme-compact").click();
+      await page.locator(".theme-compact").click();
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+      await page.screenshot({
+        path: "test-results/v290-fund-light.png",
+        fullPage: true,
+      });
+      expect(errors).toEqual([]);
+      console.log(
+        "PASS V2.9 fund UI: three finance tabs, setup, per-member targets, contribution, reimbursement, return, responsive 320/390/430/1280, cached offline read and write guards.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_BOOKINGS_TEST) {
       await expect(page.locator(".connection-dot.ready")).toBeVisible();
       await page.route("**/api/version", (route) =>
@@ -423,6 +598,15 @@ async function main() {
         .fill("La Vague booking");
       await page.getByLabel("Mã xác nhận", { exact: true }).fill("LV12345");
       await page
+        .getByText("Thông tin bổ sung & liên kết", { exact: true })
+        .click();
+      await page
+        .getByLabel("Người đứng tên", { exact: true })
+        .fill("Mai Phụng");
+      await page
+        .getByLabel("Địa điểm", { exact: true })
+        .fill("Villa Melia Hồ Tràm");
+      await page
         .getByLabel("Bắt đầu / nhận phòng", { exact: true })
         .fill("2026-11-01T14:00");
       await page
@@ -435,6 +619,28 @@ async function main() {
         "La Vague booking",
       );
       await expect(page.locator(".booking-card")).toContainText("LV12345");
+      for (const width of [320, 390, 430, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        const card = page.locator(".booking-card").first();
+        await expect(card).toBeVisible();
+        if ((await card.locator("details").getAttribute("open")) === null)
+          await card.locator("summary").click();
+        await expect(card.locator("dt").first()).toBeVisible();
+        expect(
+          await card.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+        ).toBe(true);
+        expect(
+          await card
+            .locator("dt")
+            .first()
+            .evaluate((el) => el.getBoundingClientRect().width),
+        ).toBeGreaterThan(100);
+        await page.screenshot({
+          path: `test-results/v290-booking-details-${width}.png`,
+          fullPage: true,
+        });
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
       await page
         .getByRole("button", { name: "Thêm đặt chỗ / tài liệu", exact: true })
         .click();
@@ -819,7 +1025,9 @@ async function main() {
       .getByRole("button", { name: "Lưu thay đổi", exact: true })
       .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(page.locator(".money-banner")).toContainText("370.000");
+    await expect(page.locator(".travel-wallet-panel")).toContainText(
+      "2.830.000",
+    );
     await page.screenshot({
       path: "test-results/v241-light-mobile-offline-wallet.png",
       fullPage: true,

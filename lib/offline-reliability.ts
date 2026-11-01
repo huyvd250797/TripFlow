@@ -248,6 +248,7 @@ function optimisticExpense(mutation: Mutation, nowIso: string): Expense | null {
     spent_on: String(data.spent_on || nowIso.slice(0, 10)),
     budget_id: data.budget_id ? String(data.budget_id) : null,
     refund_of: data.refund_of ? String(data.refund_of) : null,
+    payment_source: data.payment_source === "fund" ? "fund" : "personal",
     payer: String(data.payer || ""),
     note: String(data.note || ""),
     receipt_url: String(data.receipt_url || ""),
@@ -421,6 +422,10 @@ export function applyOptimisticMutation(
   if (mutation.entity === "expense") {
     if (mutation.action === "create") {
       const row = optimisticExpense(mutation, nowIso);
+      if (row?.kind === "refund")
+        row.payment_source =
+          next.expenses.find((e) => e.id === row.refund_of)?.payment_source ||
+          "personal";
       if (row && !next.expenses.some((expense) => expense.id === row.id))
         next.expenses.push(row);
     } else if (mutation.action === "update" && mutation.id) {
@@ -442,6 +447,16 @@ export function applyOptimisticMutation(
         (expense) => expense.id !== mutation.id,
       );
     }
+    next.expenses = next.expenses.map((e) =>
+      e.kind === "refund"
+        ? {
+            ...e,
+            payment_source:
+              next.expenses.find((p) => p.id === e.refund_of)?.payment_source ||
+              "personal",
+          }
+        : e,
+    );
     return next;
   }
 

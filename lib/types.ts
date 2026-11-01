@@ -1,5 +1,5 @@
-export const VERSION = "2.8.0";
-export const DATABASE_VERSION = "2.8.0";
+export const VERSION = "2.9.0";
+export const DATABASE_VERSION = "2.9.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -91,6 +91,7 @@ export type Expense = Row & {
   spent_on: string;
   budget_id: string | null;
   refund_of: string | null;
+  payment_source?: "personal" | "fund";
   payer: string;
   note: string;
   receipt_url: string;

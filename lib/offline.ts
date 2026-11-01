@@ -14,7 +14,7 @@ import {
 type CacheEntry<T = unknown> = {
   key: string;
   userId: string;
-  kind: "trips" | "bundle";
+  kind: "trips" | "bundle" | "bookings" | "fund";
   tripId?: string;
   value: T;
   updatedAt: string;
@@ -170,6 +170,7 @@ export async function removeCachedBundle(userId: string, tripId: string) {
   if (!available()) return;
   await remove(CACHE, `bundle:${userId}:${tripId}`);
   await removeCachedBookings(userId, tripId);
+  await removeCachedFund(userId, tripId);
 }
 
 export function canQueueMutation(mutation: Mutation) {
@@ -314,4 +315,27 @@ export async function readCachedBookings<T>(userId: string, tripId: string) {
 }
 export async function removeCachedBookings(userId: string, tripId: string) {
   if (available()) await remove(CACHE, `bookings:${userId}:${tripId}`);
+}
+
+export async function cacheFund(
+  userId: string,
+  tripId: string,
+  value: unknown,
+) {
+  if (!available()) return;
+  await put(CACHE, {
+    key: `fund:${userId}:${tripId}`,
+    userId,
+    kind: "fund",
+    tripId,
+    value,
+    updatedAt: new Date().toISOString(),
+  });
+}
+export async function readCachedFund<T>(userId: string, tripId: string) {
+  if (!available()) return undefined;
+  return (await get<{ value: T }>(CACHE, `fund:${userId}:${tripId}`))?.value;
+}
+export async function removeCachedFund(userId: string, tripId: string) {
+  if (available()) await remove(CACHE, `fund:${userId}:${tripId}`);
 }

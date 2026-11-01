@@ -1,3 +1,7 @@
+# Kiểm thử hiện tại V2.9.0
+
+Xem `VALIDATION-V2.9.0.md`. Chạy `npm test`, build và browser integration cho quỹ/đặt chỗ theo hướng dẫn trong tài liệu đó. Các mục phiên bản cũ dưới đây là lịch sử kiểm thử.
+
 # Kiểm tra TripFlow
 
 ## V2.8.0 Bookings & Travel Documents
@@ -308,12 +312,12 @@ Dùng project staging và dữ liệu thử riêng:
 ## V1.9.0 Expense Intelligence & Travel Wallet
 
 - [ ] `tests/expense-intelligence.test.ts`: category inference, wallet remaining/per-person/daily allowance, refund theo payer và spending pace.
-- [ ] Chi phí → Ví du lịch hiển thị đúng còn/vượt, bình quân/người và mức chi/ngày theo dữ liệu hiện tại.
+- [ ] Chi phí → Tổng quan hiển thị đúng còn/vượt, bình quân/người và mức chi/ngày theo dữ liệu hiện tại.
 - [ ] Spending Pace cảnh báo khi % ngân sách dùng cao hơn tiến độ chuyến > 15 điểm phần trăm.
 - [ ] Favorite Expense được giữ theo user + trip sau reload; không thay đổi bản ghi expense trên server.
 - [ ] Dùng lại Favorite/Recent mở form mới, không sửa record gốc và ngày chi mặc định là ngày hiện tại theo timezone chuyến.
 - [ ] Nhập `Grab sân bay`, `Buffet hải sản`, `Khách sạn` hiển thị gợi ý category phù hợp; không tự áp dụng nếu user chưa bấm **Dùng gợi ý**.
-- [ ] Mobile 320/390 px: 5 tab Finance cuộn ngang, Travel Wallet và shortcut cards không tràn màn hình.
+- [ ] Mobile 320/390 px: 3 tab Finance vừa chiều ngang, Travel Wallet và shortcut cards không tràn màn hình.
 - [ ] Regression: short link Google Maps V1.8.4 vẫn giữ nguyên khi save/edit và Map không đọc nhầm tọa độ.
 
 ## V2.0.0 Pro Travel Operating System

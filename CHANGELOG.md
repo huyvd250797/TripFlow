@@ -1,5 +1,14 @@
 # Changelog
 
+## V2.9.0 — Trip Fund & Settlement
+
+- Chi phí gọn còn **Tổng quan · Dự toán · Thực chi**. Quỹ nằm trong Tổng quan; Đối chiếu mở từ Dự toán, Báo cáo mở từ Tổng quan.
+- Quỹ có người giữ, mức đóng/hạn đóng theo thành viên, đóng nhiều đợt, thu thực tế, hoàn ứng theo khoản chi và trả tiền dư. Sổ giao dịch giữ lịch sử, sửa sai bằng giao dịch hủy.
+- Nguồn thực chi: **Quỹ chuyến đi / Cá nhân ứng trước**. Hoàn tiền kế thừa nguồn khoản gốc. Đóng quỹ, hoàn ứng, trả quỹ không cộng thêm thực chi. Kiểm tra số dư, mức hoàn, quyền và chống ghi trùng tại database.
+- Quỹ đã tải có thể xem offline; giao dịch quỹ cần online. Backup ứng dụng và restore-as-copy bao gồm sổ quỹ, mức đóng và nguồn tiền của chi phí. Có xuất JSON sổ quỹ riêng.
+- Chi tiết đặt chỗ trên mobile xếp nhãn/giá trị dọc; giờ nhận/trả tách dòng, ngày DD/MM/YYYY; không còn cột nhãn vỡ thành từng chữ.
+- **Bắt buộc chạy migration mới** `202611010002_v290_trip_fund.sql` sau V2.8.0. Bản TXT cùng nội dung được gửi riêng. Xem [hướng dẫn V2.9.0](docs/UPGRADE-V2.9.0.md).
+
 ## V2.8.0 — Bookings & Travel Documents
 
 - Module Đặt chỗ & tài liệu: chuyến bay/tàu xe, khách sạn, thuê xe, tour, vé và tài liệu HTTPS; mã xác nhận, người đứng tên, số lượng, múi giờ, nhận/trả qua đêm, hạn thanh toán/hủy, trạng thái và ghi chú.

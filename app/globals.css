@@ -7346,3 +7346,45 @@ h3 {
   font-size: 12px;
   line-height: 1.45;
 }
+
+/* V2.9: independent cash balance, compact three-tab finance and readable booking details. */
+.fund-stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0;}
+.fund-stats > div {min-width:0;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--tf-surface-soft);}
+.fund-stats span {display:block;color:var(--muted);font-size:.85rem;}
+.fund-stats strong {display:block;margin-top:7px;font-size:1.15rem;overflow-wrap:anywhere;}
+.dialog-content.fund-dialog {width:calc(100% - 32px);max-width:840px;}
+.fund-body {overflow:auto;min-height:0;overscroll-behavior:contain;}
+.fund-views {display:flex;margin:16px 0;}
+.fund-views button {flex:1;}
+.fund-list {display:grid;gap:12px;max-height:42vh;overflow:auto;overscroll-behavior:contain;}
+.fund-list article {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px;border:1px solid var(--line);border-radius:14px;min-width:0;}
+.fund-list article > div {min-width:0;overflow-wrap:break-word;}
+.fund-list p {margin:6px 0;font-size:.9rem;}
+.fund-reversed {opacity:.7;}
+.fund-form {display:grid;gap:12px;padding:18px;margin-top:16px;border:1px solid var(--line);border-radius:16px;}
+.fund-form label {display:grid;gap:7px;min-width:0;}
+.fund-form input {width:100%;min-width:0;}
+.finance-shortcuts {margin:0 0 14px;}
+.booking-card details dl {display:block;width:100%;margin:14px 0;}
+.booking-card details dl > div {display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.5fr);gap:16px;margin:0;padding:10px 0;border-bottom:1px solid var(--line);}
+.booking-card details dt,.booking-card details dd {min-width:0;width:auto;margin:0;white-space:normal;word-break:normal;overflow-wrap:break-word;}
+.booking-times {display:grid;gap:5px;font-size:.9rem;}
+.booking-times small {color:var(--muted);}
+.booking-card h3 {overflow-wrap:break-word;}
+@media(max-width:760px){
+ .dialog-content.fund-dialog {width:100%;max-width:none;}
+}
+@media(max-width:600px){
+ .fund-stats {grid-template-columns:1fr 1fr;gap:8px;}
+ .fund-stats > div:first-child {grid-column:1/-1;}
+ .fund-stats > div:first-child strong {font-size:1.65rem;}
+ .fund-stats > div {padding:12px;}
+ .fund-stats strong {font-size:1rem;}
+ .trip-fund-panel .section-heading {align-items:flex-start;gap:12px;}
+ .fund-list article {align-items:flex-start;flex-direction:column;gap:8px;}
+ .fund-list article .actions {flex-wrap:wrap;}
+ .fund-form {padding:12px;}
+ .booking-card details dl > div {grid-template-columns:1fr;gap:3px;padding:10px 0;}
+ .booking-card details dt {font-size:.82rem;color:var(--muted);}
+ .booking-card details dd {font-size:.95rem;}
+}

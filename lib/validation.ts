@@ -96,6 +96,7 @@ export const schemas = {
     budget_id: ref,
     refund_of: ref,
     spent_on: day,
+    payment_source: z.enum(["personal", "fund"]).optional(),
     payer: z.string().max(160),
     note,
     receipt_url: link,

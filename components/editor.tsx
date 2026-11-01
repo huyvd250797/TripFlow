@@ -82,6 +82,7 @@ export function Editor({
     quantity: 1,
     unit_price: "",
     amount: "",
+    payment_source: "personal",
     payer: "",
     location: "",
     map_url: "",
@@ -242,7 +243,12 @@ export function Editor({
       ]);
     sel("category", "Nhóm chi phí", pair(CATEGORIES));
     f("spent_on", "Ngày chi *", "day", true);
-    sel("payer", "Người thanh toán", payerOptions);
+    if (watch("kind") !== "refund")
+      sel("payment_source", "Nguồn tiền", [
+        ["personal", "Cá nhân ứng trước"],
+        ["fund", "Quỹ chuyến đi"],
+      ]);
+    sel("payer", "Người thanh toán / người thực hiện", payerOptions);
     f("receipt_url", "Link hóa đơn hoặc chứng từ", "url");
   }
   if (spec.entity === "media") {

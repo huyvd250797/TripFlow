@@ -1,4 +1,4 @@
-# TripFlow 2.8.0 · Bookings & Travel Documents
+# TripFlow 2.9.0 · Trip Fund & Settlement
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
@@ -6,7 +6,16 @@ Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu ti
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
 
-## V2.8.0 — Bookings & Travel Documents
+## V2.9.0 — Trip Fund & Settlement
+
+- Chi phí gọn còn **Tổng quan · Dự toán · Thực chi**. Quỹ nằm trong Tổng quan; Đối chiếu mở từ Dự toán, Báo cáo mở từ Tổng quan.
+- Quỹ có người giữ, mức đóng/hạn đóng theo thành viên, đóng nhiều đợt, thu thực tế, hoàn ứng theo khoản chi và trả tiền dư. Sổ giao dịch giữ lịch sử, sửa sai bằng giao dịch hủy.
+- Nguồn thực chi: **Quỹ chuyến đi / Cá nhân ứng trước**. Hoàn tiền kế thừa nguồn khoản gốc. Đóng quỹ, hoàn ứng, trả quỹ không cộng thêm thực chi. Kiểm tra số dư, mức hoàn, quyền và chống ghi trùng tại database.
+- Quỹ đã tải có thể xem offline; giao dịch quỹ cần online. Backup ứng dụng và restore-as-copy bao gồm sổ quỹ, mức đóng và nguồn tiền của chi phí. Có xuất JSON sổ quỹ riêng.
+- Chi tiết đặt chỗ trên mobile xếp nhãn/giá trị dọc; giờ nhận/trả tách dòng, ngày DD/MM/YYYY; không còn cột nhãn vỡ thành từng chữ.
+- **Bắt buộc chạy migration mới** `202611010002_v290_trip_fund.sql` sau V2.8.0. Bản TXT cùng nội dung được gửi riêng. Xem [hướng dẫn V2.9.0](docs/UPGRADE-V2.9.0.md).
+
+## Lịch sử V2.8.0 — Bookings & Travel Documents
 
 - Module Đặt chỗ & tài liệu: chuyến bay/tàu xe, khách sạn, thuê xe, tour, vé và tài liệu HTTPS; mã xác nhận, người đứng tên, số lượng, múi giờ, nhận/trả qua đêm, hạn thanh toán/hủy, trạng thái và ghi chú.
 - Liên kết hoạt động/dự toán/đặt chỗ; số đã trả ròng lấy từ thực chi/hoàn tiền của dự toán liên kết, không tạo thêm khoản chi tự động. Xuất JSON riêng.
@@ -132,7 +141,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
 - **Offline V0.2.0:** cache IndexedDB theo tài khoản; hàng đợi thao tác; tự đồng bộ khi mạng trở lại; trạng thái chờ/gửi/xung đột/bị từ chối; service worker cache app shell.
 - **Master Administration:** Master xem danh sách user, dữ liệu/chuyến đi và audit; hủy kích hoạt hoặc kích hoạt lại tài khoản. User bị hủy kích hoạt không thể sử dụng app/API và bị đăng xuất khi account gate phát hiện trạng thái.
 - Điều hướng dưới trên mobile, dialog co giãn, vùng an toàn màn hình; web manifest và icon để cài PWA.
-- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.8.0 đều được đánh dấu ✅.
+- Roadmap phiên bản hiển thị trong **Thêm → Ứng dụng, dữ liệu & vận hành → TripFlow roadmap**; V0.1.0 đến V2.9.0 đều được đánh dấu ✅.
 
 **Phạm vi offline V2.4.0:** cho phép tạo/sửa/xóa lịch trình, dự toán, chi tiêu, người tham gia, media và sửa chuyến hiện tại; optimistic UI + queue tự đồng bộ. Phân quyền, lời mời, snapshot/chốt dự toán, xóa chuyến và Master Admin vẫn yêu cầu online. Chưa có push notification, định vị nền, chia nợ hoặc đa tiền tệ.
 
@@ -153,6 +162,7 @@ ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn 
    - `supabase/migrations/202609290001_v140_smart_planning_templates_reuse.sql` — Planning Templates/Reuse + optional end date/time + Database marker V1.4.0.
    - `supabase/migrations/202610310001_v241_travel_reliability_permissions.sql` — V2.4.1: năm quyền độc lập, RPC/RLS và schema marker mới.
    - `supabase/migrations/202611010001_v280_bookings_documents.sql` — V2.8.0: đặt chỗ/tài liệu, RLS/RPC và marker 2.8.0; chạy sau V2.4.1.
+   - `supabase/migrations/202611010002_v290_trip_fund.sql` — V2.9.0: quỹ, nguồn tiền thực chi, backup quỹ và marker 2.9.0; chạy sau V2.8.0.
      **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0, V2.0.0, V2.2.0, V2.2.1, V2.3.0 và V2.4.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.4.0 (App V2.4.0), chỉ chạy migration V2.4.1 mới rồi deploy source. Nếu DB V1.3.0, chạy V1.4.0 rồi V2.4.1. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
@@ -246,7 +256,7 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 ## 1.9. Stable Production Release V1.0.0
 
 - Chạy `202609280005_v100_stable_production_release.sql` sau V0.9.0 trước khi deploy source V1.0.0.
-- **Thêm → Trạng thái Production** chỉ báo sẵn sàng khi source, database marker và channel đều là `1.0.0 / stable`, đồng thời các guard server/client đều đạt.
+- **Thêm → Trạng thái Production** chỉ báo sẵn sàng khi source, database marker và channel đều là `2.9.0 / stable`, đồng thời các guard server/client đều đạt.
 - V1.0.0 không thêm bảng nghiệp vụ mới, không sửa dữ liệu chuyến đi và không thay đổi mô hình quyền; đây là bản đóng roadmap 1.0 để vận hành ổn định.
 - Service worker dùng cache `tripflow-shell-v100`; API private tiếp tục `no-store`, same-origin/content-type/payload guard và request-id.
 - Trước deploy production thực tế, hoàn tất `docs/RELEASE-CHECKLIST.md`; sau deploy dùng `docs/PRODUCTION-RUNBOOK.md` để smoke test, backup và rollback.
@@ -335,8 +345,8 @@ Mở `http://localhost:3000`. Nếu thiếu cấu hình, app hiện hướng d�
 
 1. Đăng ký, xác nhận email, đăng nhập; tạo chuyến đi với ngày và múi giờ phù hợp.
 2. Trong **Lịch trình**, thêm hoạt động. Giờ nhập là giờ địa phương của chuyến đi.
-3. Trong **Chi phí → Dự toán**, thêm các khoản dự kiến; trong **Đối chiếu**, bấm **Chốt dự toán gốc**. Lần chốt đầu tiên trở thành baseline bất biến, các lần sau là bản điều chỉnh.
-4. Bấm **Ghi chi tiêu**. Chọn khoản dự toán tương ứng hoặc để ngoài dự toán; chi ròng tự trừ khoản hoàn tiền hợp lệ. Mở **Chi phí → Báo cáo** để xem tổng hợp theo ngày/hoạt động và trạng thái Data Integrity.
+3. Trong **Chi phí → Dự toán**, thêm các khoản dự kiến; bấm **Đối chiếu dự toán**, rồi **Chốt dự toán gốc**. Lần chốt đầu tiên trở thành baseline bất biến, các lần sau là bản điều chỉnh.
+4. Bấm **Ghi chi tiêu**. Chọn khoản dự toán tương ứng hoặc để ngoài dự toán; chi ròng tự trừ khoản hoàn tiền hợp lệ. Mở **Chi phí → Tổng quan → Xem báo cáo** để xem tổng hợp theo ngày/hoạt động và trạng thái Data Integrity.
 5. Bấm **Tôi đã đến** khi tới một điểm; xác nhận chuyển điểm sẽ hoàn thành điểm cũ. App không coi giờ kế hoạch là xác nhận bạn đang có mặt.
 6. Trong **Media**, gắn link album Drive. Cấp quyền album tại Drive cho người xem; quyền TripFlow không thay đổi quyền Drive.
 7. Trong **Thêm**, mời bằng email, sao chép link và tự gửi. Người nhận đăng nhập đúng email rồi mở link để chấp nhận. Nếu vừa đăng ký và xác nhận email, mở lại link mời. Danh sách “Người tham gia” không tự tạo tài khoản hoặc cấp quyền.
@@ -374,7 +384,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap hiện đã hoàn thành đến V2.8.0 – Bookings & Travel Documents. Đề xuất V2.9.0 – Travel Readiness & Reminders để Boss chọn, chưa triển khai.
+- Roadmap hiện đã hoàn thành đến V2.9.0 – Trip Fund & Settlement. Đề xuất V2.10.0 – Travel Readiness & Reminders để Boss chọn, chưa triển khai.
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
 
@@ -411,4 +421,4 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - Số tiền hỗ trợ `350k`, `1tr2`, `1.2tr`, `120.000`, `1.250.000`; ngày hỗ trợ `hôm nay`, `ngày mai`, `DD/MM`; giờ hỗ trợ `7:30`, `14h`, `14h30`.
 - Preview luôn xuất hiện trước khi ghi. Có thể **Lưu nhanh**, **Lưu & nhập tiếp** hoặc **Mở form** để bổ sung chi tiết.
 - Quick Entry dùng mutation/queue hiện có nên khoản chi và activity vẫn hỗ trợ offline như trước.
-- App version: **2.8.0**; Database version yêu cầu: **2.8.0**; chạy migration V2.8.0 sau V2.4.1.
+- App version: **2.9.0**; Database version yêu cầu: **2.9.0**; chạy migration V2.9.0 sau V2.8.0.

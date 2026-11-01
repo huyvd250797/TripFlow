@@ -9,6 +9,11 @@ import {
 } from "@/lib/api-hardening";
 export const dynamic = "force-dynamic";
 const messages: Record<string, string> = {
+  FUND_INSUFFICIENT:
+    "Quỹ không đủ tiền. Kiểm tra đóng quỹ hoặc chọn cá nhân ứng trước.",
+  REIMBURSEMENT_EXCEEDS_ADVANCE:
+    "Khoản này đã được hoàn ứng. Hãy hủy giao dịch hoàn ứng liên quan trước khi thay đổi.",
+  RETURN_EXCEEDS_CONTRIBUTION: "Số tiền trả quỹ vượt số đã đóng.",
   PERMISSION_DENIED: "Bạn chưa được cấp quyền thực hiện thao tác này.",
   PERMISSION_GRANT_OWNER_ONLY: "Chỉ chủ chuyến đi được cấp năm quyền đặc biệt.",
   SELF_PERMISSION_CHANGE: "Bạn không thể tự đổi quyền của chính mình.",

@@ -258,6 +258,20 @@ export const ROADMAP: RoadmapItem[] = [
     description:
       "Đặt chỗ, vé/tài liệu, liên kết lịch trình/dự toán; lưới module mobile và trạng thái kết nối.",
   },
+  {
+    version: "V2.9.0",
+    title: "Trip Fund & Settlement",
+    done: true,
+    description:
+      "Ba tab Chi phí; quỹ thực thu riêng dự toán, đóng quỹ theo người, hoàn ứng, trả quỹ, sổ giao dịch bất biến, backup quỹ và sửa chi tiết đặt chỗ mobile.",
+  },
+  {
+    version: "V2.10.0",
+    title: "Travel Readiness & Reminders",
+    done: false,
+    description:
+      "Đề xuất: checklist trước chuyến đi, chuẩn bị theo thành viên và cảnh báo hạn thanh toán / giờ nhận phòng từ đặt chỗ. Chưa triển khai.",
+  },
 ];
 
 export const NEXT_VERSION = ROADMAP.find((item) => !item.done) ?? null;

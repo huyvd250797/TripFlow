@@ -90,9 +90,9 @@ export function ReleaseReadiness({ online }: { online: boolean }) {
           <span className="eyebrow">STABLE PRODUCTION · APP V{VERSION}</span>
           <h2>Trạng thái Production</h2>
           <p className="muted">
-            V2.8.0 bổ sung Đặt chỗ & tài liệu, lưới module và trạng thái kết
-            nối. Database tiếp tục V{DATABASE_VERSION}; giữ năm quyền độc lập và
-            các guard dữ liệu hiện có.
+            V2.9.0 bổ sung quỹ chuyến đi, hoàn ứng và ba tab chi phí. Database V
+            {DATABASE_VERSION}; giữ năm quyền độc lập và các guard dữ liệu hiện
+            có.
           </p>
         </div>
         <span className={`status-chip ${ready ? "active" : "deactivated"}`}>

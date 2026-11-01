@@ -22,6 +22,7 @@ const AnalyticsModule = dynamic(
   () => import("./analytics-module").then((m) => m.AnalyticsModule),
   { loading: () => <ModuleSkeleton label="Đang tải báo cáo" />, ssr: false },
 );
+import { TripFund } from "./trip-fund";
 import { ModuleHub } from "./ui/module-hub";
 import { ConnectionStatus } from "./connection-status";
 const Bookings = dynamic(() => import("./bookings").then((m) => m.Bookings), {
@@ -4526,57 +4527,63 @@ function App() {
                 )}
                 {tab === "money" && data && totals && financeReport && (
                   <>
-                    <section className="money-banner finance-v030">
-                      <div>
-                        <span>Dự toán gốc</span>
-                        <strong>
-                          {financeReport.baseline_snapshot_id
-                            ? money(financeReport.totals.original_budget)
-                            : "Chưa chốt"}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>Dự toán hiện tại</span>
-                        <strong>
-                          {money(financeReport.totals.current_budget)}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>Thực chi ròng</span>
-                        <strong>
-                          {money(financeReport.totals.net_actual)}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>
-                          {financeReport.totals.current_variance < 0
-                            ? "Vượt dự toán"
-                            : "Còn lại"}
-                        </span>
-                        <strong
-                          className={
-                            financeReport.totals.current_variance < 0
-                              ? "over-text"
-                              : ""
-                          }
-                        >
-                          {money(
-                            Math.abs(financeReport.totals.current_variance),
-                          )}
-                        </strong>
-                      </div>
-                    </section>
+                    {financeTab !== "wallet" && (
+                      <section className="money-banner finance-v030">
+                        <div>
+                          <span>Dự toán gốc</span>
+                          <strong>
+                            {financeReport.baseline_snapshot_id
+                              ? money(financeReport.totals.original_budget)
+                              : "Chưa chốt"}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Dự toán hiện tại</span>
+                          <strong>
+                            {money(financeReport.totals.current_budget)}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Thực chi ròng</span>
+                          <strong>
+                            {money(financeReport.totals.net_actual)}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>
+                            {financeReport.totals.current_variance < 0
+                              ? "Vượt dự toán"
+                              : "Còn lại"}
+                          </span>
+                          <strong
+                            className={
+                              financeReport.totals.current_variance < 0
+                                ? "over-text"
+                                : ""
+                            }
+                          >
+                            {money(
+                              Math.abs(financeReport.totals.current_variance),
+                            )}
+                          </strong>
+                        </div>
+                      </section>
+                    )}
                     <div className="finance-toolbar">
                       <div className="segments">
                         {[
-                          ["wallet", "Ví du lịch"],
-                          ["summary", "Đối chiếu"],
+                          ["wallet", "Tổng quan"],
                           ["plan", "Dự toán"],
                           ["actual", "Thực chi"],
-                          ["report", "Báo cáo"],
                         ].map(([id, label]) => (
                           <button
-                            className={financeTab === id ? "active" : ""}
+                            className={
+                              financeTab === id ||
+                              (id === "plan" && financeTab === "summary") ||
+                              (id === "wallet" && financeTab === "report")
+                                ? "active"
+                                : ""
+                            }
                             onClick={() => setFinanceTab(id)}
                             key={id}
                           >
@@ -4595,8 +4602,47 @@ function App() {
                         ))}
                       </select>
                     </div>
+                    <div className="actions finance-shortcuts">
+                      {financeTab === "wallet" && (
+                        <button
+                          className="btn secondary"
+                          onClick={() => setFinanceTab("report")}
+                        >
+                          Xem báo cáo
+                        </button>
+                      )}
+                      {financeTab === "plan" && (
+                        <button
+                          className="btn secondary"
+                          onClick={() => setFinanceTab("summary")}
+                        >
+                          Đối chiếu dự toán
+                        </button>
+                      )}
+                      {financeTab === "summary" && (
+                        <button
+                          className="btn secondary"
+                          onClick={() => setFinanceTab("plan")}
+                        >
+                          Về Dự toán
+                        </button>
+                      )}
+                      {financeTab === "report" && (
+                        <button
+                          className="btn secondary"
+                          onClick={() => setFinanceTab("wallet")}
+                        >
+                          Về Tổng quan
+                        </button>
+                      )}
+                    </div>
                     {financeTab === "wallet" && wallet ? (
                       <>
+                        <TripFund
+                          bundle={data}
+                          userId={user.id}
+                          online={online}
+                        />
                         <section className="panel travel-wallet-panel">
                           <div className="section-heading wallet-heading">
                             <div>
@@ -5305,7 +5351,10 @@ function App() {
                                 <h3>{x.title}</h3>
                                 <small>
                                   {dateLabel(x.spent_on)} · {x.category} ·{" "}
-                                  {x.payer || "Chưa ghi người trả"}
+                                  {x.payer || "Chưa ghi người trả"} ·{" "}
+                                  {x.payment_source === "fund"
+                                    ? "Quỹ chuyến đi"
+                                    : "Cá nhân ứng trước"}
                                 </small>
                                 <small>
                                   {x.kind === "refund" ? "Hoàn tiền · " : ""}
