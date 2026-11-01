@@ -1,6 +1,13 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus, Copy, FileText, Ticket, RefreshCw } from "lucide-react";
+import {
+  Plus,
+  Copy,
+  FileText,
+  Ticket,
+  RefreshCw,
+  Download,
+} from "lucide-react";
 import {
   BOOKING_KINDS,
   BOOKING_STATUS,
@@ -198,51 +205,56 @@ export function Bookings({
           <span className="eyebrow">BOOKINGS & DOCUMENTS</span>
           <h2>Đặt chỗ & tài liệu</h2>
         </div>
-        <button
-          className="icon-btn"
-          aria-label="Tải lại đặt chỗ"
-          onClick={() => void load()}
-        >
-          <RefreshCw size={18} />
-        </button>
+        <div className="actions booking-heading-actions">
+          {writable && (
+            <button
+              className="btn primary"
+              aria-label="Thêm đặt chỗ / tài liệu"
+              disabled={!online || busy}
+              onClick={() => open(null)}
+            >
+              <Plus size={17} />
+              Thêm
+            </button>
+          )}
+          <button
+            className="btn secondary booking-export"
+            aria-label="Xuất JSON"
+            title="Xuất JSON"
+            onClick={() =>
+              download(
+                `TripFlow-bookings-${tid}.json`,
+                JSON.stringify(
+                  {
+                    format: "tripflow-bookings-export-v1",
+                    tripId: tid,
+                    exportedAt: new Date().toISOString(),
+                    bookings: rows,
+                  },
+                  null,
+                  2,
+                ),
+                "application/json",
+              )
+            }
+          >
+            <Download size={17} />
+            <span className="button-label">Xuất JSON</span>
+          </button>
+          <button
+            className="icon-btn"
+            aria-label="Tải lại đặt chỗ"
+            onClick={() => void load()}
+          >
+            <RefreshCw size={18} />
+          </button>
+        </div>
       </div>
       <p className="hint">
         Mã đặt chỗ, vé và hướng dẫn cho chuyến đi. Liên kết tài liệu ngoài cần
         mạng và quyền truy cập tại nguồn.
       </p>
-      <div className="actions">
-        {writable && (
-          <button
-            className="btn primary"
-            disabled={!online || busy}
-            onClick={() => open(null)}
-          >
-            <Plus size={17} />
-            Thêm đặt chỗ / tài liệu
-          </button>
-        )}
-        <button
-          className="btn secondary"
-          onClick={() =>
-            download(
-              `TripFlow-bookings-${tid}.json`,
-              JSON.stringify(
-                {
-                  format: "tripflow-bookings-export-v1",
-                  tripId: tid,
-                  exportedAt: new Date().toISOString(),
-                  bookings: rows,
-                },
-                null,
-                2,
-              ),
-              "application/json",
-            )
-          }
-        >
-          Xuất JSON
-        </button>
-      </div>
+
       <div className="booking-filters">
         {[
           ["upcoming", "Sắp sử dụng"],
@@ -451,6 +463,8 @@ export function Bookings({
               setError("");
               try {
                 const raw = Object.fromEntries(form);
+                if (!form.has("holder") && edit?.payload.holder)
+                  raw.holder = edit.payload.holder;
                 for (const name of [
                   "start_at",
                   "end_at",
@@ -522,7 +536,29 @@ export function Bookings({
                 <summary>Thông tin bổ sung & liên kết</summary>
                 <div className="form-grid">
                   {field("provider", "Nhà cung cấp")}
-                  {field("holder", "Người đứng tên")}
+                  <label className="field">
+                    <span>Người đứng tên</span>
+                    <select
+                      aria-label="Người đứng tên"
+                      name="holder"
+                      defaultValue={edit?.payload.holder || ""}
+                    >
+                      <option value="">Chọn người tham gia</option>
+                      {edit?.payload.holder &&
+                        !bundle.participants.some(
+                          (p) => p.name === edit.payload.holder,
+                        ) && (
+                          <option value={edit.payload.holder} disabled>
+                            {edit.payload.holder} (dữ liệu cũ)
+                          </option>
+                        )}
+                      {bundle.participants.map((p) => (
+                        <option key={p.id} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   {field("quantity", "Số lượng", "number")}
                   {field("location", "Địa điểm")}
                   {field("map_url", "Link Maps HTTPS", "url")}

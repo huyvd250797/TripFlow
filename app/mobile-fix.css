@@ -1,0 +1,542 @@
+/* V2.9.3: authoritative layout rules after historical styles. */
+button,
+.btn,
+.text-btn,
+.segments button {
+  white-space: nowrap;
+}
+.btn,
+.text-btn {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+.btn > span,
+.btn > b {
+  white-space: nowrap;
+}
+button svg,
+.btn svg {
+  flex-shrink: 0;
+}
+.page-heading,
+.section-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.page-heading > div,
+.section-heading > div {
+  min-width: 0;
+  flex: 1;
+}
+.page-heading > .btn,
+.section-heading > .btn {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  align-self: center;
+}
+.page-heading h1 {
+  margin: 0;
+}
+.dialog-header {
+  justify-content: flex-start;
+}
+.dialog-header > div {
+  min-width: 0;
+  flex: 1;
+}
+.dialog-header > button {
+  flex: 0 0 auto;
+}
+.dialog-overlay {
+  z-index: 10000;
+}
+.dialog-content {
+  z-index: 10001;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.dialog-content * {
+  box-sizing: border-box;
+  min-inline-size: 0;
+}
+.dialog-content .dialog-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  min-width: 0;
+  max-width: 100%;
+  touch-action: pan-y;
+}
+.dialog-content .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dialog-content input,
+.dialog-content select,
+.dialog-content textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
+}
+.dialog-content input[type="checkbox"],
+.dialog-content input[type="radio"] {
+  display: inline-block;
+  width: auto;
+  flex-shrink: 0;
+}
+.dialog-content input[type="date"],
+.dialog-content input[type="datetime-local"] {
+  min-height: 46px;
+  appearance: none;
+  -webkit-appearance: none;
+  overflow: hidden;
+}
+.dialog-content input::-webkit-date-and-time-value {
+  text-align: left;
+  min-width: 0;
+}
+.dialog-content .field,
+.dialog-content label,
+.dialog-content form {
+  min-width: 0;
+  max-width: 100%;
+}
+.dialog-footer,
+.fund-form-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+.dialog-footer > .btn:only-child {
+  margin-left: auto;
+}
+.dialog-content .dialog-footer .btn,
+.fund-form-footer .btn {
+  font-size: 14px;
+  padding: 11px 14px;
+  white-space: nowrap;
+}
+.smart-form-control {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.smart-form-toggle {
+  width: auto;
+  min-height: 36px;
+  font-size: 12px;
+  padding: 6px 12px;
+}
+.smart-default-inline,
+.smart-default-banner {
+  display: none;
+}
+.money-banner.finance-v030.finance-quick-summary > div {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  align-items: start;
+  justify-content: normal;
+  grid-column: auto;
+  border: 0;
+  padding: 14px 0;
+  margin: 0;
+  min-width: 0;
+}
+.money-banner.finance-v030.finance-quick-summary > div > span {
+  margin: 0;
+  line-height: 1.4;
+  min-height: 2.8em;
+}
+.money-banner.finance-v030.finance-quick-summary > div > strong {
+  display: block;
+  margin: 6px 0 0;
+  line-height: 1.3;
+  align-self: start;
+}
+.finance-toolbar .segments {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  gap: 2px;
+  scrollbar-width: thin;
+}
+.finance-toolbar .segments button {
+  flex: 1 0 auto;
+  text-align: center;
+  min-height: 44px;
+  padding: 10px 12px;
+}
+.travel-wallet-panel {
+  padding: 20px;
+  background: var(--panel);
+}
+.wallet-heading {
+  margin-bottom: 16px;
+}
+.wallet-heading > div {
+  max-width: none;
+}
+.wallet-heading h2 {
+  font-size: 21px;
+  margin: 0;
+}
+.wallet-heading .wallet-add-expense {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  width: auto;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.wallet-heading .wallet-add-expense-icon {
+  width: auto;
+  height: auto;
+  padding: 0;
+  background: none;
+}
+.wallet-heading .wallet-add-expense span,
+.wallet-heading .wallet-add-expense b {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.travel-wallet-panel .wallet-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.travel-wallet-panel .wallet-kpi,
+.travel-wallet-panel .wallet-kpi:first-child {
+  grid-column: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  min-width: 0;
+}
+.travel-wallet-panel .wallet-kpi b {
+  font-size: 20px;
+  overflow-wrap: break-word;
+}
+.travel-wallet-panel .wallet-kpi span {
+  font-size: 12px;
+  min-height: 2.8em;
+  line-height: 1.4;
+  display: block;
+}
+.travel-wallet-panel .wallet-kpi small {
+  font-size: 11px;
+}
+.spending-pace {
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  border-radius: 14px;
+  margin-top: 14px;
+}
+.pace-bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.fund-form select {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 12px 14px;
+  min-height: 46px;
+  font-size: 16px;
+}
+body:has(.dialog-content[data-state="open"]) .bottom-nav,
+body:has(.dialog-content[data-state="open"]) .tf-command-dock {
+  visibility: hidden;
+  pointer-events: none;
+}
+.tf-command-dock {
+  position: fixed;
+  right: 4px;
+  bottom: 120px;
+  width: 48px;
+  height: 48px;
+  z-index: 70;
+  touch-action: none;
+  user-select: none;
+  transition:
+    left 0.24s ease,
+    top 0.18s ease;
+}
+.tf-command-dock.is-dragging {
+  transition: none;
+}
+.tf-command-dock .command-fab {
+  position: static !important;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+}
+.tf-command-dock .command-fab:active {
+  cursor: grabbing;
+}
+.tf-command-dock .command-fab-close {
+  position: absolute;
+  right: 0;
+  top: -13px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  z-index: 2;
+}
+.tf-command-dock.is-collapsed {
+  width: 26px;
+  height: 34px;
+}
+.tf-command-dock .command-fab-reveal {
+  position: static;
+  transform: none;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  width: 26px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--primary);
+  padding: 0;
+  touch-action: none;
+}
+@media (max-width: 760px) {
+  .page-heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .page-heading h1 {
+    font-size: clamp(18px, 4.7vw, 24px);
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+  }
+  .page-heading .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+  .page-heading > .btn {
+    font-size: 12px;
+    padding: 9px 10px;
+    min-height: 40px;
+    width: auto;
+  }
+  .page-heading > .btn svg {
+    width: 15px;
+  }
+  .section-heading h2 {
+    font-size: 19px;
+  }
+  .section-heading > .btn {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  body .dialog-content,
+  body .dialog-content.dialog-sheet,
+  body .dialog-content.dialog-compact,
+  body .dialog-content.app-update-dialog,
+  body .dialog-content.fund-dialog {
+    left: 0 !important;
+    top: var(--tf-viewport-top, 0px) !important;
+    bottom: auto !important;
+    right: auto !important;
+    transform: none !important;
+    translate: none !important;
+    scale: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: var(--tf-viewport-height, 100dvh) !important;
+    max-height: var(--tf-viewport-height, 100dvh) !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .dialog-content .dialog-header {
+    padding: 14px 16px;
+    flex-shrink: 0;
+    gap: 10px;
+  }
+  .dialog-content .dialog-header .eyebrow {
+    display: none;
+  }
+  .dialog-content .dialog-header h2 {
+    font-size: 20px;
+  }
+  .dialog-content .editor-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+  }
+  .dialog-content .dialog-body {
+    flex: 1 1 auto;
+    padding: 16px;
+  }
+  .dialog-content .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dialog-content .dialog-footer {
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  }
+  .dialog-content .dialog-footer > .btn,
+  .fund-form-footer > .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 13px;
+    padding: 11px 10px;
+  }
+  .dialog-content .dialog-footer > .btn svg {
+    width: 16px;
+  }
+  .dialog-content .smart-form-toggle {
+    width: auto;
+  }
+  .money-banner.finance-v030.finance-quick-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 20px;
+    padding: 8px 16px;
+  }
+  .money-banner.finance-v030.finance-quick-summary > div > strong {
+    font-size: clamp(16px, 4.4vw, 23px);
+  }
+  .finance-toolbar .segments button {
+    padding: 9px 8px;
+    font-size: 12px;
+  }
+  .travel-wallet-panel {
+    padding: 16px;
+  }
+  .travel-wallet-panel .wallet-kpis {
+    gap: 10px;
+  }
+  .travel-wallet-panel .wallet-kpi {
+    padding: 13px;
+  }
+  .travel-wallet-panel .wallet-kpi b {
+    font-size: 18px;
+  }
+  .pace-bars {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .fund-form-footer {
+    bottom: -16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-command-dock {
+    transition: none;
+  }
+}
+.tf-command-dock .command-fab-reveal {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+@media (max-width: 760px) {
+  .travel-wallet-panel .wallet-kpi b {
+    font-size: clamp(15px, 4vw, 20px);
+  }
+}
+.section-heading > .actions,
+.section-heading > .analytics-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .booking-heading-actions .booking-export .button-label {
+    display: none;
+  }
+  .booking-heading-actions .btn {
+    font-size: 12px;
+    padding: 9px 10px;
+    min-height: 38px;
+  }
+  .booking-heading-actions .booking-export {
+    padding: 9px;
+  }
+  .booking-module .section-heading h2 {
+    font-size: 17px;
+  }
+  .analytics-heading .eyebrow,
+  .analytics-heading .muted {
+    display: none;
+  }
+  .analytics-heading h2 {
+    font-size: 17px;
+  }
+  .analytics-heading .analytics-actions {
+    gap: 4px;
+  }
+  .analytics-heading .analytics-actions .btn {
+    font-size: 11px;
+    padding: 8px;
+    min-height: 38px;
+  }
+  .analytics-heading .analytics-actions svg {
+    display: none;
+  }
+}
+.module-tile {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.module-tile strong,
+.module-tile small {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dialog-content button {
+  max-width: 100%;
+}
+@media (max-width: 760px) {
+  .dialog-content .dialog-header {
+    padding-top: max(14px, env(safe-area-inset-top));
+  }
+}

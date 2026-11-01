@@ -90,6 +90,20 @@ export async function POST(req: NextRequest) {
         { error: p.error.issues.map((i) => i.message).join(" ") },
         400,
       );
+    if (p.data.action === "setup") {
+      const keeper = await s
+        .from("trip_participants")
+        .select("id")
+        .eq("trip_id", p.data.tripId)
+        .eq("name", p.data.data.keeper)
+        .is("deleted_at", null)
+        .limit(1);
+      if (keeper.error || !keeper.data?.length)
+        return reply(
+          { error: "Chọn người giữ quỹ từ danh sách người tham gia hiện tại." },
+          400,
+        );
+    }
     const r = await s.rpc("tf_fund_mutate", { p: p.data });
     if (r.error) return failure(r.error);
     return reply({ result: r.data });

@@ -201,7 +201,6 @@ export function TripFund({
           <span className="eyebrow">QUỸ CHUNG</span>
           <h2>Quỹ chuyến đi</h2>
           <p className="muted">
-            Tiền thực thu và đã chi ·{" "}
             {data.fund?.keeper
               ? `Giữ quỹ: ${data.fund.keeper}`
               : "Chưa thiết lập người giữ quỹ"}
@@ -227,10 +226,6 @@ export function TripFund({
           </div>
         </div>
       )}
-      <p className="hint">
-        Dự toán là kế hoạch. Đóng quỹ chỉ tăng tiền quỹ; hoàn ứng và trả quỹ
-        không cộng thêm thực chi.
-      </p>
       {error && (
         <p role="alert" className="error">
           {error}{" "}
@@ -590,7 +585,28 @@ export function TripFund({
                 </h3>
                 {form.action === "setup" ? (
                   <>
-                    {field("keeper", "Người giữ quỹ", "text", true)}
+                    <label>
+                      Người giữ quỹ
+                      <select
+                        aria-label="Người giữ quỹ"
+                        required
+                        value={String(form.data.keeper)}
+                        disabled={busy}
+                        onChange={(e) => update("keeper", e.target.value)}
+                      >
+                        <option value="">Chọn người tham gia</option>
+                        {bundle.participants.map((p) => (
+                          <option key={p.id} value={p.name}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      {!bundle.participants.length && (
+                        <small>
+                          Thêm người tham gia trước khi thiết lập quỹ.
+                        </small>
+                      )}
+                    </label>
                     {field("note", "Ghi chú")}
                   </>
                 ) : form.action === "target" ? (
@@ -620,13 +636,6 @@ export function TripFund({
                 )}
                 <div className="actions fund-form-footer">
                   <button
-                    type="submit"
-                    className="btn primary"
-                    disabled={!canWrite}
-                  >
-                    {busy ? "Đang lưu…" : "Lưu quỹ"}
-                  </button>
-                  <button
                     type="button"
                     className="btn secondary"
                     disabled={busy}
@@ -638,6 +647,13 @@ export function TripFund({
                     }}
                   >
                     Hủy nhập
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn primary"
+                    disabled={!canWrite}
+                  >
+                    {busy ? "Đang lưu…" : "Lưu quỹ"}
                   </button>
                 </div>
               </form>

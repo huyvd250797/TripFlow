@@ -96,13 +96,6 @@ export function Dialog({
           }}
         >
           <header className="dialog-header">
-            <div>
-              <span className="eyebrow">TRIPFLOW</span>
-              <D.Title>{title}</D.Title>
-              {description && (
-                <D.Description id={descriptionId}>{description}</D.Description>
-              )}
-            </div>
             <button
               type="button"
               className="icon-btn"
@@ -112,6 +105,13 @@ export function Dialog({
             >
               <X size={21} />
             </button>
+            <div>
+              <span className="eyebrow">TRIPFLOW</span>
+              <D.Title>{title}</D.Title>
+              {description && (
+                <D.Description id={descriptionId}>{description}</D.Description>
+              )}
+            </div>
           </header>
           {children}
         </D.Content>

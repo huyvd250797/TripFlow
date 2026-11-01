@@ -23,6 +23,7 @@ const AnalyticsModule = dynamic(
   { loading: () => <ModuleSkeleton label="Đang tải báo cáo" />, ssr: false },
 );
 import { TripFund, FinanceBanner } from "./trip-fund";
+import { CommandDock } from "./ui/command-dock";
 import { ModuleHub } from "./ui/module-hub";
 import { ConnectionStatus } from "./connection-status";
 const Bookings = dynamic(() => import("./bookings").then((m) => m.Bookings), {
@@ -4539,16 +4540,12 @@ function App() {
                         {[
                           ["wallet", "Tổng quan"],
                           ["plan", "Dự toán"],
+                          ["summary", "Đối chiếu"],
                           ["actual", "Thực chi"],
+                          ["report", "Báo cáo"],
                         ].map(([id, label]) => (
                           <button
-                            className={
-                              financeTab === id ||
-                              (id === "plan" && financeTab === "summary") ||
-                              (id === "wallet" && financeTab === "report")
-                                ? "active"
-                                : ""
-                            }
+                            className={financeTab === id ? "active" : ""}
                             onClick={() => setFinanceTab(id)}
                             key={id}
                           >
@@ -4567,40 +4564,6 @@ function App() {
                         ))}
                       </select>
                     </div>
-                    <div className="actions finance-shortcuts">
-                      {financeTab === "wallet" && (
-                        <button
-                          className="btn secondary"
-                          onClick={() => setFinanceTab("report")}
-                        >
-                          Xem báo cáo
-                        </button>
-                      )}
-                      {financeTab === "plan" && (
-                        <button
-                          className="btn secondary"
-                          onClick={() => setFinanceTab("summary")}
-                        >
-                          Đối chiếu dự toán
-                        </button>
-                      )}
-                      {financeTab === "summary" && (
-                        <button
-                          className="btn secondary"
-                          onClick={() => setFinanceTab("plan")}
-                        >
-                          Về Dự toán
-                        </button>
-                      )}
-                      {financeTab === "report" && (
-                        <button
-                          className="btn secondary"
-                          onClick={() => setFinanceTab("wallet")}
-                        >
-                          Về Tổng quan
-                        </button>
-                      )}
-                    </div>
                     {financeTab === "wallet" && wallet ? (
                       <>
                         <TripFund
@@ -4611,14 +4574,7 @@ function App() {
                         <section className="panel travel-wallet-panel">
                           <div className="section-heading wallet-heading">
                             <div>
-                              <span className="eyebrow">
-                                TRAVEL WALLET · V{VERSION}
-                              </span>
                               <h2>Ví chuyến đi</h2>
-                              <p className="muted">
-                                Nhìn nhanh số tiền còn lại, mức chi an toàn và
-                                tốc độ sử dụng ngân sách.
-                              </p>
                             </div>
                             {writable && (
                               <button
@@ -4630,7 +4586,6 @@ function App() {
                                 </span>
                                 <span>
                                   <b>Ghi chi tiêu</b>
-                                  <small>Thêm khoản mới</small>
                                 </span>
                               </button>
                             )}
@@ -4743,11 +4698,6 @@ function App() {
                               Chưa có giao dịch để tổng hợp người thanh toán.
                             </p>
                           )}
-                          <p className="wallet-note">
-                            Travel Wallet V{VERSION} dùng danh sách người tham
-                            gia chuyến đi cho trường Người thanh toán, giúp dữ
-                            liệu người trả nhất quán khi tổng hợp.
-                          </p>
                         </section>
 
                         <section className="panel wallet-shortcuts-panel">
@@ -6277,41 +6227,12 @@ function App() {
         ))}
       </nav>
       {data && (
-        <div
-          className={`command-fab-dock ${commandFabCollapsed ? "collapsed" : ""}`}
-        >
-          <button
-            className="command-fab-reveal"
-            onClick={() => updateCommandFabCollapsed(false)}
-            aria-label="Hiện nút Quick"
-            title="Hiện Quick"
-            tabIndex={commandFabCollapsed ? 0 : -1}
-            aria-hidden={!commandFabCollapsed}
-          >
-            <ChevronLeft size={20} />
-          </button>
-          {!commandFabCollapsed && (
-            <button
-              className="command-fab-close"
-              onClick={() => updateCommandFabCollapsed(true)}
-              aria-label="Ẩn nút Quick"
-              title="Ẩn Quick"
-            >
-              ×
-            </button>
-          )}
-          <button
-            className="command-fab"
-            onClick={() => setQuickActionsOpen(true)}
-            aria-label="Mở TripFlow Command Center"
-            title="Command Center · Ctrl+K"
-            tabIndex={commandFabCollapsed ? -1 : 0}
-            aria-hidden={commandFabCollapsed}
-          >
-            <Zap size={21} />
-            <span>Quick</span>
-          </button>
-        </div>
+        <CommandDock
+          userId={user.id}
+          collapsed={commandFabCollapsed}
+          onCollapse={updateCommandFabCollapsed}
+          onOpen={() => setQuickActionsOpen(true)}
+        />
       )}
       {spec && (
         <Editor
@@ -6421,18 +6342,7 @@ function App() {
                             ? ` · ${quickPreview.time_hint}`
                             : ""}
                         </small>
-                        <span className="smart-default-inline">
-                          <Sparkles size={13} />
-                          {[
-                            quickPreview.payer
-                              ? `Người trả: ${quickPreview.payer}`
-                              : "Chưa xác định người trả",
-                            commandFocusBudget
-                              ? `Dự toán: ${commandFocusBudget.title}`
-                              : "Chưa gắn dự toán",
-                            `Tin cậy: ${quickPreview.confidence}%`,
-                          ].join(" · ")}
-                        </span>
+
                         {quickPreview.payer_match.state === "ambiguous" && (
                           <div className="command-match-picker">
                             <small>Chọn người thanh toán</small>
@@ -6482,16 +6392,7 @@ function App() {
                       </small>
                     )}
                     {!quickPreview.valid && <em>{quickPreview.error}</em>}
-                    {quickPreview.kind === "item" &&
-                      quickPreview.valid &&
-                      smartDefaults && (
-                        <span className="smart-default-inline">
-                          <Sparkles size={13} />
-                          {smartDefaults.item.location
-                            ? `Địa điểm gợi ý: ${smartDefaults.item.location}`
-                            : "Thời gian được kiểm tra theo lịch trình hiện tại"}
-                        </span>
-                      )}
+
                     {quickContextWarnings.length > 0 && (
                       <div className="smart-warning-list">
                         {quickContextWarnings.map((warning) => (

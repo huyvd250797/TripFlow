@@ -49,55 +49,54 @@ export function AnalyticsModule({
                 tại của chuyến đi.
               </p>
             </div>
-            <span
-              className={`status-chip ${analytics.readiness === "ready" ? "active" : ""}`}
-            >
-              {analytics.report_state === "post_trip"
-                ? analytics.readiness === "ready"
-                  ? "Báo cáo hoàn chỉnh"
-                  : "Sau chuyến · cần rà soát"
-                : "Báo cáo tạm thời"}
-            </span>
+            <div className="analytics-actions">
+              <button
+                className="btn secondary"
+                onClick={() =>
+                  download(
+                    "TripFlow-PostTrip.csv",
+                    postTripCsv(data),
+                    "text/csv;charset=utf-8",
+                  )
+                }
+              >
+                <Download size={16} /> CSV
+              </button>
+              <button
+                className="btn secondary"
+                onClick={() =>
+                  download(
+                    "TripFlow-PostTrip.json",
+                    postTripJson(data),
+                    "application/json;charset=utf-8",
+                  )
+                }
+              >
+                <FileText size={16} /> JSON
+              </button>
+              <button
+                className="btn primary"
+                onClick={() =>
+                  openPrintableReport(
+                    "TripFlow-PostTrip.html",
+                    postTripHtml(data),
+                  )
+                }
+              >
+                <FileText size={16} /> Bản in
+              </button>
+            </div>
           </div>
 
-          <div className="analytics-actions">
-            <button
-              className="btn secondary"
-              onClick={() =>
-                download(
-                  "TripFlow-PostTrip.csv",
-                  postTripCsv(data),
-                  "text/csv;charset=utf-8",
-                )
-              }
-            >
-              <Download size={16} /> CSV
-            </button>
-            <button
-              className="btn secondary"
-              onClick={() =>
-                download(
-                  "TripFlow-PostTrip.json",
-                  postTripJson(data),
-                  "application/json;charset=utf-8",
-                )
-              }
-            >
-              <FileText size={16} /> JSON
-            </button>
-            <button
-              className="btn primary"
-              onClick={() =>
-                openPrintableReport(
-                  "TripFlow-PostTrip.html",
-                  postTripHtml(data),
-                )
-              }
-            >
-              <FileText size={16} /> Bản in
-            </button>
-          </div>
-
+          <span
+            className={`status-chip ${analytics.readiness === "ready" ? "active" : ""}`}
+          >
+            {analytics.report_state === "post_trip"
+              ? analytics.readiness === "ready"
+                ? "Báo cáo hoàn chỉnh"
+                : "Sau chuyến · cần rà soát"
+              : "Báo cáo tạm thời"}
+          </span>
           <div className="analytics-kpis">
             <article>
               <span>Hoàn thành lịch trình</span>

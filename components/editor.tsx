@@ -121,6 +121,15 @@ export function Editor({
   for (const k of ["unit_price", "amount"])
     if (initial[k] !== "" && initial[k] != null)
       initial[k] = formatMoneyInput(initial[k]);
+  if (
+    spec.entity === "expense" &&
+    !row &&
+    initial.payer &&
+    !bundle?.participants.some(
+      (p) => p.name.trim() === String(initial.payer).trim(),
+    )
+  )
+    initial.payer = "";
   const {
     register,
     handleSubmit,
@@ -424,18 +433,6 @@ export function Editor({
               riêng; chỉ chủ chuyến được cấp hoặc thay đổi các quyền này.
             </p>
           )}
-          {!row && spec.smartHints && spec.smartHints.length > 0 && (
-            <div className="smart-default-banner full">
-              <span>
-                <Check size={16} /> Smart Defaults
-              </span>
-              <p>{spec.smartHints.join(" · ")}</p>
-              <small>
-                Đây là gợi ý theo dữ liệu gần nhất; bạn vẫn có thể sửa trước khi
-                lưu.
-              </small>
-            </div>
-          )}
           {categorySuggestion &&
             categorySuggestion !== "Khác" &&
             categorySuggestion !== String(watch("category") || "") && (
@@ -469,15 +466,6 @@ export function Editor({
           )}
           {hasProgressiveFields && (
             <div className="smart-form-control full">
-              <div>
-                <span>
-                  <SlidersHorizontal size={15} /> Form thông minh
-                </span>
-                <small>
-                  TripFlow đã điền các giá trị theo ngữ cảnh. Chỉ mở phần chi
-                  tiết khi cần thay đổi.
-                </small>
-              </div>
               <button
                 type="button"
                 className="smart-form-toggle"
@@ -515,7 +503,15 @@ export function Editor({
                       : {})}
                   >
                     {field.options?.map(([v, l]) => (
-                      <option value={v} key={v}>
+                      <option
+                        value={v}
+                        key={v}
+                        disabled={
+                          field.key === "payer" &&
+                          !!v &&
+                          !participantNames.includes(v)
+                        }
+                      >
                         {l}
                       </option>
                     ))}

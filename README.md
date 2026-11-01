@@ -1,10 +1,20 @@
-# TripFlow 2.9.2 · Finance Overview & Fund UX Polish
+# TripFlow 2.9.3 · Mobile Layout & Interaction Fix
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.9.3 — Mobile Layout & Interaction Fix
+
+- Chuẩn hóa nhóm hành động: Hủy/Đóng bên trái, Lưu/Xác nhận bên phải; chuyển cả nút đóng header sang trái. Label nút một dòng, chức năng chính ở bên phải cùng hàng tiêu đề.
+- Modal mobile phủ đầy visual viewport, nằm trên thanh điều hướng; input/date/select không tràn cha, cuộn dọc trong nội dung, chặn kéo ngang ngoài ý muốn. Desktop giữ hộp thoại căn giữa.
+- Người giữ quỹ, người thanh toán và người đứng tên đặt chỗ chọn từ người tham gia; không nhập tên tùy ý. API thiết lập quỹ kiểm tra người giữ đang thuộc chuyến. Dữ liệu tên cũ được giữ, không tự xóa.
+- Chi phí: Tổng quan / Dự toán / Đối chiếu / Thực chi / Báo cáo; tab có cuộn ngang rõ khi màn quá nhỏ. Căn lại hai hàng block xanh và đồng nhất hai KPI của Ví.
+- Nút Quick kéo thả, tự bám mép gần nhất, nhớ vị trí theo tài khoản; mũi tên thu gọn 26px. Kéo không mở nhầm Command Center.
+- Bỏ banner Smart Defaults, mô tả Form thông minh và nội dung giải thích kỹ thuật trong Ví. Giữ giá trị mặc định và nút Thêm chi tiết gọn.
+- Không cần chạy migration mới. App 2.9.3 / DB 2.9.0.
 
 ## V2.9.2 — Finance Overview & Fund UX Polish
 

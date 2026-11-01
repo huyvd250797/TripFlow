@@ -280,6 +280,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Khôi phục block xanh bốn chỉ số; quản lý quỹ gọn, một vùng cuộn, nhập giao dịch riêng và dùng chung dữ liệu số dư.",
   },
   {
+    version: "V2.9.3",
+    title: "Mobile Layout & Interaction Fix",
+    done: true,
+    description:
+      "Modal mobile fullscreen, input không tràn, nút Hủy trái/Lưu phải; chọn người tham gia, năm tab tài chính và Quick kéo thả bám mép.",
+  },
+  {
     version: "V2.10.0",
     title: "Travel Readiness & Reminders",
     done: false,

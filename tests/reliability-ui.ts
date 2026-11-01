@@ -117,7 +117,7 @@ async function main() {
   );
   let viewRole: "owner" | "viewer" = "owner";
   let viewerCanDelete = false;
-  if (process.env.TRIPFLOW_FUND_TEST)
+  if (process.env.TRIPFLOW_FUND_TEST || process.env.TRIPFLOW_BOOKINGS_TEST)
     await mutate("participant", { name: "Mai Phụng", note: "" });
   if (process.env.TRIPFLOW_FUND_TEST)
     for (let i = 1; i <= 8; i++)
@@ -436,12 +436,69 @@ async function main() {
       await nav("Chi phí");
       await expect(
         page.locator(".finance-toolbar .segments button"),
-      ).toHaveCount(3);
+      ).toHaveCount(5);
       await expect(page.locator(".money-banner")).toHaveCount(1);
+      const dock = page.locator(".tf-command-dock");
+      const zap = page.getByRole("button", {
+        name: "Mở TripFlow Command Center",
+        exact: true,
+      });
+      const origin = await zap.boundingBox();
+      await page.mouse.move(origin!.x + 24, origin!.y + 24);
+      await page.mouse.down();
+      await page.mouse.move(30, 300, { steps: 12 });
+      await page.mouse.up();
+      await expect(dock).toHaveAttribute("data-side", "left");
+      expect((await dock.boundingBox())!.x).toBeLessThan(10);
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await page
+        .getByRole("button", { name: "Ẩn nút Quick", exact: true })
+        .click();
+      const reveal = page.getByRole("button", {
+        name: "Hiện nút Quick",
+        exact: true,
+      });
+      expect((await reveal.boundingBox())!.width).toBeLessThanOrEqual(28);
+      await page.waitForTimeout(400);
+      const small = await reveal.boundingBox();
+      await page.mouse.move(small!.x + 12, small!.y + 15);
+      await page.mouse.down();
+      await page.mouse.move(360, 330, { steps: 12 });
+      await page.mouse.up();
+      await expect(dock).toHaveAttribute("data-side", "right");
+      await page.waitForTimeout(400);
+      await reveal.click();
+      await zap.click();
+      const command = page.getByRole("dialog");
+      await expect(command).toBeVisible();
+      expect((await command.boundingBox())!.height).toBeGreaterThanOrEqual(840);
+      await expect(page.locator(".bottom-nav")).toBeHidden();
+      await command.getByRole("button", { name: "Đóng", exact: true }).click();
+      const cells = page.locator(".money-banner > div");
+      expect(
+        Math.abs(
+          (await cells.nth(2).boundingBox())!.y -
+            (await cells.nth(3).boundingBox())!.y,
+        ),
+      ).toBeLessThan(2);
+      const kpis = page.locator(".wallet-kpi");
+      expect(
+        Math.abs(
+          (await kpis.nth(0).boundingBox())!.y -
+            (await kpis.nth(1).boundingBox())!.y,
+        ),
+      ).toBeLessThan(2);
+
       await expect(page.locator(".money-banner")).toContainText(
         "Chưa thiết lập",
       );
-      for (const label of ["Dự toán", "Thực chi", "Tổng quan"]) {
+      for (const label of [
+        "Dự toán",
+        "Đối chiếu",
+        "Thực chi",
+        "Báo cáo",
+        "Tổng quan",
+      ]) {
         await page
           .locator(".finance-toolbar")
           .getByRole("button", { name: label, exact: true })
@@ -471,7 +528,7 @@ async function main() {
         .click();
       await dialog
         .getByLabel("Người giữ quỹ", { exact: true })
-        .fill("Mai Phụng");
+        .selectOption({ label: "Mai Phụng" });
       await dialog
         .getByRole("button", { name: "Lưu quỹ", exact: true })
         .click();
@@ -489,6 +546,31 @@ async function main() {
         .getByLabel("Mục tiêu đóng (VNĐ)", { exact: true })
         .fill("1000000");
       await dialog.getByLabel("Hạn đóng", { exact: true }).fill("2026-11-05");
+      for (const width of [320, 390, 430]) {
+        await page.setViewportSize({ width, height: 844 });
+        const box = await dialog.boundingBox();
+        expect(box!.height).toBeGreaterThanOrEqual(840);
+        expect(box!.x).toBe(0);
+        expect(
+          await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+        ).toBe(true);
+        for (const input of await dialog.locator("input,select").all()) {
+          if (!(await input.isVisible())) continue;
+          const r = await input.boundingBox();
+          expect(r!.x).toBeGreaterThanOrEqual(0);
+          expect(r!.x + r!.width).toBeLessThanOrEqual(width + 1);
+        }
+        const cancel = await dialog
+            .getByRole("button", { name: "Hủy nhập", exact: true })
+            .boundingBox(),
+          save = await dialog
+            .getByRole("button", { name: "Lưu quỹ", exact: true })
+            .boundingBox();
+        expect(cancel!.x).toBeLessThan(save!.x);
+        await page.screenshot({ path: `test-results/v293-form-${width}.png` });
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+
       await expect(dialog.locator(".fund-management")).toHaveCount(0);
       const footer = await dialog.locator(".fund-form-footer").boundingBox();
       expect(footer!.y + footer!.height).toBeGreaterThan(700);
@@ -576,6 +658,30 @@ async function main() {
         .getByLabel("Nội dung chi *", { exact: true })
         .fill("Taxi chi từ quỹ");
       await page.getByLabel("Nguồn tiền", { exact: true }).selectOption("fund");
+      await expect(page.locator(".smart-default-banner")).toHaveCount(0);
+      await page.locator(".smart-form-toggle").click();
+      const expenseDialog = page.getByRole("dialog");
+      const noOverflow = await expenseDialog.evaluate((el) => {
+        const bounds = el.getBoundingClientRect();
+        return Array.from(
+          el.querySelectorAll("input:not([type=hidden]),select,textarea"),
+        )
+          .filter((n) => (n as HTMLElement).offsetParent !== null)
+          .every((n) => {
+            const r = n.getBoundingClientRect();
+            return r.left >= bounds.left && r.right <= bounds.right + 1;
+          });
+      });
+      expect(noOverflow).toBe(true);
+      const cancelRect = await expenseDialog
+          .getByRole("button", { name: "Hủy", exact: true })
+          .boundingBox(),
+        saveRect = await expenseDialog
+          .getByRole("button", { name: "Lưu thay đổi", exact: true })
+          .boundingBox();
+      expect(cancelRect!.x).toBeLessThan(saveRect!.x);
+      await page.screenshot({ path: "test-results/v293-expense-modal.png" });
+
       await page
         .getByRole("button", { name: "Lưu thay đổi", exact: true })
         .click();
@@ -653,7 +759,7 @@ async function main() {
         .click();
       await page
         .getByLabel("Người đứng tên", { exact: true })
-        .fill("Mai Phụng");
+        .selectOption({ label: "Mai Phụng" });
       await page
         .getByLabel("Địa điểm", { exact: true })
         .fill("Villa Melia Hồ Tràm");
@@ -692,6 +798,32 @@ async function main() {
         });
       }
       await page.setViewportSize({ width: 390, height: 844 });
+      await db.exec("set role postgres");
+      await db.query(
+        "update travel_bookings set payload=jsonb_set(payload,'{holder}','\"Khách cũ\"'::jsonb) where trip_id=$1",
+        [tid],
+      );
+      await db.exec("set role authenticated");
+      await page
+        .getByRole("button", { name: "Tải lại đặt chỗ", exact: true })
+        .click();
+      await expect(page.locator(".booking-card")).toContainText("Khách cũ");
+      await page
+        .locator(".booking-card")
+        .getByRole("button", { name: "Sửa", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Lưu đặt chỗ", exact: true })
+        .click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      expect(
+        (
+          await db.query<any>(
+            "select payload->>'holder' holder from travel_bookings where trip_id=$1",
+            [tid],
+          )
+        ).rows[0].holder,
+      ).toBe("Khách cũ");
       await page
         .getByRole("button", { name: "Thêm đặt chỗ / tài liệu", exact: true })
         .click();

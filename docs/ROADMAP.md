@@ -291,6 +291,16 @@ V2.7.0 đã hoàn thành; xem các bản bổ sung bên dưới.
 - Quản lý quỹ dùng một vùng cuộn; danh sách gọn, tìm thành viên, hướng dẫn thiết lập, nút primary đúng màu app. Mở thao tác thành màn nhập riêng thay vì đẩy form xuống dưới danh sách; footer Lưu/Hủy bám cuối màn nhập. Chứng từ/ghi chú mở khi cần; tiền VNĐ có dấu phân cách hàng nghìn.
 - Banner và module dùng chung cache truy vấn, tự cập nhật sau giao dịch; API/RLS, version, idempotency và công thức quỹ giữ nguyên. Không cần chạy migration mới, App 2.9.2 / DB 2.9.0.
 
+## ✅ V2.9.3 — Mobile Layout & Interaction Fix
+
+- Chuẩn hóa nhóm hành động: Hủy/Đóng bên trái, Lưu/Xác nhận bên phải; chuyển cả nút đóng header sang trái. Label nút một dòng, chức năng chính ở bên phải cùng hàng tiêu đề.
+- Modal mobile phủ đầy visual viewport, nằm trên thanh điều hướng; input/date/select không tràn cha, cuộn dọc trong nội dung, chặn kéo ngang ngoài ý muốn. Desktop giữ hộp thoại căn giữa.
+- Người giữ quỹ, người thanh toán và người đứng tên đặt chỗ chọn từ người tham gia; không nhập tên tùy ý. API thiết lập quỹ kiểm tra người giữ đang thuộc chuyến. Dữ liệu tên cũ được giữ, không tự xóa.
+- Chi phí: Tổng quan / Dự toán / Đối chiếu / Thực chi / Báo cáo; tab có cuộn ngang rõ khi màn quá nhỏ. Căn lại hai hàng block xanh và đồng nhất hai KPI của Ví.
+- Nút Quick kéo thả, tự bám mép gần nhất, nhớ vị trí theo tài khoản; mũi tên thu gọn 26px. Kéo không mở nhầm Command Center.
+- Bỏ banner Smart Defaults, mô tả Form thông minh và nội dung giải thích kỹ thuật trong Ví. Giữ giá trị mặc định và nút Thêm chi tiết gọn.
+- Không cần chạy migration mới. App 2.9.3 / DB 2.9.0.
+
 ## Đề xuất V2.10.0 — Travel Readiness & Reminders
 
 Checklist trước đi, phân công chuẩn bị theo thành viên, nhắc hạn thanh toán/hủy và giờ sử dụng đặt chỗ. Ưu tiên cảnh báo trong ứng dụng trước; push notification cần thiết kế quyền và vận hành riêng. Chưa triển khai.
