@@ -1,10 +1,16 @@
-# TripFlow 2.9.0 · Trip Fund & Settlement
+# TripFlow 2.9.1 · Deployment Lockfile Fix
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.9.1 — Deployment Lockfile Fix
+
+- Tạo lại package-lock.json bằng npm; bổ sung tslib 2.9.1 tại nhánh @swc/helpers và các bản ghi dependency thiếu. Giữ các phiên bản dependency trực tiếp, giữ Vercel dùng npm ci.
+- App 2.9.1 / database 2.9.0. Không cần chạy migration mới; nếu chưa chạy migration quỹ V2.9.0 thì vẫn phải hoàn thành trước khi dùng quỹ.
+- Deploy lại source mới, không bật Use existing Build Cache ở lần redeploy kiểm tra này. Install Command: npm ci; Build Command: npm run build; Node 24.x.
 
 ## V2.9.0 — Trip Fund & Settlement
 

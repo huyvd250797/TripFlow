@@ -1,5 +1,11 @@
 # Changelog
 
+## V2.9.1 — Deployment Lockfile Fix
+
+- Tạo lại package-lock.json bằng npm; bổ sung tslib 2.9.1 tại nhánh @swc/helpers và các bản ghi dependency thiếu. Giữ các phiên bản dependency trực tiếp, giữ Vercel dùng npm ci.
+- App 2.9.1 / database 2.9.0. Không cần chạy migration mới; nếu chưa chạy migration quỹ V2.9.0 thì vẫn phải hoàn thành trước khi dùng quỹ.
+- Deploy lại source mới, không bật Use existing Build Cache ở lần redeploy kiểm tra này. Install Command: npm ci; Build Command: npm run build; Node 24.x.
+
 ## V2.9.0 — Trip Fund & Settlement
 
 - Chi phí gọn còn **Tổng quan · Dự toán · Thực chi**. Quỹ nằm trong Tổng quan; Đối chiếu mở từ Dự toán, Báo cáo mở từ Tổng quan.

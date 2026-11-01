@@ -278,6 +278,12 @@ V2.7.0 đã hoàn thành; xem các bản bổ sung bên dưới.
 - Chi từ quỹ / cá nhân ứng, hoàn ứng và trả quỹ; chống ghi trùng, không âm quỹ, giữ audit và backup/restore.
 - Sửa bố cục chi tiết đặt chỗ mobile; ngày/giờ dễ đọc.
 
+## ✅ V2.9.1 — Deployment Lockfile Fix
+
+- Tạo lại package-lock.json bằng npm; bổ sung tslib 2.9.1 tại nhánh @swc/helpers và các bản ghi dependency thiếu. Giữ các phiên bản dependency trực tiếp, giữ Vercel dùng npm ci.
+- App 2.9.1 / database 2.9.0. Không cần chạy migration mới; nếu chưa chạy migration quỹ V2.9.0 thì vẫn phải hoàn thành trước khi dùng quỹ.
+- Deploy lại source mới, không bật Use existing Build Cache ở lần redeploy kiểm tra này. Install Command: npm ci; Build Command: npm run build; Node 24.x.
+
 ## Đề xuất V2.10.0 — Travel Readiness & Reminders
 
 Checklist trước đi, phân công chuẩn bị theo thành viên, nhắc hạn thanh toán/hủy và giờ sử dụng đặt chỗ. Ưu tiên cảnh báo trong ứng dụng trước; push notification cần thiết kế quyền và vận hành riêng. Chưa triển khai.

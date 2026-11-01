@@ -266,6 +266,9 @@ export const ROADMAP: RoadmapItem[] = [
       "Ba tab Chi phí; quỹ thực thu riêng dự toán, đóng quỹ theo người, hoàn ứng, trả quỹ, sổ giao dịch bất biến, backup quỹ và sửa chi tiết đặt chỗ mobile.",
   },
   {
+    version: "V2.9.1", title: "Deployment Lockfile Fix", done: true, description: "Tạo lại lockfile, kiểm tra cài dependency từ source sạch; database giữ 2.9.0."
+  },
+  {
     version: "V2.10.0",
     title: "Travel Readiness & Reminders",
     done: false,
