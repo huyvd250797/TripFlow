@@ -20,6 +20,8 @@ export function Dialog({
   busy?: boolean;
   children: React.ReactNode;
 }) {
+  const compact = /(?:dialog-compact|app-update-dialog)/.test(className || "");
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const descriptionId = useId();
   const opener = useRef<HTMLElement | null>(
     typeof document !== "undefined" &&
@@ -34,6 +36,7 @@ export function Dialog({
   closeRef.current = requestClose;
   useEffect(() => {
     if (!open) return;
+    window.dispatchEvent(new Event("tripflow:sync-viewport"));
     let mounted = true,
       armed = false;
     const marker = crypto.randomUUID();
@@ -79,6 +82,7 @@ export function Dialog({
         <D.Overlay className="dialog-overlay" />
         <D.Content
           className={`dialog-content${className ? ` ${className}` : ""}`}
+          data-presentation={compact ? "compact" : "sheet"}
           aria-describedby={description ? descriptionId : undefined}
           aria-busy={busy || undefined}
           onCloseAutoFocus={(event) => {
@@ -95,6 +99,31 @@ export function Dialog({
             target?.focus({ preventScroll: true });
           }}
         >
+          {!compact && (
+            <div
+              className="sheet-grip"
+              aria-hidden="true"
+              onPointerDown={(event) => {
+                swipeStart.current = { x: event.clientX, y: event.clientY };
+                event.currentTarget.setPointerCapture(event.pointerId);
+              }}
+              onPointerCancel={() => {
+                swipeStart.current = null;
+              }}
+              onPointerUp={(event) => {
+                const start = swipeStart.current;
+                swipeStart.current = null;
+                if (
+                  start &&
+                  event.clientY - start.y > 72 &&
+                  Math.abs(event.clientX - start.x) < 80
+                )
+                  requestClose();
+              }}
+            >
+              <span />
+            </div>
+          )}
           <header className="dialog-header">
             <button
               type="button"

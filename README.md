@@ -1,10 +1,23 @@
-# TripFlow 2.9.3 · Mobile Layout & Interaction Fix
+# TripFlow 2.9.4 · Bottom Sheets & Module Navigation
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.9.4 — Bottom Sheets & Module Navigation
+
+- Mobile: form, quản lý và danh sách dùng bottom sheet bo góc trên, bám đáy vùng hiển thị; nội dung cuộn dọc, footer hành động giữ trong khung. Kéo xuống từ tay nắm để đóng, vẫn giữ kiểm tra dữ liệu chưa lưu và trạng thái đang xử lý.
+- Popup cập nhật phần mềm và xác nhận giữ dạng nhỏ căn giữa. Desktop giữ hộp thoại căn giữa.
+- Đồng bộ lại vùng hiển thị khi resize, đổi hướng, focus/blur, mở sheet và quay lại app; phục hồi kích thước sau bàn phím, tránh giữ chiều cao cũ tạo khoảng trống dưới sheet.
+- Thêm chỉ có một sheet danh sách module; bỏ lưới module ở trang nền. Đóng khi chưa chọn module quay về màn trước; từ màn quản lý có thể mở lại danh sách module.
+- Tên module hiển thị đầy đủ và được xuống dòng. Nút hành động nhỏ giữ một dòng; Hủy/Đóng bên trái, Lưu/Xác nhận bên phải.
+- Không cần chạy migration mới. App 2.9.4 / DB 2.9.0. Giữ các migration hiện có; không chạy lại SQL đã áp dụng.
+
+**Nâng từ V2.9.3:** thay source bằng bản này, giữ biến môi trường Supabase trên Vercel, dùng Node 24.x và `npm ci` → `npm run build`. Root Directory là thư mục có `package.json`. Không reset database và không chạy lại migration đã áp dụng. Các SQL trong ZIP dùng cho cài mới/lịch sử nâng cấp.
+
+**Kiểm tra V2.9.4:** xem `docs/VALIDATION-V2.9.4.md`. Bàn phím được mô phỏng trên Chromium; cần thử thêm trên iPhone/Safari thật sau deploy.
 
 ## V2.9.3 — Mobile Layout & Interaction Fix
 

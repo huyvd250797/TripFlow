@@ -301,6 +301,15 @@ V2.7.0 đã hoàn thành; xem các bản bổ sung bên dưới.
 - Bỏ banner Smart Defaults, mô tả Form thông minh và nội dung giải thích kỹ thuật trong Ví. Giữ giá trị mặc định và nút Thêm chi tiết gọn.
 - Không cần chạy migration mới. App 2.9.3 / DB 2.9.0.
 
+## ✅ V2.9.4 — Bottom Sheets & Module Navigation
+
+- Mobile: form, quản lý và danh sách dùng bottom sheet bo góc trên, bám đáy vùng hiển thị; nội dung cuộn dọc, footer hành động giữ trong khung. Kéo xuống từ tay nắm để đóng, vẫn giữ kiểm tra dữ liệu chưa lưu và trạng thái đang xử lý.
+- Popup cập nhật phần mềm và xác nhận giữ dạng nhỏ căn giữa. Desktop giữ hộp thoại căn giữa.
+- Đồng bộ lại vùng hiển thị khi resize, đổi hướng, focus/blur, mở sheet và quay lại app; phục hồi kích thước sau bàn phím, tránh giữ chiều cao cũ tạo khoảng trống dưới sheet.
+- Thêm chỉ có một sheet danh sách module; bỏ lưới module ở trang nền. Đóng khi chưa chọn module quay về màn trước; từ màn quản lý có thể mở lại danh sách module.
+- Tên module hiển thị đầy đủ và được xuống dòng. Nút hành động nhỏ giữ một dòng; Hủy/Đóng bên trái, Lưu/Xác nhận bên phải.
+- Không cần chạy migration mới. App 2.9.4 / DB 2.9.0. Giữ các migration hiện có; không chạy lại SQL đã áp dụng.
+
 ## Đề xuất V2.10.0 — Travel Readiness & Reminders
 
 Checklist trước đi, phân công chuẩn bị theo thành viên, nhắc hạn thanh toán/hủy và giờ sử dụng đặt chỗ. Ưu tiên cảnh báo trong ứng dụng trước; push notification cần thiết kế quyền và vận hành riêng. Chưa triển khai.

@@ -20,13 +20,18 @@ import {
 } from "lucide-react";
 import { heading, sections, useMobile } from "./mobile-module";
 import { Dialog } from "./dialog";
-export function ModuleHub({ children }: { children: ReactNode }) {
+export function ModuleHub({
+  children,
+  onExit,
+}: {
+  children: ReactNode;
+  onExit: () => void;
+}) {
   const mobile = useMobile();
   const [picker, setPicker] = useState(true),
     [active, setActive] = useState<number | null>(null);
   useEffect(() => {
     const show = () => {
-      setActive(null);
       setPicker(true);
     };
     window.addEventListener("tripflow:open-modules", show);
@@ -85,17 +90,11 @@ export function ModuleHub({ children }: { children: ReactNode }) {
   );
   return (
     <div className="module-hub">
-      {active === null ? (
-        <>
-          <h2>Chức năng chuyến đi</h2>
-          {grid}
-        </>
-      ) : (
+      {active !== null && (
         <>
           <button
             className="text-btn module-back"
             onClick={() => {
-              setActive(null);
               setPicker(true);
             }}
           >
@@ -112,7 +111,10 @@ export function ModuleHub({ children }: { children: ReactNode }) {
           open
           title="Thêm chức năng"
           className="dialog-sheet module-picker"
-          onClose={() => setPicker(false)}
+          onClose={() => {
+            setPicker(false);
+            if (active === null) onExit();
+          }}
         >
           <div className="dialog-body">{grid}</div>
         </Dialog>

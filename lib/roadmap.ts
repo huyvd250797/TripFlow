@@ -287,6 +287,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Modal mobile fullscreen, input không tràn, nút Hủy trái/Lưu phải; chọn người tham gia, năm tab tài chính và Quick kéo thả bám mép.",
   },
   {
+    version: "V2.9.4",
+    title: "Bottom Sheets & Module Navigation",
+    done: true,
+    description:
+      "Bottom sheet mobile bám đáy, popup cập nhật nhỏ căn giữa; Thêm chỉ mở danh sách module, tên đầy đủ được xuống dòng.",
+  },
+  {
     version: "V2.10.0",
     title: "Travel Readiness & Reminders",
     done: false,

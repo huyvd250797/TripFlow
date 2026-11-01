@@ -1,4 +1,4 @@
-/* V2.9.3: authoritative layout rules after historical styles. */
+/* V2.9.4: authoritative layout rules after historical styles. */
 button,
 .btn,
 .text-btn,
@@ -57,7 +57,7 @@ button svg,
 .dialog-content {
   z-index: 10001;
   max-width: calc(100vw - 24px);
-  overflow: hidden;
+  overflow: clip;
   overscroll-behavior: none;
 }
 .dialog-content * {
@@ -367,26 +367,61 @@ body:has(.dialog-content[data-state="open"]) .tf-command-dock {
     font-size: 12px;
     padding: 8px 10px;
   }
-  body .dialog-content,
-  body .dialog-content.dialog-sheet,
-  body .dialog-content.dialog-compact,
-  body .dialog-content.app-update-dialog,
-  body .dialog-content.fund-dialog {
+  body .dialog-content[data-presentation="sheet"] {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
     left: 0 !important;
-    top: var(--tf-viewport-top, 0px) !important;
-    bottom: auto !important;
+    top: auto !important;
+    bottom: max(0px, calc(100% - var(--tf-viewport-bottom, 100dvh))) !important;
     right: auto !important;
     transform: none !important;
     translate: none !important;
     scale: none !important;
     width: 100% !important;
     max-width: 100% !important;
-    height: var(--tf-viewport-height, 100dvh) !important;
-    max-height: var(--tf-viewport-height, 100dvh) !important;
+    height: auto !important;
+    max-height: calc(var(--tf-viewport-height, 100dvh) - 16px) !important;
     min-height: 0 !important;
-    border-radius: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    animation: tf-sheet-fade 160ms ease-out;
+  }
+  body .dialog-content[data-presentation="compact"] {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    left: 50% !important;
+    top: calc(
+      var(--tf-viewport-top, 0px) + var(--tf-viewport-height, 100dvh) / 2
+    ) !important;
+    bottom: auto !important;
+    width: calc(100% - 32px) !important;
+    max-width: 460px !important;
+    height: auto !important;
+    max-height: calc(var(--tf-viewport-height, 100dvh) - 32px) !important;
+    transform: translate(-50%, -50%) !important;
+    border-radius: 20px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    animation: tf-sheet-fade 160ms ease-out;
+  }
+  .dialog-content .dialog-header::before {
+    display: none;
+  }
+  .dialog-content .sheet-grip {
+    display: grid;
+    place-items: center;
+    height: 22px;
+    flex: 0 0 22px;
+    touch-action: none;
+  }
+  .sheet-grip span {
+    width: 36px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--line);
   }
   .dialog-content .dialog-header {
     padding: 14px 16px;
@@ -528,9 +563,11 @@ body:has(.dialog-content[data-state="open"]) .tf-command-dock {
 .module-tile small {
   display: block;
   max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
 }
 .dialog-content button {
   max-width: 100%;
@@ -538,5 +575,58 @@ body:has(.dialog-content[data-state="open"]) .tf-command-dock {
 @media (max-width: 760px) {
   .dialog-content .dialog-header {
     padding-top: max(14px, env(safe-area-inset-top));
+  }
+}
+
+.sheet-grip {
+  display: none;
+}
+.module-tile {
+  white-space: normal;
+  text-align: left;
+  height: auto;
+}
+@media (max-width: 760px) {
+  .dialog-content[data-presentation="sheet"] .sheet-grip {
+    display: grid;
+  }
+  .dialog-content[data-presentation="sheet"] .dialog-header {
+    padding-top: 0;
+  }
+  .dialog-content[data-presentation="compact"] .dialog-body {
+    flex: 0 1 auto;
+  }
+  body .dialog-content.module-picker[data-presentation="sheet"] {
+    height: auto !important;
+  }
+  .module-picker .module-grid {
+    align-items: stretch;
+  }
+  .module-picker .module-tile {
+    min-height: 105px;
+  }
+}
+@keyframes tf-sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body .dialog-content[data-presentation] {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .fund-dialog .fund-form {
+    min-height: 0;
+    flex: 0 0 auto;
+  }
+  .fund-dialog .fund-form-footer {
+    margin-top: 12px;
+    bottom: 0;
   }
 }

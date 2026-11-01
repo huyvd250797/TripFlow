@@ -24,6 +24,7 @@ const AnalyticsModule = dynamic(
 );
 import { TripFund, FinanceBanner } from "./trip-fund";
 import { CommandDock } from "./ui/command-dock";
+import { observeDialogViewport } from "@/lib/ui-viewport";
 import { ModuleHub } from "./ui/module-hub";
 import { ConnectionStatus } from "./connection-status";
 const Bookings = dynamic(() => import("./bookings").then((m) => m.Bookings), {
@@ -410,27 +411,7 @@ function App() {
       ? "standalone"
       : "browser";
 
-    const syncViewport = () => {
-      const visual = window.visualViewport;
-      const viewportHeight = visual?.height || window.innerHeight;
-      const viewportTop = Math.max(0, visual?.offsetTop || 0);
-      document.documentElement.style.setProperty(
-        "--tf-viewport-height",
-        `${Math.round(viewportHeight)}px`,
-      );
-      document.documentElement.style.setProperty(
-        "--tf-viewport-top",
-        `${Math.round(viewportTop)}px`,
-      );
-      const keyboardOpen = window.innerHeight - viewportHeight > 120;
-      document.documentElement.dataset.keyboard = keyboardOpen
-        ? "open"
-        : "closed";
-    };
-    syncViewport();
-    window.visualViewport?.addEventListener("resize", syncViewport);
-    window.visualViewport?.addEventListener("scroll", syncViewport);
-    window.addEventListener("orientationchange", syncViewport);
+    const stopViewport = observeDialogViewport();
 
     const beforeInstall = (event: Event) => {
       event.preventDefault();
@@ -461,9 +442,7 @@ function App() {
     window.addEventListener("tripflow:update-available", updateReady);
 
     return () => {
-      window.visualViewport?.removeEventListener("resize", syncViewport);
-      window.visualViewport?.removeEventListener("scroll", syncViewport);
-      window.removeEventListener("orientationchange", syncViewport);
+      stopViewport();
       window.removeEventListener("beforeinstallprompt", beforeInstall);
       window.removeEventListener("appinstalled", installed);
       window.removeEventListener("tripflow:worker-ready", workerReady);
@@ -1619,7 +1598,9 @@ function App() {
       )
     );
   }
+  const previousModuleTab = useRef("home");
   function navigate(id: string) {
+    if (id === "more" && tab !== "more") previousModuleTab.current = tab;
     if (id === "more") window.dispatchEvent(new Event("tripflow:open-modules"));
     if (id !== tab) {
       const state = {
@@ -5476,7 +5457,7 @@ function App() {
                   />
                 )}
                 {tab === "more" && data && (
-                  <ModuleHub>
+                  <ModuleHub onExit={() => navigate(previousModuleTab.current)}>
                     <section className="more-hub-intro">
                       <div>
                         <span className="eyebrow">

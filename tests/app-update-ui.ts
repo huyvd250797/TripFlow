@@ -126,6 +126,22 @@ async function main() {
       name: "TripFlow có phiên bản mới",
     });
     await expect(dialog).toBeVisible({ timeout: 20000 });
+    await expect(dialog).toHaveAttribute("data-presentation", "compact");
+    const popup = (await dialog.boundingBox())!;
+    expect(popup.height).toBeLessThan(700);
+    expect(Math.abs(popup.y + popup.height / 2 - 422)).toBeLessThan(2);
+    expect(popup.x).toBeGreaterThan(10);
+    for (const width of [320, 390, 430]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.waitForTimeout(100);
+      const bounds = (await dialog.boundingBox())!;
+      expect(bounds.width).toBeLessThan(width);
+      expect(Math.abs(bounds.y + bounds.height / 2 - 422)).toBeLessThan(2);
+      expect(
+        await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+      ).toBe(true);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
     await expect(
       dialog.getByRole("button", { name: "Cập nhật", exact: true }),
     ).toBeDisabled();

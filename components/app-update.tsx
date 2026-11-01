@@ -195,7 +195,7 @@ export function AppUpdate() {
         <Dialog
           open
           title="TripFlow có phiên bản mới"
-          className="app-update-dialog dialog-sheet"
+          className="app-update-dialog dialog-compact"
           busy={busy}
           onClose={() => {
             if (!busy) {

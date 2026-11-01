@@ -471,7 +471,10 @@ async function main() {
       await zap.click();
       const command = page.getByRole("dialog");
       await expect(command).toBeVisible();
-      expect((await command.boundingBox())!.height).toBeGreaterThanOrEqual(840);
+      const commandBox = (await command.boundingBox())!;
+      expect(commandBox.height).toBeGreaterThan(200);
+      expect(commandBox.height).toBeLessThanOrEqual(828);
+      expect(Math.abs(commandBox.y + commandBox.height - 844)).toBeLessThan(2);
       await expect(page.locator(".bottom-nav")).toBeHidden();
       await command.getByRole("button", { name: "Đóng", exact: true }).click();
       const cells = page.locator(".money-banner > div");
@@ -549,8 +552,14 @@ async function main() {
       for (const width of [320, 390, 430]) {
         await page.setViewportSize({ width, height: 844 });
         const box = await dialog.boundingBox();
-        expect(box!.height).toBeGreaterThanOrEqual(840);
+        expect(box!.height).toBeGreaterThan(200);
+        expect(box!.height).toBeLessThan(740);
+        expect(Math.abs(box!.y + box!.height - 844)).toBeLessThan(2);
         expect(box!.x).toBe(0);
+        expect(await dialog.evaluate((el) => el.scrollTop)).toBe(0);
+        const header = (await dialog.locator(".dialog-header").boundingBox())!;
+        expect(header.y).toBeGreaterThanOrEqual(box!.y);
+        expect(header.y + header.height).toBeLessThan(box!.y + box!.height);
         expect(
           await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
         ).toBe(true);
@@ -571,9 +580,72 @@ async function main() {
       }
       await page.setViewportSize({ width: 390, height: 844 });
 
+      for (let cycle = 0; cycle < 2; cycle++) {
+        await dialog.getByLabel("Mục tiêu đóng (VNĐ)", { exact: true }).focus();
+        await page.evaluate(() => {
+          Object.defineProperty(window.visualViewport, "height", {
+            configurable: true,
+            value: 420,
+          });
+          Object.defineProperty(window.visualViewport, "offsetTop", {
+            configurable: true,
+            value: 55,
+          });
+          window.visualViewport!.dispatchEvent(new Event("resize"));
+        });
+        await page.waitForTimeout(100);
+        let bounds = (await dialog.boundingBox())!;
+        expect(Math.abs(bounds.y + bounds.height - 475)).toBeLessThan(2);
+        const keyboardFooter = (await dialog
+          .locator(".fund-form-footer")
+          .boundingBox())!;
+        expect(keyboardFooter.y + keyboardFooter.height).toBeLessThanOrEqual(
+          476,
+        );
+        await dialog.getByRole("heading", { level: 2 }).click();
+        await page.waitForTimeout(750);
+        bounds = (await dialog.boundingBox())!;
+        expect(Math.abs(bounds.y + bounds.height - 844)).toBeLessThan(2);
+        await page.evaluate(() => {
+          Reflect.deleteProperty(window.visualViewport!, "height");
+          Reflect.deleteProperty(window.visualViewport!, "offsetTop");
+          window.visualViewport!.dispatchEvent(new Event("resize"));
+        });
+      }
+      const grip = (await dialog.locator(".sheet-grip").boundingBox())!;
+      page.removeAllListeners("dialog");
+      page.once("dialog", (prompt) => prompt.dismiss());
+      await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(grip.x + grip.width / 2, grip.y + 110, {
+        steps: 8,
+      });
+      await page.mouse.up();
+      await expect(dialog).toBeVisible();
+      page.on("dialog", (prompt) => prompt.accept());
+      await expect(
+        dialog.getByLabel("Mục tiêu đóng (VNĐ)", { exact: true }),
+      ).toHaveValue("1.000.000");
+      expect(
+        await dialog
+          .locator(".fund-form-footer button")
+          .evaluateAll((buttons) =>
+            buttons.every((button) => {
+              const r = button.getBoundingClientRect();
+              return button.contains(
+                document.elementFromPoint(
+                  r.x + r.width / 2,
+                  r.y + r.height / 2,
+                ),
+              );
+            }),
+          ),
+      ).toBe(true);
+      await page.screenshot({ path: "test-results/v294-target-sheet.png" });
       await expect(dialog.locator(".fund-management")).toHaveCount(0);
       const footer = await dialog.locator(".fund-form-footer").boundingBox();
       expect(footer!.y + footer!.height).toBeGreaterThan(700);
+      expect(footer!.y + footer!.height).toBeLessThanOrEqual(845);
       await expect(
         dialog.getByRole("button", { name: "Lưu quỹ", exact: true }),
       ).toBeVisible();
@@ -716,7 +788,7 @@ async function main() {
       });
       expect(errors).toEqual([]);
       console.log(
-        "PASS V2.9 fund UI: three finance tabs, setup, per-member targets, contribution, reimbursement, return, responsive 320/390/430/1280, cached offline read and write guards.",
+        "PASS V2.9.4 fund UI: five finance tabs, sheet bottom anchoring, keyboard recovery, setup, per-member targets, contribution, reimbursement, return, responsive 320/390/430/1280, cached offline read and write guards.",
       );
       return;
     }
@@ -736,6 +808,29 @@ async function main() {
         exact: true,
       });
       await expect(picker.locator(".module-tile")).toHaveCount(14);
+      await expect(page.locator(".module-grid")).toHaveCount(1);
+      await expect(page.locator(".module-hub .module-grid")).toHaveCount(0);
+      await picker.getByRole("button", { name: "Đóng", exact: true }).click();
+      await expect(picker).toHaveCount(0);
+      await expect(page.locator(".daily-focus-card.current")).toBeVisible();
+      await nav("Thêm");
+      for (const width of [320, 390, 430]) {
+        await page.setViewportSize({ width, height: 844 });
+        await expect(picker).toBeVisible();
+        expect(
+          await picker.locator(".module-tile strong").evaluateAll((items) =>
+            items.every((el) => {
+              const style = getComputedStyle(el);
+              return (
+                style.whiteSpace === "normal" &&
+                style.textOverflow !== "ellipsis" &&
+                el.scrollHeight <= el.clientHeight + 1
+              );
+            }),
+          ),
+        ).toBe(true);
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
       await page.screenshot({
         path: "test-results/v280-module-grid.png",
         fullPage: true,
@@ -747,6 +842,16 @@ async function main() {
         })
         .click();
       await expect(picker).toHaveCount(0);
+      await page
+        .getByRole("button", { name: "Tất cả module", exact: true })
+        .click();
+      await expect(picker).toBeVisible();
+      await expect(page.locator(".module-grid")).toHaveCount(1);
+      await page.goBack();
+      await expect(picker).toHaveCount(0);
+      await expect(
+        page.locator(".module-management .booking-module"),
+      ).toBeVisible();
       await page
         .getByRole("button", { name: "Thêm đặt chỗ / tài liệu", exact: true })
         .click();
@@ -873,7 +978,7 @@ async function main() {
       await context.setOffline(false);
       expect(errors).toEqual([]);
       console.log(
-        "PASS V2.8: module grid, management screen, booking overnight create, document create/edit/delete, cached offline read, write disabled offline, green/red connection indicators, no JS errors.",
+        "PASS V2.9.4: single module picker, wrapping titles, management screen, booking overnight create, document create/edit/delete, cached offline read, write disabled offline, green/red connection indicators, no JS errors.",
       );
       return;
     }
@@ -1005,7 +1110,7 @@ async function main() {
       await expect(dialog).toBeVisible();
       expect(
         await dialog.evaluate((el) => getComputedStyle(el).animationName),
-      ).toBe("tf-dialog-enter");
+      ).toBe("tf-sheet-fade");
       await page.getByLabel("Số tiền VNĐ *", { exact: true }).fill("75000");
       await page
         .getByLabel("Nội dung chi *", { exact: true })
@@ -1074,7 +1179,7 @@ async function main() {
         .toBe(844);
       expect(
         await dialog.evaluate((el) => getComputedStyle(el).animationName),
-      ).toBe("tf-sheet-enter");
+      ).toBe("tf-sheet-fade");
       await page.screenshot({
         path: "test-results/v260-dark-mobile-sheet.png",
         fullPage: true,
@@ -1195,6 +1300,17 @@ async function main() {
     await expect(page.locator(".topbar")).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await nav("Chi phí");
+    await page
+      .getByRole("button", { name: "Ghi chi tiêu", exact: true })
+      .first()
+      .click();
+    await expect(
+      page.getByLabel("Số tiền VNĐ *", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Hủy", exact: true })
+      .click();
     await context.setOffline(true);
     await page
       .getByRole("button", { name: "Ghi chi tiêu", exact: true })

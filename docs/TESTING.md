@@ -1,3 +1,14 @@
+# Kiểm thử hiện tại V2.9.4
+
+- `npm ci`, `npm test`, `npm run build`.
+- `TRIPFLOW_FUND_TEST=1 UI_BASE_URL=http://localhost:3000 npm run test:ui`: năm tab Chi phí, đóng quỹ/hoàn/trả, bám đáy sheet, khôi phục viewport sau hai vòng bàn phím mô phỏng, input/footer trong khung, từ chối bỏ dữ liệu khi kéo đóng, Sáng/Tối và offline.
+- `TRIPFLOW_BOOKINGS_TEST=1 UI_BASE_URL=http://localhost:3000 npm run test:ui`: chỉ một danh sách module, đóng về màn trước, quay lại danh sách và native Back, tên đầy đủ ở 320/390/430px, CRUD đặt chỗ/tài liệu và dữ liệu cũ.
+- `TRIPFLOW_POLISH_TEST=1 UI_BASE_URL=http://localhost:3000 npm run test:ui`: sheet mobile, centered dialog desktop, giảm chuyển động, busy/error/retry và focus.
+- `npm run test:ui` không bật cờ nhánh: phân quyền, offline và 40 bố cục hồi quy. Bộ HTTP/Auth được mô phỏng, SQL chạy bằng PGlite với toàn bộ migration; không dùng dữ liệu sản xuất.
+- `npm run test:update:ui` sau build: worker thật, popup cập nhật nhỏ căn giữa ở 320/390/430px, chặn draft và bảo toàn queue/theme/session khi cập nhật.
+- Cần Chromium; đặt `CHROMIUM_PATH` nếu không dùng Chromium mặc định của Playwright. Cấu hình Supabase local mẫu cho test theo hướng dẫn cũ bên dưới. Chỉ bật một cờ nhánh mỗi lần.
+- Giới hạn: viewport/bàn phím được mô phỏng trên Chromium. Chưa kiểm tra iPhone/Safari và Supabase/Vercel thật. Boss nên thử gõ → đóng bàn phím → cuộn → mở/đóng sheet nhiều lần trên iPhone sau deploy.
+
 # Kiểm thử hiện tại V2.9.0
 
 Xem `VALIDATION-V2.9.0.md`. Chạy `npm test`, build và browser integration cho quỹ/đặt chỗ theo hướng dẫn trong tài liệu đó. Các mục phiên bản cũ dưới đây là lịch sử kiểm thử.
