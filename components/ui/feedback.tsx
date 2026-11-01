@@ -9,7 +9,12 @@ import {
 } from "lucide-react";
 
 export type ToastTone = "success" | "info" | "warning";
-export type ToastMessage = { id: string; message: string; tone: ToastTone };
+export type ToastMessage = {
+  id: string;
+  message: string;
+  tone: ToastTone;
+  duration?: number;
+};
 
 export function BusyIndicator() {
   return <LoaderCircle size={18} className="tf-busy-icon" aria-hidden="true" />;
@@ -24,10 +29,17 @@ export function Toast({
 }) {
   const [paused, setPaused] = useState(false);
   useEffect(() => {
-    if (!notice || paused) return;
-    const timer = setTimeout(onDismiss, 6000);
+    if (!notice || paused || notice.duration === 0) return;
+    const timer = setTimeout(onDismiss, notice.duration ?? 6000);
     return () => clearTimeout(timer);
-  }, [notice?.id, paused, onDismiss]);
+  }, [
+    notice?.id,
+    notice?.message,
+    notice?.tone,
+    notice?.duration,
+    paused,
+    onDismiss,
+  ]);
   const Icon =
     notice?.tone === "warning"
       ? TriangleAlert

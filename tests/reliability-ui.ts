@@ -4,7 +4,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { readFile, mkdir, readdir } from "node:fs/promises";
-import { VERSION } from "../lib/types";
+import { VERSION, DATABASE_VERSION } from "../lib/types";
 import { mutationSchema } from "../lib/validation";
 async function main() {
   const db = new PGlite();
@@ -156,6 +156,25 @@ async function main() {
         note: "",
       });
   }
+  if (process.env.TRIPFLOW_LAYOUT_TEST) {
+    for (let i = 0; i < 12; i++)
+      await mutate("participant", {
+        name: `Thành viên ${i + 1} có tên dài kiểm tra giao diện`,
+        note: "",
+      });
+    for (let i = 0; i < 14; i++)
+      await mutate("budget", {
+        title: `Khoản dự toán ${i + 1} có tên dài kiểm tra bố cục`,
+        category: "Khác",
+        quantity: 1,
+        unit_price: 150000,
+        note: "",
+      });
+  }
+  if (process.env.TRIPFLOW_LAYOUT_TEST)
+    await db.exec(
+      `set role postgres;update budget_items set cost_sharing='{"mode":"equal"}'::jsonb;set role authenticated;`,
+    );
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
     args: [
@@ -168,6 +187,7 @@ async function main() {
   const context = await browser.newContext({
     viewport: {
       width:
+        process.env.TRIPFLOW_LAYOUT_TEST ||
         process.env.TRIPFLOW_ROUTE_TEST ||
         process.env.TRIPFLOW_PREPARATION_TEST ||
         process.env.TRIPFLOW_COST_TEST ||
@@ -254,7 +274,7 @@ async function main() {
       json: {
         app_version: VERSION,
         channel: "stable",
-        database_version: VERSION,
+        database_version: DATABASE_VERSION,
         checked_at: new Date().toISOString(),
         ready: true,
         checks: [
@@ -283,6 +303,8 @@ async function main() {
   let postDelay = 0,
     failNextPost = false;
   let reads = { list: 0, bundle: 0 };
+  let refreshDelay = 0,
+    refreshFailure = false;
   await page.route("**/api/tripflow*", async (route) => {
     if (process.env.TRIPFLOW_PERF_TEST) {
       if (route.request().method() === "GET") {
@@ -293,6 +315,10 @@ async function main() {
       await new Promise((r) => setTimeout(r, 120));
     }
     try {
+      if (route.request().method() === "GET" && refreshDelay)
+        await new Promise((resolve) => setTimeout(resolve, refreshDelay));
+      if (route.request().method() === "GET" && refreshFailure)
+        throw new Error("Lỗi tải dữ liệu mô phỏng");
       let body: Record<string, unknown>;
       if (route.request().method() === "POST") {
         if (postDelay)
@@ -505,17 +531,254 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_LAYOUT_TEST) {
+      const checkLayout = async (label: string) => {
+        const leaks = await page.evaluate(() => {
+          const result: string[] = [];
+          for (const el of Array.from(
+            document.querySelectorAll<HTMLElement>(
+              ".panel .btn,.panel select,.panel input,.preparation-module h2,.planning-view-switch button,.planning-heading-actions>.icon-btn",
+            ),
+          )) {
+            if (
+              !el.getClientRects().length ||
+              el.closest('[aria-hidden="true"],.dialog-exit-layer')
+            )
+              continue;
+            if (el.closest(".table-scroll,.planning-board")) continue;
+            const r = el.getBoundingClientRect(),
+              parent = el.closest(".panel")?.getBoundingClientRect();
+            if (
+              r.width > innerWidth + 1 ||
+              r.left < -1 ||
+              r.right > innerWidth + 1 ||
+              (parent &&
+                (r.left < parent.left - 1 || r.right > parent.right + 1))
+            )
+              result.push(
+                el.tagName +
+                  ":" +
+                  (el.getAttribute("aria-label") || el.textContent || "")
+                    .trim()
+                    .slice(0, 70),
+              );
+          }
+          for (const el of Array.from(
+            document.querySelectorAll<HTMLElement>(
+              ".panel h2,.panel h3,.route-map-head h3",
+            ),
+          )) {
+            if (!el.getClientRects().length) continue;
+            const parent = el.closest(".panel,.route-map-shell");
+            if (!parent) continue;
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const r = range.getBoundingClientRect(),
+              box = parent.getBoundingClientRect();
+            if (r.right > box.right + 1 || r.left < box.left - 1)
+              result.push("heading text:" + el.textContent);
+          }
+          return result;
+        });
+        expect(leaks, `${label}: controls must fit their panels`).toEqual([]);
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth + 1,
+          ),
+          label,
+        ).toBe(true);
+      };
+      refreshDelay = 500;
+      await page
+        .getByRole("button", { name: "Tải lại dữ liệu", exact: true })
+        .click();
+      await expect(page.locator(".tf-toast.info")).toContainText(
+        "Đang cập nhật",
+      );
+      const pendingToast = await page.locator(".tf-toast").elementHandle();
+      await expect(page.locator(".tf-toast.success")).toContainText(
+        "Đã cập nhật dữ liệu",
+      );
+      expect(
+        await pendingToast!.evaluate(
+          (el) => el === document.querySelector(".tf-toast"),
+        ),
+      ).toBe(true);
+      await expect(page.locator(".tf-toast.success>svg")).toHaveCount(1);
+      await expect(page.locator(".tf-toast")).toHaveCount(0, { timeout: 6000 });
+      refreshDelay = 0;
+      await nav("Lịch trình");
+      await expect(page.locator(".route-planner")).toHaveCount(0);
+      for (const width of [320, 390, 430, 768, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        for (const theme of ["light", "dark"]) {
+          await page.evaluate((t) => {
+            document.documentElement.dataset.theme = t;
+            document.documentElement.style.colorScheme = t;
+          }, theme);
+          for (const mode of ["Timeline", "Board", "Bản đồ"]) {
+            await page
+              .locator(".planning-view-switch")
+              .getByRole("button", { name: mode, exact: true })
+              .click();
+            for (const button of await page
+              .locator(".planning-view-switch button")
+              .all())
+              await expect(button).toBeVisible();
+            await checkLayout(`route ${mode} ${width} ${theme}`);
+          }
+          await page.screenshot({
+            path: `test-results/v2121-route-${width}-${theme}.png`,
+          });
+        }
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page
+        .getByRole("button", { name: "Điều phối lịch trình", exact: true })
+        .click();
+      await expect(
+        page
+          .getByRole("dialog")
+          .getByRole("heading", { name: "Điều phối lịch trình", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByRole("dialog")
+          .getByLabel("Hoạt động cần điều chỉnh", { exact: true }),
+      ).toBeVisible();
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Đóng", exact: true })
+        .first()
+        .click();
+      await nav("Chi phí");
+      await page
+        .locator(".finance-toolbar")
+        .getByRole("button", { name: "Báo cáo", exact: true })
+        .click();
+      await expect(page.locator(".cost-sharing-report")).toHaveCount(0);
+      const launcher = page.getByRole("button", {
+        name: "Phân chia chi phí",
+        exact: true,
+      });
+      await expect(launcher.locator("..")).toContainText(
+        "Báo cáo theo hoạt động",
+      );
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await launcher.click();
+      let sheet = page.getByRole("dialog");
+      const body = sheet.locator(".dialog-body");
+      await expect(sheet.locator(".sheet-scroll-indicator")).toBeVisible();
+      const geometry = await body.boundingBox();
+      expect(geometry).toBeTruthy();
+      const before = await body.evaluate((el) => el.scrollTop);
+      const cdp = await context.newCDPSession(page);
+      const x = geometry!.x + geometry!.width * 0.6,
+        y = Math.min(geometry!.y + geometry!.height - 70, 700);
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x, y }],
+      });
+      for (const dy of [35, 80, 135, 190]) {
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x, y: y - dy }],
+        });
+        await page.waitForTimeout(16);
+      }
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+      await expect
+        .poll(() => body.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(before + 35);
+      expect(await body.evaluate((el) => getComputedStyle(el).overflowX)).toBe(
+        "hidden",
+      );
+      await page.screenshot({
+        path: "test-results/v2121-cost-sharing-sheet.png",
+      });
+      await sheet
+        .getByRole("button", { name: "Đóng", exact: true })
+        .first()
+        .click();
+      await expect(sheet).toHaveCount(0);
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await nav("Thêm");
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: /Chuẩn bị chuyến đi/ })
+        .click();
+      const prep = page.locator(".preparation-module");
+      await expect(prep).toBeVisible();
+      for (const width of [320, 390, 430, 768, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        for (const theme of ["light", "dark"]) {
+          await page.evaluate((t) => {
+            document.documentElement.dataset.theme = t;
+            document.documentElement.style.colorScheme = t;
+          }, theme);
+          await checkLayout(`preparation ${width} ${theme}`);
+          await page.screenshot({
+            path: `test-results/v2121-preparation-${width}-${theme}.png`,
+          });
+        }
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await prep.getByRole("button", { name: "Thêm mục", exact: true }).click();
+      sheet = page.getByRole("dialog");
+      expect(
+        await sheet.evaluate((el) =>
+          Array.from(el.querySelectorAll("input,select,textarea")).every(
+            (x) => {
+              const r = x.getBoundingClientRect(),
+                p = el.getBoundingClientRect();
+              return r.left >= p.left - 1 && r.right <= p.right + 1;
+            },
+          ),
+        ),
+      ).toBe(true);
+      await sheet.getByRole("button", { name: "Hủy", exact: true }).click();
+      expect(await page.locator("svg.brand-mark rect").count()).toBe(0);
+      expect(
+        await page
+          .locator("svg.brand-mark")
+          .first()
+          .evaluate((el) => ({
+            border: getComputedStyle(el).borderTopWidth,
+            background: getComputedStyle(el).backgroundColor,
+          })),
+      ).toEqual({ border: "0px", background: "rgba(0, 0, 0, 0)" });
+      refreshFailure = true;
+      await page
+        .getByRole("button", { name: "Tải lại dữ liệu", exact: true })
+        .click();
+      await expect(page.locator(".tf-toast.warning")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(page.locator(".tf-toast.success")).toHaveCount(0);
+      refreshFailure = false;
+      if (errors.length) throw new Error(errors.join("\n"));
+      console.log(
+        "PASS V2.12.1: borderless logo, route modes and preparation controls contained at 320/390/430/768/1280 in light/dark; icon planner, contextual cost sharing sheet, native first gesture scrolling with rail ready on open; same toast pending→checked success→dismiss and failed refresh warning.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_ROUTE_TEST) {
       await nav("Lịch trình");
-      const planner = page.getByRole("region", {
-        name: "Điều phối lịch trình",
-      });
-      // section without labelled-by is found through its explicit aria-label.
       const region = page.locator(".route-planner");
-      await expect(region).toBeVisible();
+      const openPlanner = async () => {
+        if (!(await region.isVisible()))
+          await page
+            .getByRole("button", { name: "Điều phối lịch trình", exact: true })
+            .click();
+      };
       await page
         .getByRole("button", { name: "26/09/2026", exact: true })
         .click();
+      await openPlanner();
+      await expect(region).toBeVisible();
       const breakfast = (
         await db.query<any>(
           "select * from itinerary_items where trip_id=$1 and title='Ăn sáng linh hoạt'",
@@ -531,6 +794,7 @@ async function main() {
       await page
         .getByLabel("Hoạt động cần điều chỉnh", { exact: true })
         .selectOption(breakfast.id);
+      await openPlanner();
       await region
         .getByRole("button", { name: "Điều chỉnh", exact: true })
         .click();
@@ -596,6 +860,7 @@ async function main() {
       await expect(
         visitRow.getByRole("link", { name: "Chỉ đường", exact: true }),
       ).toHaveAttribute("href", /google.com\/maps\/dir/);
+      await openPlanner();
       await region.getByRole("button", { name: /Muốn đi/ }).click();
       sheet = page.getByRole("dialog");
       await sheet
@@ -664,6 +929,7 @@ async function main() {
         .click();
       await expect(page.getByRole("dialog")).toHaveCount(0);
       // Stale preview must not overwrite a concurrent itinerary update.
+      await openPlanner();
       await region
         .getByRole("button", { name: "Điều chỉnh", exact: true })
         .click();
@@ -705,11 +971,13 @@ async function main() {
         .click();
       await sheet.getByRole("button", { name: "Hủy", exact: true }).click();
       await page.reload();
+      await openPlanner();
       await expect(region).toBeVisible();
       await page
         .getByLabel("Hoạt động cần điều chỉnh", { exact: true })
         .selectOption(breakfast.id);
       await context.setOffline(true);
+      await openPlanner();
       await region
         .getByRole("button", { name: "Điều chỉnh", exact: true })
         .click();
@@ -752,6 +1020,7 @@ async function main() {
         .toBe("2026-09-26T00:15:00.000Z");
       for (const width of [320, 390, 768, 1280]) {
         await page.setViewportSize({ width, height: 844 });
+        await openPlanner();
         await expect(region).toBeVisible();
         expect(
           await page.evaluate(
@@ -761,6 +1030,7 @@ async function main() {
         await page
           .getByLabel("Hoạt động cần điều chỉnh", { exact: true })
           .selectOption(breakfast.id);
+        await openPlanner();
         await region
           .getByRole("button", { name: "Điều chỉnh", exact: true })
           .click();
@@ -782,10 +1052,12 @@ async function main() {
       await page.setViewportSize({ width: 390, height: 844 });
       viewRole = "viewer";
       await page.reload();
+      await openPlanner();
       await expect(region).toBeVisible();
       await expect(
         region.getByRole("button", { name: "Điều chỉnh", exact: true }),
       ).toHaveCount(0);
+      await openPlanner();
       await region.getByRole("button", { name: /Muốn đi/ }).click();
       await expect(
         page
@@ -1101,6 +1373,9 @@ async function main() {
         .locator(".finance-toolbar")
         .getByRole("button", { name: "Báo cáo", exact: true })
         .click();
+      await page
+        .getByRole("button", { name: "Phân chia chi phí", exact: true })
+        .click();
       const report = page.locator(".cost-sharing-report");
       await report
         .getByLabel("Khoản dự toán cần đối chiếu", { exact: true })
@@ -1113,6 +1388,12 @@ async function main() {
         path: "test-results/v210-custom-sharing.png",
         fullPage: true,
       });
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Đóng", exact: true })
+        .first()
+        .click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
       const expense = (
         await db.query<any>(
           "select * from expenses where title='Cọc phòng 50%'",
@@ -1192,8 +1473,8 @@ async function main() {
       expect(header.height + handle.height).toBeLessThanOrEqual(66);
       expect(header.height).toBeGreaterThanOrEqual(44);
       const body = picker.locator(".dialog-body");
-      expect(await body.evaluate((el) => getComputedStyle(el).overflowY)).toBe(
-        "scroll",
+      expect(["auto", "scroll"]).toContain(
+        await body.evaluate((el) => getComputedStyle(el).overflowY),
       );
       // First native touch gesture on a fresh sheet; no prior warm-up scroll.
       await expect

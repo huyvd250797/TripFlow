@@ -24,6 +24,67 @@ export function Dialog({
   const swipeStart = useRef<{ x: number; y: number; at: number } | null>(null);
   const motion = useRef<HTMLDivElement | null>(null);
   const overlay = useRef<HTMLDivElement | null>(null);
+  const content = useRef<HTMLDivElement | null>(null);
+  const rail = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (!open || compact) return;
+    let frame = 0,
+      disposed = false,
+      body: HTMLElement | null = null,
+      resize: ResizeObserver | undefined,
+      mutations: MutationObserver | undefined;
+    const measure = () => {
+      frame = 0;
+      if (disposed || !content.current || !rail.current) return;
+      body = content.current.querySelector<HTMLElement>(".dialog-body");
+      if (!body) return;
+      if (resize)
+        Array.from(body.children).forEach((child) => resize!.observe(child));
+      const pane = body.getBoundingClientRect(),
+        box = content.current.getBoundingClientRect();
+      const overflow = body.scrollHeight - body.clientHeight;
+      rail.current.hidden = overflow <= 1;
+      rail.current.style.top = `${pane.top - box.top + 5}px`;
+      rail.current.style.height = `${Math.max(0, pane.height - 10)}px`;
+      const thumb = rail.current.firstElementChild as HTMLElement;
+      const track = Math.max(0, pane.height - 10),
+        height = Math.min(
+          track,
+          Math.max(24, (track * body.clientHeight) / body.scrollHeight),
+        );
+      thumb.style.height = `${height}px`;
+      thumb.style.transform = `translateY(${overflow > 0 ? (Math.max(0, Math.min(overflow, body.scrollTop)) / overflow) * (track - height) : 0}px)`;
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    frame = requestAnimationFrame(() => {
+      if (disposed || !content.current) return;
+      measure();
+      resize = new ResizeObserver(schedule);
+      resize.observe(content.current);
+      if (body) resize.observe(body);
+      mutations = new MutationObserver(schedule);
+      mutations.observe(content.current, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ["open"],
+      });
+      content.current.addEventListener("scroll", schedule, {
+        capture: true,
+        passive: true,
+      });
+    });
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      resize?.disconnect();
+      mutations?.disconnect();
+      content.current?.removeEventListener("scroll", schedule, true);
+    };
+  }, [open, compact]);
   const animation = useRef<Animation | null>(null);
   const springBack = () => {
     const node = motion.current;
@@ -61,13 +122,6 @@ export function Dialog({
     if (start && motion.current)
       motion.current.style.transform = `translateY(${Math.max(0, event.clientY - start.y)}px)`;
   };
-  const finishEntryBeforeScroll = (event: React.PointerEvent<HTMLElement>) => {
-    if (!(event.target as HTMLElement).closest(".dialog-body")) return;
-    // A native touch scroll must not compete with the entrance moving its pane.
-    // Finish only the entrance; do not preventDefault or capture the pointer.
-    if (!swipeStart.current && animation.current?.playState === "running")
-      animation.current.finish();
-  };
   const endDrag = (event: React.PointerEvent<HTMLElement>) => {
     const start = swipeStart.current;
     swipeStart.current = null;
@@ -85,6 +139,9 @@ export function Dialog({
     if (!open) return;
     window.dispatchEvent(new Event("tripflow:sync-viewport"));
     const frame = requestAnimationFrame(() => {
+      // Allocate the scroll pane before the compositor starts the slide.
+      void motion.current?.querySelector<HTMLElement>(".dialog-body")
+        ?.clientHeight;
       if (motion.current)
         motion.current.dataset.enterMotion =
           !compact &&
@@ -236,7 +293,13 @@ export function Dialog({
               data-presentation={compact ? "compact" : "sheet"}
               aria-describedby={description ? descriptionId : undefined}
               aria-busy={busy || undefined}
-              onPointerDownCapture={finishEntryBeforeScroll}
+              ref={content}
+              onOpenAutoFocus={(event) => {
+                if (!compact && matchMedia("(max-width: 760px)").matches) {
+                  event.preventDefault();
+                  content.current?.focus({ preventScroll: true });
+                }
+              }}
               onCloseAutoFocus={(event) => {
                 // Dialogs are opened by programmatic actions rather than Radix Trigger.
                 // Keep keyboard navigation in the current screen after the dialog leaves.
@@ -288,6 +351,16 @@ export function Dialog({
                 </div>
               </header>
               {children}
+              {!compact && (
+                <div
+                  ref={rail}
+                  className="sheet-scroll-indicator"
+                  aria-hidden="true"
+                  hidden
+                >
+                  <span />
+                </div>
+              )}
             </D.Content>
           </div>
         </div>

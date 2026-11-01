@@ -1,0 +1,391 @@
+/* V2.12.1: size the content, not the viewport; clipping is never the overflow fix. */
+body svg.brand-mark {
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border-radius: 0 !important;
+}
+.panel,
+.stop-panel,
+.module-management,
+.module-hub,
+.main-content,
+.field,
+.form-grid {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.section-heading {
+  min-width: 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.section-heading > :is(div, h2, h3, p) {
+  min-width: 0;
+  max-width: 100%;
+}
+.section-heading :is(h2, h3) {
+  overflow-wrap: break-word;
+}
+.section-heading .btn,
+.dialog-footer .btn {
+  white-space: nowrap;
+}
+.planning-heading-actions {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.planning-view-switch {
+  min-width: 0;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  box-sizing: border-box;
+}
+.planning-view-switch button {
+  min-width: 0;
+  white-space: nowrap;
+  justify-content: center;
+}
+.route-planning-launcher {
+  flex-shrink: 0;
+}
+.dialog-body .route-planner {
+  min-width: 0;
+  max-width: 100%;
+}
+.dialog-body .route-planner .section-heading {
+  justify-content: flex-start;
+}
+.cost-sharing-dialog .dialog-body > .panel {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+.cost-sharing-launcher {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.preparation-module > .section-heading:first-child {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.preparation-module .prep-actions {
+  max-width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.preparation-module :is(select, input, textarea) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+.prep-toolbar select,
+.prep-item-control select {
+  appearance: auto;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--text);
+  min-height: 44px;
+  font: inherit;
+}
+.prep-toolbar label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.prep-progress > div {
+  min-width: 0;
+}
+.prep-progress progress {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--line);
+}
+.prep-progress progress::-webkit-progress-bar {
+  background: var(--line);
+  border-radius: 8px;
+}
+.prep-progress progress::-webkit-progress-value {
+  background: var(--primary);
+  border-radius: 8px;
+}
+.prep-progress progress::-moz-progress-bar {
+  background: var(--primary);
+  border-radius: 8px;
+}
+.prep-empty {
+  padding: 20px 8px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.dialog-viewport .dialog-body {
+  transform: none;
+  will-change: auto;
+  scroll-behavior: auto;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-scroll-indicator {
+  position: absolute;
+  right: 4px;
+  width: 3px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 3;
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
+}
+.sheet-scroll-indicator[hidden] {
+  display: none;
+}
+.sheet-scroll-indicator > span {
+  display: block;
+  width: 3px;
+  min-height: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 60%, transparent);
+  will-change: transform;
+}
+@media (min-width: 761px) {
+  .sheet-scroll-indicator {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .roadmap-heading {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+  .roadmap-heading > div:first-child {
+    min-width: 0;
+    width: 100%;
+  }
+  .roadmap-heading p {
+    margin: 5px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .roadmap-heading h2 {
+    font-size: 20px;
+    margin: 0;
+  }
+  .planning-heading-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 36px 36px;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    justify-content: stretch;
+  }
+  .planning-view-switch {
+    order: 0;
+    width: 100%;
+    gap: 0;
+    padding: 3px;
+    border-radius: 13px;
+  }
+  .planning-view-switch button {
+    padding: 9px 5px !important;
+    font-size: 12px !important;
+    gap: 4px;
+    line-height: 1.2;
+  }
+  .planning-view-switch button svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  .route-planning-launcher {
+    order: 1;
+    width: 36px;
+    height: 36px;
+    padding: 7px;
+  }
+  .planning-heading-actions .planning-gps-btn {
+    order: 2;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    padding: 7px;
+    border-radius: 11px;
+  }
+  .planning-gps-btn > span {
+    display: none;
+  }
+  .dialog-viewport .dialog-content[data-presentation="sheet"] .dialog-body {
+    scrollbar-width: none;
+    scrollbar-gutter: auto;
+    padding-right: 20px;
+  }
+  .dialog-viewport
+    .dialog-content[data-presentation="sheet"]
+    .dialog-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+  .preparation-module > .section-heading:first-child .eyebrow {
+    font-size: 9px;
+    letter-spacing: 1.3px;
+  }
+  .preparation-module > .section-heading:first-child h2 {
+    font-size: 20px;
+    line-height: 1.25;
+    margin: 5px 0 0;
+  }
+  .prep-counts {
+    gap: 8px;
+    font-size: 12px;
+  }
+  .preparation-module .section-heading h3 {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+  .preparation-module .prep-toolbar {
+    gap: 10px;
+  }
+  .preparation-module .prep-contact {
+    flex-wrap: wrap;
+  }
+  .preparation-module .prep-contact > .prep-actions {
+    margin-left: auto;
+  }
+  .report-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .report-kpis .panel {
+    min-width: 0;
+  }
+  .cost-sharing-launcher {
+    font-size: 12px;
+    padding: 9px 10px;
+  }
+}
+@media (max-width: 480px) {
+  .preparation-module > .section-heading:first-child .prep-actions {
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .preparation-module > .section-heading:first-child .prep-actions .btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 8px;
+  }
+  .preparation-module > .section-heading:first-child .prep-actions .btn > span {
+    display: none;
+  }
+}
+@media (max-width: 400px) {
+  .planning-view-switch button svg {
+    display: none;
+  }
+  .planning-view-switch button {
+    font-size: 11px !important;
+  }
+  .preparation-module > .section-heading:first-child h2 {
+    font-size: 18px;
+  }
+  .prep-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cost-sharing-dialog .cost-sharing-report > .section-heading {
+  display: none;
+}
+.cost-sharing-report select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font: inherit;
+}
+
+html[data-theme="dark"] .brand-mark,
+body .auth-story .brand-mark {
+  --brand-pin-fill: #f7fcfc;
+}
+.report-activity-heading {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .prep-contact-add {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 8px !important;
+  }
+  .prep-contact-add > span {
+    display: none;
+  }
+  .preparation-module > .section-heading:not(:first-child) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .report-activity-heading h2 {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+}
+.route-map-shell,
+.route-map-head,
+.route-map-head > div {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.route-map-head :is(h2, h3, p) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+@media (max-width: 760px) {
+  .panel :is(h2, h3),
+  .stop-panel h3 {
+    white-space: normal;
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+  .route-map-head h3 {
+    font-size: 18px;
+    line-height: 1.35;
+  }
+  .route-segment-actions {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .route-segment-actions a {
+    max-width: 100%;
+    white-space: normal;
+  }
+}

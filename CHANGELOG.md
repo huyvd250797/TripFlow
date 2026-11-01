@@ -1,5 +1,18 @@
 # Changelog
 
+## V2.12.1 — Mobile Layout & Interaction Polish
+
+- Bỏ nền khung/viền/shadow của logo hiển thị trong app; pin đứng độc lập, màu phù hợp sáng/tối. Không thay icon nút điều hướng hoặc dữ liệu người dùng.
+- Timeline/Board/Bản đồ có ba cột vừa khung, icon Điều phối và GPS cùng thanh công cụ. Điều phối chỉ mở bằng icon, các chức năng quản lý và preview giữ nguyên trong bottom sheet.
+- Phân chia chi phí chuyển vào nút cùng tiêu đề **Báo cáo theo hoạt động**, mở danh sách dài trong bottom sheet, không có nút đứng một hàng riêng. Thiết lập cách chia vẫn ở Dự toán.
+- Sheet chuẩn bị vùng cuộn trước animation, bỏ transform/will-change trên nội dung cuộn và bỏ việc ép kết thúc animation tại cử chỉ đầu; có thanh chỉ báo cuộn thụ động ngay khi nội dung dài. Giữ native touch scroll, kéo đóng, motion, dirty/busy guard và popup cập nhật nhỏ ở giữa.
+- Tải lại dữ liệu: giữ một thông báo đang cập nhật trong khi chờ; tải xong đổi cùng thông báo sang thành công/dấu kiểm và tự ẩn sau 3,5 giây. Lỗi/offline báo cảnh báo, không báo thành công giả.
+- Chuẩn bị chuyến đi: hành động header gọn, tên đầy đủ qua aria-label/title, input/select và progress phù hợp iOS; tiêu đề dài, nhóm nút, báo cáo/bản đồ được chỉnh để vừa khung.
+- **Không cần chạy migration mới. App 2.12.1, database giữ 2.12.0.** Nếu chưa nâng database V2.12.0, dùng TXT V2.12.0 đã bàn giao trước, không chạy lại SQL đã áp dụng.
+
+Hướng dẫn: `docs/UPGRADE-V2.12.1.md`; xác minh: `docs/VALIDATION-V2.12.1.md`.
+
+
 ## V2.12.0 — Flexible Itinerary & Route Planning
 
 - Lịch trình có giờ cố định/linh hoạt, giới hạn không bắt đầu trước và phải hoàn tất trước. Các trường mới nằm trong form hoạt động; giới hạn giờ nằm trong Thêm chi tiết khi tạo mới.

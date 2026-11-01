@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { UsersRound } from "lucide-react";
+import { Dialog } from "./ui/dialog";
 import type { Bundle, Budget } from "@/lib/types";
 import {
   allocateCost,
@@ -314,5 +316,40 @@ export function CostSharingReport({ bundle }: { bundle: Bundle }) {
         <p>Thêm dự toán để khai báo cách chia.</p>
       )}
     </section>
+  );
+}
+
+export function CostSharingButton({ bundle }: { bundle: Bundle }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className="btn secondary small cost-sharing-launcher"
+        aria-label="Phân chia chi phí"
+        title="Phân chia chi phí"
+        onClick={() => setOpen(true)}
+      >
+        <UsersRound size={17} />
+        <span>Phân chia</span>
+      </button>
+      {open && (
+        <Dialog
+          open
+          title="Phân chia chi phí"
+          onClose={() => setOpen(false)}
+          className="cost-sharing-dialog"
+        >
+          <div className="dialog-body">
+            <CostSharingReport bundle={bundle} />
+          </div>
+          <footer className="dialog-footer">
+            <button className="btn secondary" onClick={() => setOpen(false)}>
+              Đóng
+            </button>
+          </footer>
+        </Dialog>
+      )}
+    </>
   );
 }

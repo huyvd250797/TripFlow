@@ -1,10 +1,22 @@
-# TripFlow V2.12.0 — Flexible Itinerary & Route Planning
+# TripFlow V2.12.1 — Mobile Layout & Interaction Polish
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.12.1 — Mobile Layout & Interaction Polish
+
+- Bỏ nền khung/viền/shadow của logo hiển thị trong app; pin đứng độc lập, màu phù hợp sáng/tối. Không thay icon nút điều hướng hoặc dữ liệu người dùng.
+- Timeline/Board/Bản đồ có ba cột vừa khung, icon Điều phối và GPS cùng thanh công cụ. Điều phối chỉ mở bằng icon, các chức năng quản lý và preview giữ nguyên trong bottom sheet.
+- Phân chia chi phí chuyển vào nút cùng tiêu đề **Báo cáo theo hoạt động**, mở danh sách dài trong bottom sheet, không có nút đứng một hàng riêng. Thiết lập cách chia vẫn ở Dự toán.
+- Sheet chuẩn bị vùng cuộn trước animation, bỏ transform/will-change trên nội dung cuộn và bỏ việc ép kết thúc animation tại cử chỉ đầu; có thanh chỉ báo cuộn thụ động ngay khi nội dung dài. Giữ native touch scroll, kéo đóng, motion, dirty/busy guard và popup cập nhật nhỏ ở giữa.
+- Tải lại dữ liệu: giữ một thông báo đang cập nhật trong khi chờ; tải xong đổi cùng thông báo sang thành công/dấu kiểm và tự ẩn sau 3,5 giây. Lỗi/offline báo cảnh báo, không báo thành công giả.
+- Chuẩn bị chuyến đi: hành động header gọn, tên đầy đủ qua aria-label/title, input/select và progress phù hợp iOS; tiêu đề dài, nhóm nút, báo cáo/bản đồ được chỉnh để vừa khung.
+- **Không cần chạy migration mới. App 2.12.1, database giữ 2.12.0.** Nếu chưa nâng database V2.12.0, dùng TXT V2.12.0 đã bàn giao trước, không chạy lại SQL đã áp dụng.
+
+Hướng dẫn: `docs/UPGRADE-V2.12.1.md`; xác minh: `docs/VALIDATION-V2.12.1.md`.
 
 ## V2.12.0 — Flexible Itinerary & Route Planning
 
@@ -341,7 +353,7 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 ## 1.9. Stable Production Release V1.0.0
 
 - Chạy `202609280005_v100_stable_production_release.sql` sau V0.9.0 trước khi deploy source V1.0.0.
-- **Thêm → Trạng thái Production** chỉ báo sẵn sàng khi source, database marker và channel đều là `2.12.0 / stable`, đồng thời các guard server/client đều đạt.
+- **Thêm → Trạng thái Production** chỉ báo sẵn sàng khi source, database marker và channel đều là `App 2.12.1 / DB 2.12.0 / stable`, đồng thời các guard server/client đều đạt.
 - V1.0.0 không thêm bảng nghiệp vụ mới, không sửa dữ liệu chuyến đi và không thay đổi mô hình quyền; đây là bản đóng roadmap 1.0 để vận hành ổn định.
 - Service worker dùng cache `tripflow-shell-v100`; API private tiếp tục `no-store`, same-origin/content-type/payload guard và request-id.
 - Trước deploy production thực tế, hoàn tất `docs/RELEASE-CHECKLIST.md`; sau deploy dùng `docs/PRODUCTION-RUNBOOK.md` để smoke test, backup và rollback.
@@ -469,7 +481,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap hoàn thành đến V2.12.0 — Flexible Itinerary & Route Planning. Tiếp theo V2.13.0 — Group Expenses & Settlement.
+- Roadmap hoàn thành đến V2.12.1 — Mobile Layout & Interaction Polish. Tiếp theo V2.13.0 — Group Expenses & Settlement.
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
 

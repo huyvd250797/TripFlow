@@ -7,6 +7,7 @@ import {
   Pencil,
   Trash2,
   ClipboardCheck,
+  Copy,
   CalendarDays,
 } from "lucide-react";
 import type {
@@ -108,16 +109,21 @@ export function PreparationModule({
           <div className="prep-actions">
             <button
               className="btn secondary small"
+              aria-label="Dùng mẫu"
+              title="Dùng mẫu"
               onClick={() => setSpec({ type: "template" })}
             >
-              Dùng mẫu
+              <Copy size={17} />
+              <span>Dùng mẫu</span>
             </button>
             <button
               className="btn primary small"
+              aria-label="Thêm mục"
+              title="Thêm mục"
               onClick={() => setSpec({ type: "item" })}
             >
               <Plus size={16} />
-              Thêm mục
+              <span>Thêm mục</span>
             </button>
           </div>
         )}
@@ -315,11 +321,13 @@ export function PreparationModule({
         <h3>Liên hệ cần thiết</h3>
         {canEdit && (
           <button
-            className="btn secondary small"
+            className="btn secondary small prep-contact-add"
+            aria-label="Thêm liên hệ"
+            title="Thêm liên hệ"
             onClick={() => setSpec({ type: "contact" })}
           >
             <Plus size={16} />
-            Thêm liên hệ
+            <span>Thêm liên hệ</span>
           </button>
         )}
       </div>

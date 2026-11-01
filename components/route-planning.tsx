@@ -181,6 +181,7 @@ export function RoutePlanning({
     [target, setTarget] = useState("");
   const [spec, setSpec] = useState<
     | { type: "shift" | "leg"; id: string; minutes?: number; day?: string }
+    | { type: "hub" }
     | { type: "wishes" }
     | { type: "wish-edit"; wish?: TravelWish }
     | { type: "wish-use"; wish: TravelWish; replace: boolean }
@@ -206,57 +207,84 @@ export function RoutePlanning({
         ? bundle.items.find((x) => x.id === spec.id)
         : undefined;
   return (
-    <section className="panel route-planner" aria-label="Điều phối lịch trình">
-      <div className="section-heading">
-        <h3>Điều phối lịch trình</h3>
-        <div className="route-action-group">
-          <button
-            className="btn secondary small"
-            onClick={() => setSpec({ type: "wishes" })}
-          >
-            Muốn đi · {bundle.wishes?.length || 0}
-          </button>
-          <button
-            className="btn secondary small"
-            onClick={() => setSpec({ type: "issues" })}
-          >
-            Kiểm tra lịch{issues.length ? ` · ${issues.length}` : ""}
-          </button>
-        </div>
-      </div>
-      {canEdit && (
-        <div className="route-adjust-picker">
-          <label className="sr-only" htmlFor="route-adjust-target">
-            Hoạt động cần điều chỉnh
-          </label>
-          <select
-            id="route-adjust-target"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-          >
-            <option value="">Chọn hoạt động cần điều chỉnh</option>
-            {sorted(bundle.items)
-              .filter((x) => x.status === "planned")
-              .map((x) => (
-                <option key={x.id} value={x.id}>
-                  {localTime(x.start_at, bundle.trip.timezone).slice(5, 16)} ·{" "}
-                  {x.title}
-                  {x.time_mode === "fixed" ? " · Cố định" : ""}
-                </option>
-              ))}
-          </select>
-          <button
-            className="btn primary small"
-            disabled={
-              !bundle.items.some(
-                (x) => x.id === target && x.status === "planned",
-              )
-            }
-            onClick={() => setSpec({ type: "shift", id: target })}
-          >
-            Điều chỉnh
-          </button>
-        </div>
+    <>
+      <button
+        type="button"
+        className="icon-btn route-planning-launcher"
+        aria-label="Điều phối lịch trình"
+        title="Điều phối lịch trình"
+        onClick={() => setSpec({ type: "hub" })}
+      >
+        <SlidersHorizontal size={19} />
+      </button>
+      {spec?.type === "hub" && (
+        <Dialog open title="Điều phối lịch trình" onClose={() => setSpec(null)}>
+          <div className="dialog-body">
+            <section
+              className="route-planner"
+              aria-label="Điều phối lịch trình"
+            >
+              <div className="section-heading">
+                <div className="route-action-group">
+                  <button
+                    className="btn secondary small"
+                    onClick={() => setSpec({ type: "wishes" })}
+                  >
+                    Muốn đi · {bundle.wishes?.length || 0}
+                  </button>
+                  <button
+                    className="btn secondary small"
+                    onClick={() => setSpec({ type: "issues" })}
+                  >
+                    Kiểm tra lịch{issues.length ? ` · ${issues.length}` : ""}
+                  </button>
+                </div>
+              </div>
+              {canEdit && (
+                <div className="route-adjust-picker">
+                  <label className="sr-only" htmlFor="route-adjust-target">
+                    Hoạt động cần điều chỉnh
+                  </label>
+                  <select
+                    id="route-adjust-target"
+                    value={target}
+                    onChange={(e) => setTarget(e.target.value)}
+                  >
+                    <option value="">Chọn hoạt động cần điều chỉnh</option>
+                    {sorted(bundle.items)
+                      .filter((x) => x.status === "planned")
+                      .map((x) => (
+                        <option key={x.id} value={x.id}>
+                          {localTime(x.start_at, bundle.trip.timezone).slice(
+                            5,
+                            16,
+                          )}{" "}
+                          · {x.title}
+                          {x.time_mode === "fixed" ? " · Cố định" : ""}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    className="btn primary small"
+                    disabled={
+                      !bundle.items.some(
+                        (x) => x.id === target && x.status === "planned",
+                      )
+                    }
+                    onClick={() => setSpec({ type: "shift", id: target })}
+                  >
+                    Điều chỉnh
+                  </button>
+                </div>
+              )}
+            </section>
+          </div>
+          <footer className="dialog-footer">
+            <button className="btn secondary" onClick={() => setSpec(null)}>
+              Đóng
+            </button>
+          </footer>
+        </Dialog>
       )}
       {spec?.type === "issues" && (
         <Dialog open title="Kiểm tra lịch trình" onClose={() => setSpec(null)}>
@@ -329,7 +357,7 @@ export function RoutePlanning({
           onClose={() => setSpec({ type: "wishes" })}
         />
       )}
-    </section>
+    </>
   );
 }
 function Preview({

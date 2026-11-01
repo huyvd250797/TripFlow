@@ -25,7 +25,7 @@ const AnalyticsModule = dynamic(
 import { TripFund, FinanceBanner } from "./trip-fund";
 import { CommandDock } from "./ui/command-dock";
 import { observeDialogViewport } from "@/lib/ui-viewport";
-import { CostSharingReport } from "./cost-sharing";
+import { CostSharingButton } from "./cost-sharing";
 import { RoutePlanning, RouteLeg } from "./route-planning";
 import { PreparationSummary } from "./preparation-summary";
 const PreparationModule = dynamic(
@@ -375,6 +375,57 @@ function App() {
   const notify = useCallback((message: string, tone: ToastTone = "success") => {
     setToast({ id: crypto.randomUUID(), message, tone });
   }, []);
+  const [manualRefreshing, setManualRefreshing] = useState(false);
+  const manualRefreshLock = useRef(false);
+  async function refreshData() {
+    if (manualRefreshLock.current) return;
+    manualRefreshLock.current = true;
+    setManualRefreshing(true);
+    const id = crypto.randomUUID();
+    setToast({
+      id,
+      message: "Đang cập nhật dữ liệu…",
+      tone: "info",
+      duration: 0,
+    });
+    try {
+      if (!navigator.onLine)
+        throw new Error(
+          "Đang offline. Dữ liệu đã lưu trên thiết bị vẫn có thể sử dụng.",
+        );
+      await syncPending(false);
+      await qc.invalidateQueries(
+        { refetchType: "active" },
+        { throwOnError: true },
+      );
+      setToast((current) =>
+        current?.id === id
+          ? {
+              id,
+              message: "Đã cập nhật dữ liệu.",
+              tone: "success",
+              duration: 3500,
+            }
+          : current,
+      );
+    } catch (e) {
+      setToast((current) =>
+        current?.id === id
+          ? {
+              id,
+              message:
+                (e as Error).message ||
+                "Không cập nhật được dữ liệu. Hãy thử lại.",
+              tone: "warning",
+              duration: 6000,
+            }
+          : current,
+      );
+    } finally {
+      manualRefreshLock.current = false;
+      setManualRefreshing(false);
+    }
+  }
   const dismissToast = useCallback(() => setToast(null), []);
   const loadAuth = useCallback(async () => {
     if (!configured()) {
@@ -3414,11 +3465,8 @@ function App() {
               className="icon-btn"
               aria-label="Tải lại dữ liệu"
               aria-busy={tripsQ.isFetching || bq.isFetching || syncing}
-              onClick={() => {
-                void qc.invalidateQueries();
-                if (online) void syncPending(false);
-                notify("Đang cập nhật dữ liệu…", "info");
-              }}
+              disabled={manualRefreshing}
+              onClick={() => void refreshData()}
             >
               <RefreshCw
                 size={19}
@@ -3727,7 +3775,6 @@ function App() {
                 {tab === "route" && data && progress && (
                   <>
                     {liveCard()}
-                    <RoutePlanning bundle={data} onSave={save} />
                     <div className="section-heading roadmap-heading">
                       <div>
                         <h2>Roadmap chuyến đi</h2>
@@ -3737,6 +3784,7 @@ function App() {
                         </p>
                       </div>
                       <div className="planning-heading-actions">
+                        <RoutePlanning bundle={data} onSave={save} />
                         <div
                           className="planning-view-switch"
                           aria-label="Kiểu hiển thị kế hoạch"
@@ -3767,6 +3815,8 @@ function App() {
                         </div>
                         <button
                           className="btn secondary planning-gps-btn"
+                          aria-label="GPS của tôi"
+                          title="GPS của tôi"
                           onClick={() => {
                             if (!navigator.geolocation) {
                               notify(
@@ -3792,7 +3842,7 @@ function App() {
                           }}
                         >
                           <MapPin size={16} />
-                          GPS của tôi
+                          <span>GPS của tôi</span>
                         </button>
                       </div>
                     </div>
@@ -5328,7 +5378,6 @@ function App() {
                       </section>
                     ) : (
                       <>
-                        <CostSharingReport bundle={data} />
                         <section className="panel">
                           <div className="section-heading">
                             <div>
@@ -5435,8 +5484,9 @@ function App() {
                         </section>
 
                         <section className="panel">
-                          <div className="section-heading">
+                          <div className="section-heading report-activity-heading">
                             <h2>Báo cáo theo hoạt động</h2>
+                            <CostSharingButton bundle={data} />
                             <div className="finance-actions">
                               <button
                                 className="btn secondary"

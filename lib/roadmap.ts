@@ -322,6 +322,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Khung giờ cố định/linh hoạt, thời gian di chuyển và dự phòng; xem trước dời nhiều hoạt động, wishlist/phương án B, phương tiện theo chặng.",
   },
   {
+    version: "V2.12.1",
+    title: "Mobile Layout & Interaction Polish",
+    done: true,
+    description:
+      "Logo không khung, thanh chế độ lịch vừa khung, điều phối bằng icon; phân chia trong sheet của Báo cáo; chuẩn bị gọn, cuộn sẵn và thông báo tải lại đổi sang thành công. DB giữ 2.12.0.",
+  },
+  {
     version: "V2.13.0",
     title: "Group Expenses & Settlement",
     done: false,
