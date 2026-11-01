@@ -37,8 +37,8 @@ export async function GET() {
         return reply(
           {
             error:
-              "Database chưa có capability V2.4.1. Hãy chạy migration Travel Reliability & Permissions còn thiếu.",
-            code: "V241_MIGRATION_REQUIRED",
+              "Database chưa có capability V2.8.0. Hãy chạy migration Bookings & Documents còn thiếu.",
+            code: "V280_MIGRATION_REQUIRED",
           },
           503,
         );
@@ -67,8 +67,8 @@ export async function GET() {
       return reply(
         {
           error:
-            "Database chưa đạt schema V2.4.1. Hãy chạy migration 202610310001_v241_travel_reliability_permissions.sql trước khi dùng app hiện tại.",
-          code: "V241_MIGRATION_REQUIRED",
+            "Database chưa đạt schema V2.8.0. Hãy chạy migration 202611010001_v280_bookings_documents.sql trước khi dùng app hiện tại.",
+          code: "V280_MIGRATION_REQUIRED",
           currentDatabaseVersion: state?.database_version || null,
         },
         503,
@@ -78,7 +78,7 @@ export async function GET() {
       ...state,
       app_version: VERSION,
       database_required_version: DATABASE_VERSION,
-      ui_release: "mobile-navigation-interaction",
+      ui_release: "bookings-travel-documents",
     });
   } catch (error) {
     console.error(

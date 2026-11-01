@@ -22,6 +22,12 @@ const AnalyticsModule = dynamic(
   () => import("./analytics-module").then((m) => m.AnalyticsModule),
   { loading: () => <ModuleSkeleton label="Đang tải báo cáo" />, ssr: false },
 );
+import { ModuleHub } from "./ui/module-hub";
+import { ConnectionStatus } from "./connection-status";
+const Bookings = dynamic(() => import("./bookings").then((m) => m.Bookings), {
+  ssr: false,
+  loading: () => <ModuleSkeleton label="Đang tải đặt chỗ" />,
+});
 import { MoreModule, useMobile } from "./ui/mobile-module";
 import { SwipeRow } from "./ui/swipe-row";
 import { AppUpdate } from "./app-update";
@@ -1612,6 +1618,7 @@ function App() {
     );
   }
   function navigate(id: string) {
+    if (id === "more") window.dispatchEvent(new Event("tripflow:open-modules"));
     if (id !== tab) {
       const state = {
         ...history.state,
@@ -5524,7 +5531,7 @@ function App() {
                   />
                 )}
                 {tab === "more" && data && (
-                  <>
+                  <ModuleHub>
                     <section className="more-hub-intro">
                       <div>
                         <span className="eyebrow">
@@ -5546,6 +5553,13 @@ function App() {
                       </div>
                       <ThemeControl />
                     </section>
+                    <div data-module-title="Đặt chỗ & tài liệu">
+                      <Bookings
+                        bundle={data}
+                        userId={user.id}
+                        online={online}
+                      />
+                    </div>
                     <MoreModule className="module-block" id="module-trip">
                       <summary>
                         <span className="module-block-icon">
@@ -6237,7 +6251,7 @@ function App() {
                         </section>
                       </div>
                     </MoreModule>
-                  </>
+                  </ModuleHub>
                 )}
               </>
             )}
@@ -6246,7 +6260,11 @@ function App() {
         <footer className="page-footer">
           <b>TRIPFLOW</b>
           <span>
-            V{VERSION} · {online ? "Đang kết nối" : "Mất kết nối"}
+            V{VERSION}{" "}
+            <ConnectionStatus
+              online={online}
+              hasError={!!(tripsQ.error || bq.error)}
+            />
           </span>
         </footer>
       </div>

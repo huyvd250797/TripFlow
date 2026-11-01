@@ -34,7 +34,7 @@ function text(node: ReactNode): string {
     )
     .join(" ");
 }
-function heading(node: ReactNode): string {
+export function heading(node: ReactNode): string {
   for (const child of Children.toArray(node)) {
     if (
       !isValidElement<{ children?: ReactNode; "data-module-title"?: string }>(
@@ -51,7 +51,7 @@ function heading(node: ReactNode): string {
   }
   return "";
 }
-function sections(node: ReactNode): ReactNode[] {
+export function sections(node: ReactNode): ReactNode[] {
   return Children.toArray(node).flatMap((child) =>
     isValidElement<{ className?: string; children?: ReactNode }>(child) &&
     (child.props.className === "module-block-content" ||

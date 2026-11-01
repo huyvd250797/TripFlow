@@ -129,7 +129,9 @@ async function main() {
   const context = await browser.newContext({
     viewport: {
       width:
-        process.env.TRIPFLOW_MOBILE_TEST || process.env.TRIPFLOW_POLISH_TEST
+        process.env.TRIPFLOW_BOOKINGS_TEST ||
+        process.env.TRIPFLOW_MOBILE_TEST ||
+        process.env.TRIPFLOW_POLISH_TEST
           ? 390
           : 1280,
       height: 844,
@@ -206,7 +208,7 @@ async function main() {
       json: {
         app_version: VERSION,
         channel: "stable",
-        database_version: "2.4.1",
+        database_version: "2.8.0",
         checked_at: new Date().toISOString(),
         ready: true,
         checks: [
@@ -311,6 +313,33 @@ async function main() {
       });
     }
   });
+  await page.route("**/api/bookings*", async (route) => {
+    try {
+      if (route.request().method() === "POST") {
+        const result = (
+          await db.query<any>("select tf_booking_mutate($1::jsonb) r", [
+            JSON.stringify(route.request().postDataJSON()),
+          ])
+        ).rows[0].r;
+        await route.fulfill({ json: { booking: result } });
+      } else
+        await route.fulfill({
+          json: {
+            bookings: (
+              await db.query(
+                "select * from travel_bookings where trip_id=$1 and deleted_at is null",
+                [tid],
+              )
+            ).rows,
+          },
+        });
+    } catch (e) {
+      await route.fulfill({
+        status: 400,
+        json: { error: (e as Error).message },
+      });
+    }
+  });
   await page.route("**/api/templates", (route) =>
     route.fulfill({ json: { templates: [] } }),
   );
@@ -342,8 +371,12 @@ async function main() {
     await page.getByLabel("Mật khẩu", { exact: true }).fill("testpassword");
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
     await expect(page.locator(".topbar")).toBeVisible();
-    const nav = (label: string) =>
-      page
+    const nav = async (label: string) => {
+      await page.waitForTimeout(150);
+      const picker = page.locator(".module-picker");
+      if (await picker.isVisible())
+        await picker.getByRole("button", { name: "Đóng", exact: true }).click();
+      await page
         .locator(
           (page.viewportSize()?.width || 390) <= 760
             ? ".bottom-nav"
@@ -351,9 +384,110 @@ async function main() {
         )
         .getByRole("button", { name: label, exact: true })
         .click();
+    };
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_BOOKINGS_TEST) {
+      await expect(page.locator(".connection-dot.ready")).toBeVisible();
+      await page.route("**/api/version", (route) =>
+        route.fulfill({ status: 503, json: { error: "test" } }),
+      );
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await expect(page.locator(".connection-dot.checking")).toBeVisible();
+      await page.unroute("**/api/version");
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await expect(page.locator(".connection-dot.ready")).toBeVisible();
+      await nav("Thêm");
+      const picker = page.getByRole("dialog", {
+        name: "Thêm chức năng",
+        exact: true,
+      });
+      await expect(picker.locator(".module-tile")).toHaveCount(14);
+      await page.screenshot({
+        path: "test-results/v280-module-grid.png",
+        fullPage: true,
+      });
+      await picker
+        .getByRole("button", {
+          name: "Đặt chỗ & tài liệu Mở quản lý",
+          exact: true,
+        })
+        .click();
+      await expect(picker).toHaveCount(0);
+      await page
+        .getByRole("button", { name: "Thêm đặt chỗ / tài liệu", exact: true })
+        .click();
+      await page
+        .getByLabel("Tên đặt chỗ / tài liệu *", { exact: true })
+        .fill("La Vague booking");
+      await page.getByLabel("Mã xác nhận", { exact: true }).fill("LV12345");
+      await page
+        .getByLabel("Bắt đầu / nhận phòng", { exact: true })
+        .fill("2026-11-01T14:00");
+      await page
+        .getByLabel("Kết thúc / trả phòng", { exact: true })
+        .fill("2026-11-02T12:00");
+      await page
+        .getByRole("button", { name: "Lưu đặt chỗ", exact: true })
+        .click();
+      await expect(page.locator(".booking-card")).toContainText(
+        "La Vague booking",
+      );
+      await expect(page.locator(".booking-card")).toContainText("LV12345");
+      await page
+        .getByRole("button", { name: "Thêm đặt chỗ / tài liệu", exact: true })
+        .click();
+      await page
+        .getByLabel("Tên đặt chỗ / tài liệu *", { exact: true })
+        .fill("Voucher khách sạn");
+      await page.getByLabel("Loại", { exact: true }).selectOption("document");
+      await page
+        .getByLabel("Link vé / tài liệu HTTPS", { exact: true })
+        .fill("https://example.com/voucher");
+      await page
+        .getByRole("button", { name: "Lưu đặt chỗ", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Tài liệu", exact: true }).click();
+      await expect(page.locator(".booking-card")).toContainText(
+        "Voucher khách sạn",
+      );
+      await page.screenshot({
+        path: "test-results/v280-bookings.png",
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Sửa", exact: true }).click();
+      await page
+        .getByLabel("Tên đặt chỗ / tài liệu *", { exact: true })
+        .fill("Voucher đã sửa");
+      await page
+        .getByRole("button", { name: "Lưu đặt chỗ", exact: true })
+        .click();
+      await expect(page.locator(".booking-card")).toContainText(
+        "Voucher đã sửa",
+      );
+      await page.getByRole("button", { name: "Xóa", exact: true }).click();
+      await expect(page.locator(".booking-card")).toHaveCount(0);
+      await context.setOffline(true);
+      await expect(page.locator(".connection-dot.offline")).toBeVisible();
+      await page
+        .getByRole("button", { name: "Tải lại đặt chỗ", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Tất cả", exact: true }).click();
+      await expect(page.locator(".booking-card")).toContainText("LV12345");
+      await expect(
+        page.getByRole("button", {
+          name: "Thêm đặt chỗ / tài liệu",
+          exact: true,
+        }),
+      ).toBeDisabled();
+      await context.setOffline(false);
+      expect(errors).toEqual([]);
+      console.log(
+        "PASS V2.8: module grid, management screen, booking overnight create, document create/edit/delete, cached offline read, write disabled offline, green/red connection indicators, no JS errors.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_MOBILE_TEST) {
       await nav("Thêm");
       await page.locator("#module-trip > summary").click();

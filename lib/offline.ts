@@ -1,6 +1,15 @@
 "use client";
-import type { Bundle, Mutation, QueuedMutation, TripListResponse } from "./types";
-import { compareQueuedMutations, compactQueueRows, isCoreOfflineMutation } from "./offline-reliability";
+import type {
+  Bundle,
+  Mutation,
+  QueuedMutation,
+  TripListResponse,
+} from "./types";
+import {
+  compareQueuedMutations,
+  compactQueueRows,
+  isCoreOfflineMutation,
+} from "./offline-reliability";
 
 type CacheEntry<T = unknown> = {
   key: string;
@@ -22,7 +31,8 @@ function available() {
 }
 
 function openDb(): Promise<IDBDatabase> {
-  if (!available()) return Promise.reject(new Error("IndexedDB không khả dụng."));
+  if (!available())
+    return Promise.reject(new Error("IndexedDB không khả dụng."));
   if (opening) return opening;
   opening = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -54,8 +64,10 @@ function openDb(): Promise<IDBDatabase> {
       };
       resolve(db);
     };
-    request.onerror = () => reject(request.error || new Error("Không mở được IndexedDB."));
-    request.onblocked = () => reject(new Error("IndexedDB đang bị khóa bởi phiên TripFlow khác."));
+    request.onerror = () =>
+      reject(request.error || new Error("Không mở được IndexedDB."));
+    request.onblocked = () =>
+      reject(new Error("IndexedDB đang bị khóa bởi phiên TripFlow khác."));
   });
   return opening;
 }
@@ -63,7 +75,8 @@ function openDb(): Promise<IDBDatabase> {
 function idbRequest<T>(request: IDBRequest<T>) {
   return new Promise<T>((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error("IndexedDB thất bại."));
+    request.onerror = () =>
+      reject(request.error || new Error("IndexedDB thất bại."));
   });
 }
 
@@ -73,18 +86,25 @@ async function put(storeName: string, value: unknown) {
     const tx = db.transaction(storeName, "readwrite");
     tx.objectStore(storeName).put(value);
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error || new Error("Không lưu được dữ liệu offline."));
-    tx.onabort = () => reject(tx.error || new Error("Giao dịch IndexedDB đã hủy."));
+    tx.onerror = () =>
+      reject(tx.error || new Error("Không lưu được dữ liệu offline."));
+    tx.onabort = () =>
+      reject(tx.error || new Error("Giao dịch IndexedDB đã hủy."));
   });
 }
 
 async function get<T>(storeName: string, key: IDBValidKey) {
   const db = await openDb();
   const tx = db.transaction(storeName, "readonly");
-  return idbRequest(tx.objectStore(storeName).get(key)) as Promise<T | undefined>;
+  return idbRequest(tx.objectStore(storeName).get(key)) as Promise<
+    T | undefined
+  >;
 }
 
-async function getByUser<T extends { userId: string }>(storeName: string, userId: string) {
+async function getByUser<T extends { userId: string }>(
+  storeName: string,
+  userId: string,
+) {
   const db = await openDb();
   const tx = db.transaction(storeName, "readonly");
   const index = tx.objectStore(storeName).index("userId");
@@ -97,10 +117,10 @@ async function remove(storeName: string, key: IDBValidKey) {
     const tx = db.transaction(storeName, "readwrite");
     tx.objectStore(storeName).delete(key);
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error || new Error("Không xóa được dữ liệu offline."));
+    tx.onerror = () =>
+      reject(tx.error || new Error("Không xóa được dữ liệu offline."));
   });
 }
-
 
 export async function cacheTrips(userId: string, value: TripListResponse) {
   if (!available()) return;
@@ -120,7 +140,11 @@ export async function readCachedTrips(userId: string) {
   return row?.value;
 }
 
-export async function cacheBundle(userId: string, tripId: string, value: Bundle) {
+export async function cacheBundle(
+  userId: string,
+  tripId: string,
+  value: Bundle,
+) {
   if (!available()) return;
   const row: CacheEntry<Bundle> = {
     key: `bundle:${userId}:${tripId}`,
@@ -135,13 +159,17 @@ export async function cacheBundle(userId: string, tripId: string, value: Bundle)
 
 export async function readCachedBundle(userId: string, tripId: string) {
   if (!available()) return undefined;
-  const row = await get<CacheEntry<Bundle>>(CACHE, `bundle:${userId}:${tripId}`);
+  const row = await get<CacheEntry<Bundle>>(
+    CACHE,
+    `bundle:${userId}:${tripId}`,
+  );
   return row?.value;
 }
 
 export async function removeCachedBundle(userId: string, tripId: string) {
   if (!available()) return;
   await remove(CACHE, `bundle:${userId}:${tripId}`);
+  await removeCachedBookings(userId, tripId);
 }
 
 export function canQueueMutation(mutation: Mutation) {
@@ -169,7 +197,8 @@ export async function enqueueMutation(
   }
   for (const row of result.rows) {
     const before = previousById.get(row.operationId);
-    if (!before || JSON.stringify(before) !== JSON.stringify(row)) await put(QUEUE, row);
+    if (!before || JSON.stringify(before) !== JSON.stringify(row))
+      await put(QUEUE, row);
   }
   return result;
 }
@@ -216,7 +245,9 @@ export async function recoverStaleQueue(userId: string, staleMs = 45000) {
   let recovered = 0;
   for (const row of rows) {
     if (row.state !== "sending") continue;
-    const last = Date.parse(row.lastAttemptAt || row.updatedAt || row.createdAt);
+    const last = Date.parse(
+      row.lastAttemptAt || row.updatedAt || row.createdAt,
+    );
     if (Number.isFinite(last) && last > cutoff) continue;
     await updateQueue(row.operationId, {
       state: "pending",
@@ -256,6 +287,31 @@ export async function clearUserOfflineData(userId: string) {
     for (const row of cacheRows) cacheStore.delete(row.key);
     for (const row of queueRows) queueStore.delete(row.operationId);
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error || new Error("Không xóa được dữ liệu offline."));
+    tx.onerror = () =>
+      reject(tx.error || new Error("Không xóa được dữ liệu offline."));
   });
+}
+
+export async function cacheBookings(
+  userId: string,
+  tripId: string,
+  value: unknown,
+) {
+  if (!available()) return;
+  await put(CACHE, {
+    key: `bookings:${userId}:${tripId}`,
+    userId,
+    kind: "bookings",
+    tripId,
+    value,
+    updatedAt: new Date().toISOString(),
+  });
+}
+export async function readCachedBookings<T>(userId: string, tripId: string) {
+  if (!available()) return undefined;
+  return (await get<{ value: T }>(CACHE, `bookings:${userId}:${tripId}`))
+    ?.value;
+}
+export async function removeCachedBookings(userId: string, tripId: string) {
+  if (available()) await remove(CACHE, `bookings:${userId}:${tripId}`);
 }

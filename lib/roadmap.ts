@@ -251,6 +251,13 @@ export const ROADMAP: RoadmapItem[] = [
     description:
       "Tinh gọn điều hướng mobile, giữ vị trí scroll và context khi quay lại, giảm số lần chạm, chuẩn hóa swipe/inline action và vùng bấm để TripFlow dùng nhanh như ứng dụng native.",
   },
+  {
+    version: "V2.8.0",
+    title: "Bookings & Travel Documents",
+    done: true,
+    description:
+      "Đặt chỗ, vé/tài liệu, liên kết lịch trình/dự toán; lưới module mobile và trạng thái kết nối.",
+  },
 ];
 
 export const NEXT_VERSION = ROADMAP.find((item) => !item.done) ?? null;

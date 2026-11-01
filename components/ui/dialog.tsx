@@ -2,6 +2,7 @@
 import * as D from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { useId, useRef, useEffect } from "react";
+let pendingHistoryBack: Promise<void> | null = null;
 export function Dialog({
   open,
   onClose,
@@ -33,23 +34,43 @@ export function Dialog({
   closeRef.current = requestClose;
   useEffect(() => {
     if (!open) return;
-    let mounted = true;
+    let mounted = true,
+      armed = false;
     const marker = crypto.randomUUID();
-    const state = { ...history.state, tripflowDialog: marker };
-    history.pushState(state, "");
+    let state: Record<string, unknown>;
     const back = () => {
       if (history.state?.tripflowDialog === marker) return;
       closeRef.current();
       // A busy form or a cancelled discard confirmation keeps its history guard.
       setTimeout(() => {
-        if (mounted) history.pushState(state, "");
+        if (mounted && armed) history.pushState(state, "");
       }, 0);
     };
-    window.addEventListener("popstate", back);
+    const arm = () => {
+      if (!mounted) return;
+      state = { ...history.state, tripflowDialog: marker };
+      history.pushState(state, "");
+      armed = true;
+      window.addEventListener("popstate", back);
+    };
+    if (pendingHistoryBack) void pendingHistoryBack.then(arm);
+    else arm();
     return () => {
       mounted = false;
       window.removeEventListener("popstate", back);
-      if (history.state?.tripflowDialog === marker) history.back();
+      if (armed && history.state?.tripflowDialog === marker) {
+        pendingHistoryBack = new Promise<void>((resolve) => {
+          window.addEventListener(
+            "popstate",
+            () => {
+              pendingHistoryBack = null;
+              resolve();
+            },
+            { once: true },
+          );
+          history.back();
+        });
+      }
     };
   }, [open]);
   return (

@@ -265,3 +265,11 @@ Hoàn thành tài khoản, chuyến đi, lịch trình, roadmap/check-in, dự t
 - Tối ưu cảm giác sử dụng như app native nhưng không làm tăng độ phức tạp nghiệp vụ.
 
 **Roadmap đã hoàn thành đến V2.7.0.** Đề xuất tiếp theo để Boss chọn: V2.8.0 — Bookings & Travel Documents (đặt chỗ, mã xác nhận và giấy tờ chuyến đi). Chưa triển khai.
+
+## ✅ V2.8.0 — Bookings & Travel Documents
+
+- Module đặt chỗ/tài liệu, liên kết lịch trình/dự toán, thời gian/múi giờ, mã/voucher, cache đọc offline và export JSON.
+- Lưới module mobile mở màn hình quản lý riêng; chấm trạng thái kết nối.
+- Migration V2.8.0 tăng dần sau V2.4.1.
+
+**Đề xuất để Boss chọn:** V2.9.0 — Travel Readiness & Reminders: checklist trước đi và cảnh báo hạn/giờ sử dụng. Chưa triển khai.

@@ -1,5 +1,11 @@
 # Kiểm tra TripFlow
 
+## V2.8.0 Bookings & Travel Documents
+
+- Kết quả/phạm vi: `VALIDATION-V2.8.0.md`; nâng cấp SQL: `UPGRADE-V2.8.0.md`.
+- Server test và Chromium như bên dưới. Chạy `TRIPFLOW_BOOKINGS_TEST=1 UI_BASE_URL=http://localhost:3001 npm run test:ui`; PowerShell đặt biến `$env:TRIPFLOW_BOOKINGS_TEST="1"` và `$env:UI_BASE_URL="http://localhost:3001"` trước khi chạy. Không bật đồng thời MOBILE/POLISH/PERF.
+- Bộ V2.7 MOBILE cũ mô tả bố cục trước V2.8. Dùng bộ BOOKING mới để nghiệm thu lưới mobile; regression thường vẫn kiểm tra nghiệp vụ cũ.
+
 ## V2.7.0 Mobile Navigation & Interaction Polish
 
 - Chạy regression thường và lifecycle update như hướng dẫn phía dưới.

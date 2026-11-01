@@ -1,5 +1,14 @@
 # Changelog
 
+## V2.8.0 — Bookings & Travel Documents
+
+- Module Đặt chỗ & tài liệu: chuyến bay/tàu xe, khách sạn, thuê xe, tour, vé và tài liệu HTTPS; mã xác nhận, người đứng tên, số lượng, múi giờ, nhận/trả qua đêm, hạn thanh toán/hủy, trạng thái và ghi chú.
+- Liên kết hoạt động/dự toán/đặt chỗ; số đã trả ròng lấy từ thực chi/hoàn tiền của dự toán liên kết, không tạo thêm khoản chi tự động. Xuất JSON riêng.
+- Mobile: Thêm mở lưới module hai cột theo mẫu tham chiếu; chọn module đi thẳng tới màn hình quản lý riêng. Desktop giữ nhóm quản lý hiện hữu.
+- Footer chỉ hiển thị version và chấm xanh/vàng/đỏ, có mô tả cho trình đọc màn hình; không còn chữ “Đang kết nối”.
+- Đặt chỗ/tài liệu đã tải được cache IndexedDB theo user/chuyến; thêm/sửa/xóa cần online. RLS + RPC kiểm tra quyền, version và operation ID; xóa mềm và audit.
+- **Migration bắt buộc:** App/DB 2.8.0, chạy `202611010001_v280_bookings_documents.sql` sau V2.4.1. File TXT được bàn giao riêng. Xem [docs/UPGRADE-V2.8.0.md](docs/UPGRADE-V2.8.0.md).
+
 ## V2.7.0 — Mobile Navigation & Interaction Polish
 
 - Popup cập nhật thành bottom sheet mobile, nút lớn cạnh nhau, cuộn trong vùng nội dung và bám visual viewport; desktop giữ popup căn giữa.

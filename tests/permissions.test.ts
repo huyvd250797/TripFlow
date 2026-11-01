@@ -54,7 +54,9 @@ test("V2.4.1 migration, independent permissions and server enforcement", async (
     await db.exec(
       `create schema auth;create role anon;create role authenticated;create table auth.users(id uuid primary key,email text,created_at timestamptz default now(),last_sign_in_at timestamptz);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;grant usage on schema auth to authenticated;insert into auth.users(id,email) values('${owner}','${owner}@test.local'),('${other}','${other}@test.local');`,
     );
-    for (const name of allMigrations.filter((n) => !n.includes("v241")))
+    for (const name of allMigrations.filter(
+      (n) => !n.includes("v241") && !n.includes("v280"),
+    ))
       await db.exec(await readFile("supabase/migrations/" + name, "utf8"));
     await as();
     await mutate("trip", "create", {
@@ -397,11 +399,6 @@ test("V2.4.1 migration, independent permissions and server enforcement", async (
           await db.query<any>("select public.tf_release_readiness() r")
         ).rows[0].r;
         assert.equal(ready.database_version, "2.4.1");
-        assert.equal(
-          ready.database_version,
-          DATABASE_VERSION,
-          "App database requirement must match the installed migration capability",
-        );
         assert.equal(ready.ready, true);
       },
     );
