@@ -1,5 +1,14 @@
 # Changelog
 
+## V2.10.1 — Sheet & Cost Sharing UX Fix
+
+- Thu gọn header bottom sheet: tay nắm 18px, nút đóng 36px, tiêu đề 18px; tổng khoảng 63px với tiêu đề một dòng. Bỏ mô tả phụ khỏi header mobile; popup compact và desktop giữ bố cục riêng.
+- Tạo sẵn vùng cuộn native và lớp nội dung, giữ scrollbar gutter ổn định, chạm vùng nội dung sẽ kết thúc animation mở đang chạy để không cạnh tranh với thao tác cuộn. Không chặn hoặc bắt pointer của nội dung; header/tay nắm vẫn kéo đóng được.
+- Thêm cách chia thứ ba: Chia đều cho danh sách được chọn. Tích người được chia, tự đếm số người; không cần phần cố định, không chia cho những người ngoài danh sách. Giữ nguyên hai cách chia trước.
+- Nút sấm sét và mũi tên thu gọn tính giới hạn theo taskbar thật và chiều cao nút, cho phép kéo sát còn 6px; nhớ vị trí, tự bám mép và xử lý resize.
+- Bảng Phân chia chi phí chuyển từ Đối chiếu sang Báo cáo. Thiết lập cách chia vẫn ở từng khoản Dự toán; Đối chiếu tập trung dự toán gốc/hiện tại/thực tế.
+- App/DB 2.10.1. Chạy migration 202611010004_v2101_selected_cost_sharing.sql sau V2.10.0 và trước deploy source; TXT gửi riêng. Không reset hoặc chạy lại SQL đã áp dụng.
+
 ## V2.10.0 — Custom Cost Sharing
 
 - Dự toán có đúng hai cách chia: chia đều toàn bộ danh sách người tham gia (không chọn người), hoặc cố định một phần rồi chia đều phần còn lại cho những người được chọn. Có xem trước, làm tròn VNĐ bảo toàn tổng tiền, kiểm tra danh sách và phần cố định.

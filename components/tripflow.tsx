@@ -4777,7 +4777,6 @@ function App() {
                       </>
                     ) : financeTab === "summary" ? (
                       <>
-                        <CostSharingReport bundle={data} />
                         <section className="panel">
                           <div className="section-heading">
                             <div>
@@ -5167,9 +5166,11 @@ function App() {
                                 <small>
                                   {b.cost_sharing?.mode === "equal"
                                     ? "Chia đều tất cả người tham gia"
-                                    : b.cost_sharing
-                                      ? "Cố định + chia phần còn lại"
-                                      : "Chưa khai báo cách chia"}
+                                    : b.cost_sharing?.mode === "selected_equal"
+                                      ? "Chia đều danh sách được chọn"
+                                      : b.cost_sharing
+                                        ? "Cố định + chia phần còn lại"
+                                        : "Chưa khai báo cách chia"}
                                 </small>
                               </div>
                               <b className="ledger-amount">
@@ -5284,6 +5285,7 @@ function App() {
                       </section>
                     ) : (
                       <>
+                        <CostSharingReport bundle={data} />
                         <section className="panel">
                           <div className="section-heading">
                             <div>

@@ -40,17 +40,25 @@ export function CostSharingFields({
             onChange(
               e.target.value === "equal"
                 ? { mode: "equal" }
-                : {
-                    mode: "fixed_remainder",
-                    fixed: [
-                      { participant_id: participants[0]?.id || "", amount: 0 },
-                    ],
-                    participants: [],
-                  },
+                : e.target.value === "selected_equal"
+                  ? { mode: "selected_equal", participants: [] }
+                  : {
+                      mode: "fixed_remainder",
+                      fixed: [
+                        {
+                          participant_id: participants[0]?.id || "",
+                          amount: 0,
+                        },
+                      ],
+                      participants: [],
+                    },
             )
           }
         >
           <option value="equal">Chia đều cho tất cả người tham gia</option>
+          <option value="selected_equal">
+            Chia đều cho danh sách được chọn
+          </option>
           <option value="fixed_remainder">
             Cố định một phần, chia đều phần còn lại
           </option>
@@ -63,87 +71,97 @@ export function CostSharingFields({
         </p>
       ) : (
         <>
-          <div className="cost-fixed-list">
-            {rule.fixed.map((entry, i) => (
-              <div className="cost-fixed-row" key={i}>
-                <label>
-                  Người chịu phần cố định
-                  <select
-                    aria-label={`Người chịu phần cố định ${i + 1}`}
-                    value={entry.participant_id}
-                    onChange={(e) =>
-                      onChange({
-                        ...rule,
-                        fixed: rule.fixed.map((x, j) =>
-                          j === i
-                            ? { ...x, participant_id: e.target.value }
-                            : x,
-                        ),
-                      })
-                    }
-                  >
-                    <option value="">Chọn người</option>
-                    {participants.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Số tiền cố định
-                  <input
-                    inputMode="numeric"
-                    aria-label={`Số tiền cố định ${i + 1}`}
-                    value={formatMoneyInput(entry.amount || "")}
-                    onChange={(e) =>
-                      onChange({
-                        ...rule,
-                        fixed: rule.fixed.map((x, j) =>
-                          i === j
-                            ? { ...x, amount: parseMoneyInput(e.target.value) }
-                            : x,
-                        ),
-                      })
-                    }
-                  />
-                </label>
-                {rule.fixed.length > 1 && (
-                  <button
-                    type="button"
-                    className="text-btn"
-                    onClick={() =>
-                      onChange({
-                        ...rule,
-                        fixed: rule.fixed.filter((_, j) => i !== j),
-                      })
-                    }
-                  >
-                    Bỏ
-                  </button>
-                )}
+          {rule.mode === "fixed_remainder" && (
+            <>
+              <div className="cost-fixed-list">
+                {rule.fixed.map((entry, i) => (
+                  <div className="cost-fixed-row" key={i}>
+                    <label>
+                      Người chịu phần cố định
+                      <select
+                        aria-label={`Người chịu phần cố định ${i + 1}`}
+                        value={entry.participant_id}
+                        onChange={(e) =>
+                          onChange({
+                            ...rule,
+                            fixed: rule.fixed.map((x, j) =>
+                              j === i
+                                ? { ...x, participant_id: e.target.value }
+                                : x,
+                            ),
+                          })
+                        }
+                      >
+                        <option value="">Chọn người</option>
+                        {participants.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Số tiền cố định
+                      <input
+                        inputMode="numeric"
+                        aria-label={`Số tiền cố định ${i + 1}`}
+                        value={formatMoneyInput(entry.amount || "")}
+                        onChange={(e) =>
+                          onChange({
+                            ...rule,
+                            fixed: rule.fixed.map((x, j) =>
+                              i === j
+                                ? {
+                                    ...x,
+                                    amount: parseMoneyInput(e.target.value),
+                                  }
+                                : x,
+                            ),
+                          })
+                        }
+                      />
+                    </label>
+                    {rule.fixed.length > 1 && (
+                      <button
+                        type="button"
+                        className="text-btn"
+                        onClick={() =>
+                          onChange({
+                            ...rule,
+                            fixed: rule.fixed.filter((_, j) => i !== j),
+                          })
+                        }
+                      >
+                        Bỏ
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="text-btn"
-            onClick={() =>
-              onChange({
-                ...rule,
-                fixed: [...rule.fixed, { participant_id: "", amount: 0 }],
-              })
-            }
-          >
-            Thêm phần cố định
-          </button>
-          <b>
-            Phần còn lại:{" "}
-            {money(total - rule.fixed.reduce((s, x) => s + x.amount, 0))}
-          </b>
+              <button
+                type="button"
+                className="text-btn"
+                onClick={() =>
+                  onChange({
+                    ...rule,
+                    fixed: [...rule.fixed, { participant_id: "", amount: 0 }],
+                  })
+                }
+              >
+                Thêm phần cố định
+              </button>
+              <b>
+                Phần còn lại:{" "}
+                {money(total - rule.fixed.reduce((s, x) => s + x.amount, 0))}
+              </b>
+            </>
+          )}
           <div className="cost-people">
             <span>
-              Chọn người chia phần còn lại · {rule.participants.length} người
+              {rule.mode === "selected_equal"
+                ? "Chọn người được chia"
+                : "Chọn người chia phần còn lại"}{" "}
+              · {rule.participants.length} người
             </span>
             {participants.map((p) => (
               <label key={p.id}>

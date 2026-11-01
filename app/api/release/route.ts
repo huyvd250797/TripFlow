@@ -67,7 +67,7 @@ export async function GET() {
       return reply(
         {
           error:
-            "Database chưa đạt schema V2.10.0. Hãy chạy migration 202611010003_v2100_custom_cost_sharing.sql trước khi dùng app hiện tại.",
+            "Database chưa đạt schema V2.10.1. Hãy chạy migration 202611010004_v2101_selected_cost_sharing.sql trước khi dùng app hiện tại.",
           code: "V290_MIGRATION_REQUIRED",
           currentDatabaseVersion: state?.database_version || null,
         },

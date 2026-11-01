@@ -322,3 +322,53 @@ body .dialog-viewport .dialog-content {
 .dialog-viewport[data-presentation="compact"] .dialog-motion {
   max-width: 460px !important;
 }
+
+/* V2.10.1: compact sheet chrome and an allocated native scrolling pane. */
+.dialog-viewport .dialog-body {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+@media (max-width: 760px) {
+  .dialog-viewport .dialog-content[data-presentation="sheet"] .sheet-grip {
+    height: 18px;
+    flex-basis: 18px;
+  }
+  .dialog-viewport .dialog-content[data-presentation="sheet"] .dialog-header {
+    min-height: 0;
+    height: auto;
+    padding: 0 14px 8px;
+    gap: 10px;
+    align-items: center;
+  }
+  .dialog-viewport
+    .dialog-content[data-presentation="sheet"]
+    .dialog-header
+    h2 {
+    font-size: 18px;
+    line-height: 1.25;
+    margin: 0;
+  }
+  .dialog-viewport .dialog-content[data-presentation="sheet"] .dialog-header p,
+  .dialog-viewport
+    .dialog-content[data-presentation="sheet"]
+    .dialog-header
+    .eyebrow {
+    display: none;
+  }
+  .dialog-viewport
+    .dialog-content[data-presentation="sheet"]
+    .dialog-header
+    .icon-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 7px;
+  }
+}

@@ -29,11 +29,21 @@ export function CommandDock({
     positionRef = useRef(position);
   positionRef.current = position;
   const size = collapsed ? 26 : 48;
-  const bounds = () => ({
-    w: window.innerWidth,
-    h: window.visualViewport?.height || window.innerHeight,
-    top: window.visualViewport?.offsetTop || 0,
-  });
+  const height = collapsed ? 34 : 48;
+  const bounds = () => {
+    const w = window.innerWidth,
+      h = window.visualViewport?.height || window.innerHeight,
+      top = window.visualViewport?.offsetTop || 0;
+    const nav = document
+      .querySelector<HTMLElement>(".bottom-nav")
+      ?.getBoundingClientRect();
+    const bottom =
+      nav && nav.height > 0 && nav.top > top
+        ? Math.min(top + h, nav.top)
+        : top + h;
+    const minY = top + 72;
+    return { w, h, top, minY, maxY: Math.max(minY, bottom - height - 6) };
+  };
   const save = (p: { x: number; y: number; side: "left" | "right" }) => {
     const b = bounds();
     try {
@@ -64,21 +74,22 @@ export function CommandDock({
       const p = {
         side: stored.side,
         x: stored.side === "left" ? 4 : Math.max(4, b.w - size - 4),
-        y: Math.max(
-          b.top + 72,
-          Math.min(b.top + b.h - 120 - size, b.top + b.h * stored.ratio),
-        ),
+        y: Math.max(b.minY, Math.min(b.maxY, b.top + b.h * stored.ratio)),
       };
       setPosition(p);
     };
     resize();
+    const observer = new ResizeObserver(resize);
+    const nav = document.querySelector(".bottom-nav");
+    if (nav) observer.observe(nav);
     window.addEventListener("resize", resize);
     window.visualViewport?.addEventListener("resize", resize);
     return () => {
+      observer.disconnect();
       window.removeEventListener("resize", resize);
       window.visualViewport?.removeEventListener("resize", resize);
     };
-  }, [userId, size]);
+  }, [userId, size, height]);
   const finish = (cancel = false) => {
     const d = drag.current;
     drag.current = null;
@@ -137,10 +148,7 @@ export function CommandDock({
         const b = bounds();
         setPosition({
           x: Math.max(0, Math.min(b.w - size, d.left + dx)),
-          y: Math.max(
-            b.top + 72,
-            Math.min(b.top + b.h - size - 110, d.top + dy),
-          ),
+          y: Math.max(b.minY, Math.min(b.maxY, d.top + dy)),
           side: positionRef.current?.side || "right",
         });
       }}

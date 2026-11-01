@@ -301,6 +301,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Hai cách chia theo khoản dự toán, thanh toán phần chịu tách khỏi ứng trước, ẩn người trả khi dùng quỹ; sheet bám đáy, kéo theo tay và trượt mở/đóng.",
   },
   {
+    version: "V2.10.1",
+    title: "Sheet & Cost Sharing UX Fix",
+    done: true,
+    description:
+      "Header sheet gọn, vùng cuộn native sẵn từ đầu; chia đều danh sách chọn, báo cáo phân chia và Quick sát taskbar.",
+  },
+  {
     version: "V2.11.0",
     title: "Travel Readiness & Reminders",
     done: false,

@@ -328,13 +328,13 @@ export async function POST(req: NextRequest) {
     if (!parsed.success)
       return reply({ error: parsed.error.issues[0]?.message }, 400);
     if (parsed.data.entity === "budget" || parsed.data.entity === "expense") {
-      const ready = await a.s.rpc("tf_cost_sharing_ready");
+      const ready = await a.s.rpc("tf_selected_cost_sharing_ready");
       if (ready.error || !ready.data)
         return reply(
           {
             error:
-              "Cần chạy migration 202611010003_v2100_custom_cost_sharing.sql trước khi lưu dữ liệu V2.10.0.",
-            code: "V2100_MIGRATION_REQUIRED",
+              "Cần chạy migration 202611010004_v2101_selected_cost_sharing.sql trước khi lưu dữ liệu V2.10.1.",
+            code: "V2101_MIGRATION_REQUIRED",
           },
           503,
         );

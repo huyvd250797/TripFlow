@@ -4,6 +4,13 @@ import type { Budget, Expense, Participant } from "./types";
 export const costSharingSchema = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("equal") }),
   z.object({
+    mode: z.literal("selected_equal"),
+    participants: z
+      .array(z.uuid())
+      .min(1, "Chọn ít nhất một người để chia đều.")
+      .max(999),
+  }),
+  z.object({
     mode: z.literal("fixed_remainder"),
     fixed: z
       .array(
@@ -40,7 +47,11 @@ export function allocateCost(
   let remainder = total;
   let selected: string[];
   if (rule.mode === "equal") selected = [...people.keys()];
-  else {
+  else if (rule.mode === "selected_equal") {
+    selected = rule.participants;
+    if (new Set(selected).size !== selected.length)
+      throw Error("Danh sách người chia bị trùng.");
+  } else {
     const fixedIds = rule.fixed.map((x) => x.participant_id);
     if (
       new Set(fixedIds).size !== fixedIds.length ||

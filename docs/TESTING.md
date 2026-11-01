@@ -1,3 +1,12 @@
+# Kiểm thử hiện tại V2.10.1
+
+- `npm ci`, `npm test`, `npm run build`.
+- `tests/cost-sharing.test.ts`: ba cách chia, người không chọn không nhận phần, tổng tiền và làm tròn, dữ liệu sai rollback, chặn xóa người đang được dùng, quyền, replay và backup/restore cách selected_equal.
+- `TRIPFLOW_COST_TEST=1 UI_BASE_URL=http://localhost:3000 npm run test:ui`: header <=66px, Báo cáo có bảng chia/Đối chiếu không có, lưu selected_equal, kéo Quick sát taskbar 6px, lần vuốt native touch đầu làm scrollTop tăng và không đổi chiều rộng pane. Không dùng scroll warm-up trước lần vuốt đầu.
+- Tiếp tục dùng nhánh FUND/BOOKINGS/POLISH để kiểm tra quỹ, đặt chỗ, dirty/busy, viewport và motion. Một cờ nhánh mỗi lần. Regression thường không cờ và `npm run test:update:ui` kiểm tra offline/quyền và lifecycle cập nhật.
+- Browser suite: Chromium, SQL PGlite, Auth/HTTP mô phỏng; không dùng production. Đặt CHROMIUM_PATH nếu Chromium không ở đường dẫn mặc định. Xem các hướng dẫn cũ bên dưới.
+- Chưa kiểm tra Safari/iPhone thật hoặc đo frame rate trên thiết bị. Kiểm thử native touch trên Chromium xác minh phản hồi lần vuốt đầu, không thay UAT Safari.
+
 # Kiểm thử hiện tại V2.10.0
 
 - `npm ci`, `npm test`, `npm run build`.

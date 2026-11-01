@@ -319,6 +319,15 @@ V2.7.0 đã hoàn thành; xem các bản bổ sung bên dưới.
 - Thêm: một danh sách module hai cột theo mẫu Mẹ Yêu Bé, màu TripFlow, tên đầy đủ và mô tả từng chức năng; không có menu trùng ở trang nền. Popup cập nhật/xác nhận nhỏ căn giữa, desktop giữ hộp thoại giữa màn hình.
 - Bắt buộc chạy `202611010003_v2100_custom_cost_sharing.sql` sau database V2.9.0, trước deploy V2.10.0. App/DB 2.10.0. Không reset hoặc chạy lại SQL cũ. TXT được bàn giao riêng.
 
+## ✅ V2.10.1 — Sheet & Cost Sharing UX Fix
+
+- Thu gọn header bottom sheet: tay nắm 18px, nút đóng 36px, tiêu đề 18px; tổng khoảng 63px với tiêu đề một dòng. Bỏ mô tả phụ khỏi header mobile; popup compact và desktop giữ bố cục riêng.
+- Tạo sẵn vùng cuộn native và lớp nội dung, giữ scrollbar gutter ổn định, chạm vùng nội dung sẽ kết thúc animation mở đang chạy để không cạnh tranh với thao tác cuộn. Không chặn hoặc bắt pointer của nội dung; header/tay nắm vẫn kéo đóng được.
+- Thêm cách chia thứ ba: Chia đều cho danh sách được chọn. Tích người được chia, tự đếm số người; không cần phần cố định, không chia cho những người ngoài danh sách. Giữ nguyên hai cách chia trước.
+- Nút sấm sét và mũi tên thu gọn tính giới hạn theo taskbar thật và chiều cao nút, cho phép kéo sát còn 6px; nhớ vị trí, tự bám mép và xử lý resize.
+- Bảng Phân chia chi phí chuyển từ Đối chiếu sang Báo cáo. Thiết lập cách chia vẫn ở từng khoản Dự toán; Đối chiếu tập trung dự toán gốc/hiện tại/thực tế.
+- App/DB 2.10.1. Chạy migration 202611010004_v2101_selected_cost_sharing.sql sau V2.10.0 và trước deploy source; TXT gửi riêng. Không reset hoặc chạy lại SQL đã áp dụng.
+
 ## Đề xuất V2.11.0 — Travel Readiness & Reminders
 
 Checklist trước đi, phân công chuẩn bị theo thành viên, nhắc hạn thanh toán/hủy và giờ sử dụng đặt chỗ. Ưu tiên cảnh báo trong ứng dụng trước; push notification cần thiết kế quyền và vận hành riêng. Chưa triển khai.

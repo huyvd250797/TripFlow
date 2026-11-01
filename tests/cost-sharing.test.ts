@@ -73,6 +73,34 @@ test("V2.10 integer allocation, explicit recipients, overlap and exact totals", 
     costSharingSchema.safeParse({ mode: "count", count: 3 }).success,
     false,
   );
+  const chosen = {
+    mode: "selected_equal" as const,
+    participants: people.slice(1, 4).map((p) => p.id),
+  };
+  const chosenRows = allocateCost(10740000, chosen, people);
+  assert.equal(chosenRows.length, 3);
+  assert.ok(
+    chosenRows.every(
+      (p) => p.amount === 3580000 && p.name !== "A" && p.name !== "Excluded",
+    ),
+  );
+  assert.throws(() =>
+    allocateCost(
+      10740000,
+      { mode: "selected_equal", participants: [] },
+      people,
+    ),
+  );
+  assert.throws(
+    () =>
+      allocateCost(
+        10740000,
+        { mode: "selected_equal", participants: [people[0].id, people[0].id] },
+        people,
+      ),
+    /trùng/,
+  );
+  assert.equal(costSharingSchema.safeParse(chosen).success, true);
 });
 
 test("V2.10 SQL shares, deposit, identity, replay, permission and backup preservation", async () => {
@@ -142,6 +170,59 @@ test("V2.10 SQL shares, deposit, identity, replay, permission and backup preserv
     const request = mutation("budget", data),
       budget: Budget = await run(request);
     assert.deepEqual(budget.cost_sharing, rule);
+    const selectedRule = {
+      mode: "selected_equal" as const,
+      participants: people.slice(2, 5).map((p) => p.id),
+    };
+    await run(
+      mutation("budget", {
+        ...data,
+        title: "Chia được chọn",
+        cost_sharing: selectedRule,
+      }),
+    );
+    assert.deepEqual(
+      allocateCost(10740000, selectedRule, people).map((p) => p.amount),
+      [3580000, 3580000, 3580000],
+    );
+    await assert.rejects(
+      run(mutation("participant", {}, "delete", people[4])),
+      /PARTICIPANT_HAS_COST_SHARES/,
+    );
+    await assert.rejects(
+      run(
+        mutation("budget", {
+          ...data,
+          cost_sharing: { mode: "selected_equal", participants: [] },
+        }),
+      ),
+      /INVALID_COST_SHARING/,
+    );
+    await assert.rejects(
+      run(
+        mutation("budget", {
+          ...data,
+          cost_sharing: {
+            mode: "selected_equal",
+            participants: [people[1].id, people[1].id],
+          },
+        }),
+      ),
+      /INVALID_COST_SHARING/,
+    );
+    await assert.rejects(
+      run(
+        mutation("budget", {
+          ...data,
+          cost_sharing: {
+            mode: "selected_equal",
+            participants: [randomUUID()],
+          },
+        }),
+      ),
+      /INVALID_PARTICIPANT/,
+    );
+
     assert.deepEqual(await run(request), budget);
     await assert.rejects(
       run({ ...request, data: { ...data, title: "Changed" } }),
@@ -240,9 +321,10 @@ test("V2.10 SQL shares, deposit, identity, replay, permission and backup preserv
       ])
     ).rows[0].r;
     const copiedBudget = (
-      await db.query<any>("select * from budget_items where trip_id=$1", [
-        copied.trip_id,
-      ])
+      await db.query<any>(
+        "select * from budget_items where trip_id=$1 and title='Tiền phòng'",
+        [copied.trip_id],
+      )
     ).rows[0];
     const copiedPeople = (
       await db.query<any>("select * from trip_participants where trip_id=$1", [
@@ -267,6 +349,22 @@ test("V2.10 SQL shares, deposit, identity, replay, permission and backup preserv
       "A",
     );
     assert.equal(copiedDeposit.settlement_type, "direct");
+    const copiedSelected = (
+      await db.query<any>(
+        "select * from budget_items where trip_id=$1 and title=$2",
+        [copied.trip_id, "Chia được chọn"],
+      )
+    ).rows[0];
+    const restoredShares = allocateCost(
+      10740000,
+      copiedSelected.cost_sharing,
+      copiedPeople,
+    );
+    assert.equal(restoredShares.length, 3);
+    assert.ok(
+      restoredShares.every((p) => ["C", "D", "Excluded"].includes(p.name)),
+    );
+
     await as(outsider);
     await assert.rejects(run(mutation("budget", data)), /FORBIDDEN/);
     await as(owner);
@@ -277,11 +375,17 @@ test("V2.10 SQL shares, deposit, identity, replay, permission and backup preserv
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        "supabase/migrations/202611010004_v2101_selected_cost_sharing.sql",
+        "utf8",
+      ),
+    );
     await as(owner);
     assert.equal(
       (await db.query<any>("select tf_release_readiness() r")).rows[0].r
         .database_version,
-      "2.10.0",
+      "2.10.1",
     );
     assert.equal(
       (

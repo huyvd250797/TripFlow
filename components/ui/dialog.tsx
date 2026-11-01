@@ -61,6 +61,13 @@ export function Dialog({
     if (start && motion.current)
       motion.current.style.transform = `translateY(${Math.max(0, event.clientY - start.y)}px)`;
   };
+  const finishEntryBeforeScroll = (event: React.PointerEvent<HTMLElement>) => {
+    if (!(event.target as HTMLElement).closest(".dialog-body")) return;
+    // A native touch scroll must not compete with the entrance moving its pane.
+    // Finish only the entrance; do not preventDefault or capture the pointer.
+    if (!swipeStart.current && animation.current?.playState === "running")
+      animation.current.finish();
+  };
   const endDrag = (event: React.PointerEvent<HTMLElement>) => {
     const start = swipeStart.current;
     swipeStart.current = null;
@@ -229,6 +236,7 @@ export function Dialog({
               data-presentation={compact ? "compact" : "sheet"}
               aria-describedby={description ? descriptionId : undefined}
               aria-busy={busy || undefined}
+              onPointerDownCapture={finishEntryBeforeScroll}
               onCloseAutoFocus={(event) => {
                 // Dialogs are opened by programmatic actions rather than Radix Trigger.
                 // Keep keyboard navigation in the current screen after the dialog leaves.

@@ -543,6 +543,11 @@ async function main() {
         .locator(".finance-toolbar")
         .getByRole("button", { name: "Đối chiếu", exact: true })
         .click();
+      await expect(page.locator(".cost-sharing-report")).toHaveCount(0);
+      await page
+        .locator(".finance-toolbar")
+        .getByRole("button", { name: "Báo cáo", exact: true })
+        .click();
       const report = page.locator(".cost-sharing-report");
       await report
         .getByLabel("Khoản dự toán cần đối chiếu", { exact: true })
@@ -565,12 +570,111 @@ async function main() {
         (await db.query<any>("select count(*)::int n from fund_entries"))
           .rows[0].n,
       ).toBe(0);
+
+      await page
+        .locator(".finance-toolbar")
+        .getByRole("button", { name: "Dự toán", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Thêm dự toán", exact: true })
+        .click();
+      await sheet
+        .getByLabel("Tên khoản *", { exact: true })
+        .fill("Chia đều ba người");
+      await sheet.getByLabel("Đơn giá VNĐ *", { exact: true }).fill("10740000");
+      await sheet
+        .getByLabel("Cách chia", { exact: true })
+        .selectOption("selected_equal");
+      await expect(
+        sheet.getByLabel("Người chịu phần cố định 1", { exact: true }),
+      ).toHaveCount(0);
+      await expect(sheet.locator(".cost-preview > div")).toHaveCount(0);
+      for (const name of ["B", "C", "D"])
+        await sheet.getByRole("checkbox", { name, exact: true }).check();
+      await expect(sheet.locator(".cost-preview > div")).toHaveCount(3);
+      await expect(sheet.locator(".cost-preview")).toContainText("3.580.000");
+      await sheet
+        .getByRole("button", { name: "Lưu thay đổi", exact: true })
+        .click();
+      await expect(sheet).toHaveCount(0);
+      const chosenBudget = (
+        await db.query<any>(
+          "select * from budget_items where title='Chia đều ba người'",
+        )
+      ).rows[0];
+      expect(chosenBudget.cost_sharing.mode).toBe("selected_equal");
+      expect(chosenBudget.cost_sharing.participants).toHaveLength(3);
+      // The dock can touch the actual taskbar boundary, keeping only a 6px gap.
+      const dock = page.locator(".tf-command-dock"),
+        zap = page.getByRole("button", {
+          name: "Mở TripFlow Command Center",
+          exact: true,
+        });
+      for (const closeToast of await page
+        .getByRole("button", { name: "Đóng thông báo", exact: true })
+        .all())
+        await closeToast.click();
+      const dockBox = (await zap.boundingBox())!;
+      await page.mouse.move(dockBox.x + 24, dockBox.y + 24);
+      await page.mouse.down();
+      await page.mouse.move(365, 838, { steps: 12 });
+      await page.mouse.up();
+      await page.waitForTimeout(400);
+      let navBox = (await page.locator(".bottom-nav").boundingBox())!,
+        currentDock = (await dock.boundingBox())!;
+      expect(
+        navBox.y - currentDock.y - currentDock.height,
+      ).toBeGreaterThanOrEqual(5);
+      expect(navBox.y - currentDock.y - currentDock.height).toBeLessThanOrEqual(
+        7,
+      );
       // Real animation and pointer following; reject a dirty close then close an empty picker.
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await nav("Thêm");
       const picker = page.locator(".module-picker");
       await expect(picker).toBeVisible();
       await expect(page.locator(".module-grid")).toHaveCount(1);
+      const header = (await picker.locator(".dialog-header").boundingBox())!,
+        handle = (await picker.locator(".sheet-grip").boundingBox())!;
+      expect(header.height + handle.height).toBeLessThanOrEqual(66);
+      expect(header.height).toBeGreaterThanOrEqual(44);
+      const body = picker.locator(".dialog-body");
+      expect(await body.evaluate((el) => getComputedStyle(el).overflowY)).toBe(
+        "scroll",
+      );
+      // First native touch gesture on a fresh sheet; no prior warm-up scroll.
+      await expect
+        .poll(async () => {
+          const r = (await picker.boundingBox())!;
+          return Math.round(r.y + r.height);
+        })
+        .toBe(844);
+      const maxScroll = await body.evaluate(
+        (el) => el.scrollHeight - el.clientHeight,
+      );
+      expect(maxScroll).toBeGreaterThan(20);
+      const cdp = await context.newCDPSession(page);
+      const widthBefore = await body.evaluate((el) => el.clientWidth);
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x: 280, y: 610 }],
+      });
+      for (let i = 1; i <= 10; i++)
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x: 280, y: 610 - i * 24 }],
+        });
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+      await expect
+        .poll(() => body.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(Math.min(70, maxScroll / 2));
+      expect(await body.evaluate((el) => el.clientWidth)).toBe(widthBefore);
+      await cdp.detach();
+      await body.evaluate((el) => (el.scrollTop = 0));
+
       await page.waitForTimeout(300);
       await page.screenshot({ path: "test-results/v210-module-picker.png" });
       const grip = (await picker.locator(".sheet-grip").boundingBox())!;
@@ -592,7 +696,7 @@ async function main() {
       ).toBeVisible();
       expect(errors).toEqual([]);
       console.log(
-        "PASS V2.10 custom shares: exact hotel split and deposit, 5 versus 3 selected people, hidden fund payer, direct payment without reimbursement, stale 60px viewport recovery, responsive input containment, drag following and animated exit.",
+        "PASS V2.10.1 selected shares, Reports placement, compact sheet, native first touch scroll and taskbar dock bounds: exact hotel split and deposit, 5 versus 3 selected people, hidden fund payer, direct payment without reimbursement, stale 60px viewport recovery, responsive input containment, drag following and animated exit.",
       );
       return;
     }
