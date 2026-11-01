@@ -309,10 +309,38 @@ export const ROADMAP: RoadmapItem[] = [
   },
   {
     version: "V2.11.0",
-    title: "Travel Readiness & Reminders",
+    title: "Packing, Checklist & Family Travel",
+    done: true,
+    description:
+      "Module chuẩn bị: checklist chung/cá nhân, mẫu hành lý độc lập, phân công, tiến độ, nhóm gia đình, liên hệ; offline, đồng bộ và backup/restore.",
+  },
+  {
+    version: "V2.12.0",
+    title: "Flexible Itinerary & Route Planning",
     done: false,
     description:
-      "Đề xuất: checklist trước chuyến đi, chuẩn bị theo thành viên và cảnh báo hạn thanh toán / giờ nhận phòng từ đặt chỗ. Chưa triển khai.",
+      "Khung giờ cố định/linh hoạt, thời gian di chuyển và dự phòng; xem trước dời nhiều hoạt động, wishlist/phương án B, phương tiện theo chặng.",
+  },
+  {
+    version: "V2.13.0",
+    title: "Group Expenses & Settlement",
+    done: false,
+    description:
+      "Hoàn thiện công nợ cá nhân và chuyển tiền quyết toán, kế thừa quỹ chuyến đi và ba cách chia chi phí hiện có.",
+  },
+  {
+    version: "V2.14.0",
+    title: "Travel Reminders & Offline Trip Pack",
+    done: false,
+    description:
+      "Nhắc việc/ICS, vé và tài liệu tải sẵn để mở offline, chia sẻ chỉ đọc có chọn lọc.",
+  },
+  {
+    version: "V2.15.0",
+    title: "International Travel",
+    done: false,
+    description:
+      "Đa tiền tệ và tỷ giá theo giao dịch, múi giờ theo chặng, hộ chiếu/visa.",
   },
 ];
 

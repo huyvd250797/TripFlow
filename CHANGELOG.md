@@ -1,5 +1,17 @@
 # Changelog
 
+## V2.11.0 — Packing, Checklist & Family Travel
+
+- Thêm → **Chuẩn bị chuyến đi**, không thêm tab điều hướng chính. Checklist chung/cá nhân, sáu nhóm gấp/mở, bộ lọc Tất cả / Của tôi / Chưa xong / Chưa phân công.
+- Đồ mang theo: Cần chuẩn bị → Đã có → Đã đóng gói; công việc: Chưa làm → Hoàn tất; Không áp dụng được loại khỏi mẫu số tiến độ. Có số lượng, hạn, người phụ trách và ghi chú.
+- Bốn mẫu biển/nghỉ dưỡng/tự túc/gia đình có em bé. Áp dụng mỗi mẫu trong một transaction, tạo các mục độc lập với UUID mới; sửa/xóa mục không đổi mẫu hoặc chuyến khác.
+- Người tham gia có nhóm Người lớn/Trẻ em/Em bé, nhóm gia đình và nhu cầu. Không tự đổi số người hoặc cách chia chi phí. Liên hệ khách sạn/tài xế/người thân có gọi điện và mở bản đồ.
+- Tổng quan chuyến đang lên kế hoạch/sẵn sàng có tiến độ và mục quá hạn, bấm mở module. Dữ liệu mới dùng hàng đợi offline, version/conflict, kiểm tra Owner/Editor/Viewer tại database và backup/restore ánh xạ lại người.
+- App/DB **2.11.0**. Từ V2.10.1 chỉ chạy `202611010005_v2110_packing_checklist_family.sql` trong TXT riêng trước deploy. Không reset DB, không chạy lại migration cũ.
+
+Xem `docs/UPGRADE-V2.11.0.md` và `docs/VALIDATION-V2.11.0.md`.
+
+
 ## V2.10.1 — Sheet & Cost Sharing UX Fix
 
 - Thu gọn header bottom sheet: tay nắm 18px, nút đóng 36px, tiêu đề 18px; tổng khoảng 63px với tiêu đề một dòng. Bỏ mô tả phụ khỏi header mobile; popup compact và desktop giữ bố cục riêng.

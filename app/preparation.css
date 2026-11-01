@@ -1,0 +1,189 @@
+.preparation-module {
+  min-width: 0;
+}
+.preparation-module .section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.preparation-module .section-heading h2,
+.preparation-module .section-heading h3 {
+  margin: 4px 0;
+}
+.prep-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.prep-actions button,
+.prep-actions a {
+  white-space: nowrap;
+}
+.prep-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 0 10px;
+}
+.prep-progress > div {
+  flex: 1;
+}
+.prep-progress progress {
+  width: 100%;
+  height: 8px;
+  display: block;
+  margin-top: 10px;
+  accent-color: var(--accent, #20b8b0);
+}
+.prep-counts {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.prep-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+.prep-toolbar label {
+  min-width: 0;
+  font-size: 0.86rem;
+}
+.prep-toolbar select {
+  width: 100%;
+  margin-top: 6px;
+}
+.prep-category {
+  border-top: 1px solid var(--line);
+  margin: 16px 0;
+}
+.prep-category > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  padding: 14px 0;
+  font-weight: 650;
+}
+.prep-category > summary span {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.prep-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.prep-item-title strong,
+.prep-item-title small,
+.prep-contact strong,
+.prep-contact small,
+.prep-family small {
+  display: block;
+}
+.prep-item-title small,
+.prep-family small,
+.prep-contact small {
+  color: var(--muted);
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+.prep-item p,
+.prep-contact p,
+.prep-family p {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+  font-size: 0.88rem;
+}
+.prep-item-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.prep-item-control select {
+  width: 145px;
+  font-size: 0.83rem;
+}
+.prep-item.is-excluded {
+  opacity: 0.65;
+}
+.prep-family article {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.prep-contact {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.prep-contact > div:first-child {
+  min-width: 0;
+}
+.prep-contact .prep-actions {
+  flex-wrap: wrap;
+}
+.prep-empty {
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--muted);
+}
+.preparation-glance {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  gap: 16px;
+  margin: 14px 0;
+  cursor: pointer;
+}
+.preparation-glance small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+}
+.prep-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.prep-form :is(input, select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+}
+.prep-form input[type="checkbox"] {
+  width: auto;
+}
+@media (max-width: 760px) {
+  .prep-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .prep-item-control {
+    justify-content: space-between;
+  }
+  .prep-item-control select {
+    width: min(220px, 72%);
+  }
+  .prep-toolbar {
+    gap: 8px;
+  }
+  .preparation-module .prep-actions .btn {
+    padding: 9px 12px;
+    font-size: 0.82rem;
+  }
+}

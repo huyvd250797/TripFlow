@@ -170,3 +170,8 @@ Planning Board không tạo nguồn dữ liệu mới. Mọi thao tác đổi ng
 `lib/route-intelligence.ts` là logic thuần không gọi API ngoài. Module đọc tọa độ từ URL Google Maps phổ biến, tính Haversine + road factor, ước tính travel time theo cự ly, so sánh với khoảng trống giữa activity và tạo Google Maps Directions URL. Điều này giữ app không phụ thuộc API key, không lưu vị trí nền và không biến số liệu ước tính thành nguồn dữ liệu chính thức.
 
 Trong PWA standalone mobile, document không còn là scroll container chính: `.app-layout` khóa theo viewport và `.app-body` scroll nội bộ. Bottom navigation/Quick dock nằm ngoài scroll container nên không bị iOS kéo lên theo visual viewport khi cuộn.
+
+
+## V2.11.0 — Preparation
+
+`lib/preparation.ts` dùng chung schema và phép tính tiến độ. `PreparationModule` lazy-loaded trong Thêm hoặc từ summary Tổng quan, dùng Dialog/Editor shell chung. `checklist`/`contact`/`checklist_batch` chạy qua API tf_mutate, hàng đợi IndexedDB, optimistic overlays và version conflicts hiện có; batch là một operation/transaction để không áp dụng dở dang. GET bundle trả checklist/contacts, client nghe Realtime hai bảng mới. Bộ lọc Của tôi dùng participant do người dùng chọn rõ, lưu theo user/trip/device, không suy đoán account từ tên. Cá nhân là phạm vi phân công, không phải quyền riêng tư. Metadata gia đình không tham gia phép phân chia tài chính. Backup immutable được tạo đủ trường ngay từ đầu; restore remap assignee_id, tương thích payload cũ thiếu các array mới.

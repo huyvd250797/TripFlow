@@ -26,6 +26,14 @@ import { TripFund, FinanceBanner } from "./trip-fund";
 import { CommandDock } from "./ui/command-dock";
 import { observeDialogViewport } from "@/lib/ui-viewport";
 import { CostSharingReport } from "./cost-sharing";
+import { PreparationSummary } from "./preparation-summary";
+const PreparationModule = dynamic(
+  () => import("./preparation-module").then((m) => m.PreparationModule),
+  {
+    ssr: false,
+    loading: () => <ModuleSkeleton label="Đang tải chuẩn bị chuyến đi" />,
+  },
+);
 import { ModuleHub } from "./ui/module-hub";
 import { ConnectionStatus } from "./connection-status";
 const Bookings = dynamic(() => import("./bookings").then((m) => m.Bookings), {
@@ -534,7 +542,8 @@ function App() {
       };
       const canRestoreTab = Boolean(
         saved.tab &&
-        (tabs.some((x) => x.id === saved.tab) ||
+        (saved.tab === "preparation" ||
+          tabs.some((x) => x.id === saved.tab) ||
           (saved.tab === "admin" && account?.role === "master")),
       );
       if (canRestoreTab && saved.tab) setTab(saved.tab);
@@ -905,6 +914,26 @@ function App() {
     const refreshTripAndList = () => refresh.schedule(true);
     const channel = s
       .channel("trip-live:" + selectedId)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trip_checklist_items",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trip_contacts",
+          filter: `trip_id=eq.${selectedId}`,
+        },
+        refreshTrip,
+      )
       .on(
         "postgres_changes",
         {
@@ -1351,12 +1380,23 @@ function App() {
             expense: "expenses",
             media: "media",
             participant: "participants",
+            checklist: "checklist",
+            contact: "contacts",
           } as const
-        )[m.entity as "item" | "budget" | "expense" | "media" | "participant"];
+        )[
+          m.entity as
+            | "item"
+            | "budget"
+            | "expense"
+            | "media"
+            | "participant"
+            | "checklist"
+            | "contact"
+        ];
         if (field && m.action !== "delete" && result.result.id) {
           visible = {
             ...visible,
-            [field]: visible[field].map((row) =>
+            [field]: (visible[field] || []).map((row) =>
               row.id === result.result.id ? result.result : row,
             ),
           } as Bundle;
@@ -3583,7 +3623,9 @@ function App() {
                             ? "Chi phí chuyến đi"
                             : tab === "media"
                               ? "Album & media"
-                              : "Thành viên & cài đặt"}
+                              : tab === "preparation"
+                                ? "Chuẩn bị chuyến đi"
+                                : "Thành viên & cài đặt"}
                     </h1>
                   </div>
                   {writable && ["route", "money", "media"].includes(tab) && (
@@ -3628,6 +3670,12 @@ function App() {
                     </div>
 
                     {contextualOverview()}
+                    {trip.status === "planning" || trip.status === "ready" ? (
+                      <PreparationSummary
+                        bundle={data}
+                        onOpen={() => navigate("preparation")}
+                      />
+                    ) : null}
 
                     <section
                       className="overview-compact-summary"
@@ -5471,6 +5519,14 @@ function App() {
                     rowTools={rowTools}
                   />
                 )}
+                {tab === "preparation" && data && (
+                  <PreparationModule
+                    key={data.trip.id}
+                    bundle={data}
+                    userId={user.id}
+                    onSave={save}
+                  />
+                )}
                 {tab === "more" && data && (
                   <ModuleHub onExit={() => navigate(previousModuleTab.current)}>
                     <section className="more-hub-intro">
@@ -5494,6 +5550,14 @@ function App() {
                       </div>
                       <ThemeControl />
                     </section>
+                    <div data-module-title="Chuẩn bị chuyến đi">
+                      <PreparationModule
+                        key={data.trip.id}
+                        bundle={data}
+                        userId={user.id}
+                        onSave={save}
+                      />
+                    </div>
                     <div data-module-title="Đặt chỗ & tài liệu">
                       <Bookings
                         bundle={data}

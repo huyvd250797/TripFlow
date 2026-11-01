@@ -38,7 +38,7 @@ export async function GET() {
           {
             error:
               "Database chưa có capability V2.9.0. Hãy chạy migration Trip Fund & Settlement còn thiếu.",
-            code: "V290_MIGRATION_REQUIRED",
+            code: "V2110_MIGRATION_REQUIRED",
           },
           503,
         );
@@ -67,8 +67,8 @@ export async function GET() {
       return reply(
         {
           error:
-            "Database chưa đạt schema V2.10.1. Hãy chạy migration 202611010004_v2101_selected_cost_sharing.sql trước khi dùng app hiện tại.",
-          code: "V290_MIGRATION_REQUIRED",
+            "Database chưa đạt schema V2.11.0. Hãy chạy migration 202611010005_v2110_packing_checklist_family.sql trước khi dùng app hiện tại.",
+          code: "V2110_MIGRATION_REQUIRED",
           currentDatabaseVersion: state?.database_version || null,
         },
         503,
@@ -78,7 +78,7 @@ export async function GET() {
       ...state,
       app_version: VERSION,
       database_required_version: DATABASE_VERSION,
-      ui_release: "trip-fund-settlement",
+      ui_release: "packing-checklist-family",
     });
   } catch (error) {
     console.error(

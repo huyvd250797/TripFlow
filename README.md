@@ -1,10 +1,21 @@
-# TripFlow 2.10.1 · Sheet & Cost Sharing UX Fix
+# TripFlow V2.11.0 — Packing, Checklist & Family Travel
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.11.0 — Packing, Checklist & Family Travel
+
+- Thêm → **Chuẩn bị chuyến đi**, không thêm tab điều hướng chính. Checklist chung/cá nhân, sáu nhóm gấp/mở, bộ lọc Tất cả / Của tôi / Chưa xong / Chưa phân công.
+- Đồ mang theo: Cần chuẩn bị → Đã có → Đã đóng gói; công việc: Chưa làm → Hoàn tất; Không áp dụng được loại khỏi mẫu số tiến độ. Có số lượng, hạn, người phụ trách và ghi chú.
+- Bốn mẫu biển/nghỉ dưỡng/tự túc/gia đình có em bé. Áp dụng mỗi mẫu trong một transaction, tạo các mục độc lập với UUID mới; sửa/xóa mục không đổi mẫu hoặc chuyến khác.
+- Người tham gia có nhóm Người lớn/Trẻ em/Em bé, nhóm gia đình và nhu cầu. Không tự đổi số người hoặc cách chia chi phí. Liên hệ khách sạn/tài xế/người thân có gọi điện và mở bản đồ.
+- Tổng quan chuyến đang lên kế hoạch/sẵn sàng có tiến độ và mục quá hạn, bấm mở module. Dữ liệu mới dùng hàng đợi offline, version/conflict, kiểm tra Owner/Editor/Viewer tại database và backup/restore ánh xạ lại người.
+- App/DB **2.11.0**. Từ V2.10.1 chỉ chạy `202611010005_v2110_packing_checklist_family.sql` trong TXT riêng trước deploy. Không reset DB, không chạy lại migration cũ.
+
+Xem `docs/UPGRADE-V2.11.0.md` và `docs/VALIDATION-V2.11.0.md`.
 
 ## V2.10.1 — Sheet & Cost Sharing UX Fix
 
@@ -223,6 +234,7 @@ Xem `docs/UPGRADE-V2.10.0.md` và `docs/VALIDATION-V2.10.0.md`.
    - `supabase/migrations/202611010002_v290_trip_fund.sql` — V2.9.0: quỹ, nguồn tiền thực chi, backup quỹ và marker 2.9.0; chạy sau V2.8.0.
    - `supabase/migrations/202611010003_v2100_custom_cost_sharing.sql` — V2.10.0: chia chi phí và thanh toán cá nhân; chạy sau V2.9.0.
    - `supabase/migrations/202611010004_v2101_selected_cost_sharing.sql` — V2.10.1: chia đều danh sách chọn và bảo toàn khi backup/restore; chạy sau V2.10.0.
+   - `supabase/migrations/202611010005_v2110_packing_checklist_family.sql` — V2.11.0: checklist, liên hệ, metadata gia đình, offline/backup; chạy sau V2.10.1.
      **V0.6.0, V0.8.0, V1.1.x, V1.2.0, V1.5.x, V1.6.0, V1.7.0, V1.8.0, V1.8.1, V1.8.2, V1.8.3, V1.8.4, V1.9.0, V2.0.0, V2.2.0, V2.2.1, V2.3.0 và V2.4.0 không có migration database. V1.3.0 và V1.4.0 có migration.** Nếu database đang ở V1.4.0 (App V2.4.0), chỉ chạy migration V2.4.1 mới rồi deploy source. Nếu DB V1.3.0, chạy V1.4.0 rồi V2.4.1. Nếu đang ở phiên bản cũ hơn, chạy các migration còn thiếu theo đúng thứ tự; không chạy lại migration đầu. Mỗi migration có transaction; nếu công cụ giữ phiên SQL sau lỗi, chạy `ROLLBACK;` trước khi thử lại.
 3. V0.4.0 thêm `itinerary_events`; V0.5.0 thêm `trip_access_events`, bảo vệ lời mời trùng và mở rộng Realtime cho cộng tác. Schema `private` tiếp tục giữ dữ liệu/hàm nội bộ.
 4. Lấy **Project URL** và **Publishable key** từ trang API/Connect của project. Legacy `anon` key cũng dùng được. **Không dùng `service_role` hoặc secret key.**
@@ -316,7 +328,7 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 ## 1.9. Stable Production Release V1.0.0
 
 - Chạy `202609280005_v100_stable_production_release.sql` sau V0.9.0 trước khi deploy source V1.0.0.
-- **Thêm → Trạng thái Production** chỉ báo sẵn sàng khi source, database marker và channel đều là `2.10.1 / stable`, đồng thời các guard server/client đều đạt.
+- **Thêm → Trạng thái Production** chỉ báo sẵn sàng khi source, database marker và channel đều là `2.11.0 / stable`, đồng thời các guard server/client đều đạt.
 - V1.0.0 không thêm bảng nghiệp vụ mới, không sửa dữ liệu chuyến đi và không thay đổi mô hình quyền; đây là bản đóng roadmap 1.0 để vận hành ổn định.
 - Service worker dùng cache `tripflow-shell-v100`; API private tiếp tục `no-store`, same-origin/content-type/payload guard và request-id.
 - Trước deploy production thực tế, hoàn tất `docs/RELEASE-CHECKLIST.md`; sau deploy dùng `docs/PRODUCTION-RUNBOOK.md` để smoke test, backup và rollback.
@@ -326,7 +338,7 @@ Khi Master hủy kích hoạt user, account gate, RLS và RPC mutation đều ch
 
 ### Cách A — GitHub → Vercel
 
-1. Đưa **nội dung thư mục `tripflow-cloud`** vào repository mới của bạn; file `package.json` ở thư mục gốc repo. Đừng đưa `node_modules`, `.next`, `.env.local` vào Git.
+1. Đưa **nội dung thư mục vừa giải nén có `package.json`** vào repository mới của bạn; file `package.json` ở thư mục gốc repo. Đừng đưa `node_modules`, `.next`, `.env.local` vào Git.
 2. Vercel → Add New Project → import repo. Framework: **Next.js**. Nếu repo chứa thư mục bao ngoài, chọn Root Directory là `tripflow-cloud`.
 3. Node.js: **24.x**. Install Command: `npm ci`; Build Command: `npm run build`; Output Directory để mặc định Next.js.
 4. Thêm hai biến cho môi trường Production:
@@ -444,7 +456,7 @@ Source không chứa credentials thật. Hãy chạy `npm test`, `npm run typech
 - App version là `1.1.0`, database compatibility version là `1.0.0`; **Thêm → Trạng thái Production** hiển thị riêng App/DB để tránh yêu cầu migration giả.
 - Nhận diện mới dùng logo pin + route, màu Ocean Teal + Sunset; icon PWA 192/512 đã thay mới.
 - Splash ban đầu có brand animation nhẹ và tối thiểu ~680ms ở lần mở app đầu để tránh flash trắng/giật layout.
-- Roadmap hoàn thành đến V2.10.1 — Sheet & Cost Sharing UX Fix. Đề xuất V2.11.0 — Travel Readiness & Reminders, chưa triển khai.
+- Roadmap hoàn thành đến V2.11.0 — Packing, Checklist & Family Travel. Tiếp theo V2.12.0 — Flexible Itinerary & Route Planning.
 
 ## 1.11. Smart Trip Workspace & Quick Actions V1.2.0
 

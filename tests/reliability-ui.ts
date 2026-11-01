@@ -125,6 +125,19 @@ async function main() {
   if (process.env.TRIPFLOW_COST_TEST)
     for (const name of ["A", "B", "C", "D", "Không chia"])
       await mutate("participant", { name, note: "" });
+  if (process.env.TRIPFLOW_PREPARATION_TEST)
+    for (const [name, age_group] of [
+      ["Mai Phụng", "adult"],
+      ["Bé Bún", "infant"],
+      ["Anh Hai", "child"],
+    ])
+      await mutate("participant", {
+        name,
+        note: "",
+        age_group,
+        family_group: "Gia đình",
+        needs_note: age_group === "infant" ? "Mang bình sữa" : "",
+      });
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
     args: [
@@ -137,6 +150,7 @@ async function main() {
   const context = await browser.newContext({
     viewport: {
       width:
+        process.env.TRIPFLOW_PREPARATION_TEST ||
         process.env.TRIPFLOW_COST_TEST ||
         process.env.TRIPFLOW_FUND_TEST ||
         process.env.TRIPFLOW_BOOKINGS_TEST ||
@@ -203,6 +217,8 @@ async function main() {
     });
   });
   const tables = {
+    checklist: "trip_checklist_items",
+    contacts: "trip_contacts",
     items: "itinerary_items",
     budgets: "budget_items",
     expenses: "expenses",
@@ -292,7 +308,7 @@ async function main() {
         for (const [key, table] of Object.entries(tables)) {
           body[key] = (
             await db.query(
-              `select * from ${table} where trip_id=$1 ${["items", "budgets", "expenses", "media", "participants"].includes(key) ? "and deleted_at is null" : ""} order by ${key === "audits" ? "created_at desc" : "id"}`,
+              `select * from ${table} where trip_id=$1 ${["items", "budgets", "expenses", "media", "participants", "checklist", "contacts"].includes(key) ? "and deleted_at is null" : ""} order by ${key === "audits" ? "created_at desc" : "id"}`,
               [tid],
             )
           ).rows;
@@ -310,8 +326,9 @@ async function main() {
           ).rows,
         };
       const normalized = JSON.parse(JSON.stringify(body), (key, value) =>
-        ["start_date", "end_date", "spent_on", "taken_on"].includes(key) &&
-        typeof value === "string"
+        ["start_date", "end_date", "spent_on", "taken_on", "due_on"].includes(
+          key,
+        ) && typeof value === "string"
           ? value.slice(0, 10)
           : value,
       );
@@ -436,6 +453,195 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_PREPARATION_TEST) {
+      const openPreparation = async () => {
+        await nav("Thêm");
+        await page
+          .getByRole("dialog")
+          .getByRole("button", { name: /Chuẩn bị chuyến đi/ })
+          .click();
+        await expect(page.locator(".preparation-module")).toBeVisible();
+      };
+      await openPreparation();
+      const prep = page.locator(".preparation-module");
+      await prep.getByRole("button", { name: "Dùng mẫu", exact: true }).click();
+      let sheet = page.getByRole("dialog");
+      await sheet.getByLabel("Mẫu hành lý").selectOption("baby");
+      await sheet.getByLabel("Phạm vi").selectOption("personal");
+      await sheet
+        .getByLabel("Người phụ trách")
+        .selectOption({ label: "Mai Phụng" });
+      await sheet.getByLabel("Hạn chuẩn bị", { exact: true }).fill("24/09/2026");
+      await sheet.getByRole("button", { name: "Áp dụng mẫu" }).click();
+      await expect(sheet).toHaveCount(0);
+      await expect(prep.locator(".prep-item")).toHaveCount(11);
+      await prep
+        .getByRole("button", { name: "Sửa Giấy tờ tùy thân", exact: true })
+        .click();
+      sheet = page.getByRole("dialog");
+      await expect(
+        sheet.getByLabel("Hạn chuẩn bị", { exact: true }),
+      ).toHaveValue("24/09/2026");
+      await sheet.getByLabel("Số lượng", { exact: true }).fill("2");
+      await sheet.getByRole("button", { name: "Lưu thay đổi" }).click();
+      await expect(sheet).toHaveCount(0);
+      await prep
+        .getByLabel("Bạn là ai trong chuyến?")
+        .selectOption({ label: "Mai Phụng" });
+      await prep.getByLabel("Lọc checklist").selectOption("mine");
+      await expect(prep.locator(".prep-item")).toHaveCount(11);
+      await prep
+        .getByLabel("Trạng thái Giấy tờ tùy thân", { exact: true })
+        .selectOption("packed");
+      await expect(prep.locator(".prep-progress")).toContainText("1/11");
+      await prep.getByLabel("Lọc checklist").selectOption("unfinished");
+      await expect(prep.locator(".prep-item")).toHaveCount(10);
+      await prep.getByLabel("Lọc checklist").selectOption("all");
+      await prep
+        .getByLabel("Trạng thái Giấy tờ tùy thân", { exact: true })
+        .selectOption("excluded");
+      await expect(prep.locator(".prep-progress")).toContainText("0/10");
+      await prep
+        .getByLabel("Trạng thái Giấy tờ tùy thân", { exact: true })
+        .selectOption("packed");
+      await prep.getByRole("button", { name: "Thêm mục", exact: true }).click();
+      sheet = page.getByRole("dialog");
+      await sheet
+        .getByLabel("Tên mục *", { exact: true })
+        .fill("Kiểm tra ghế em bé");
+      await sheet.getByLabel("Loại mục", { exact: true }).selectOption("task");
+      await sheet
+        .getByLabel("Nhóm", { exact: true })
+        .selectOption("Việc trước khi đi");
+      await sheet
+        .getByLabel("Người phụ trách")
+        .selectOption({ label: "Anh Hai" });
+      await sheet.getByRole("button", { name: "Lưu thay đổi" }).click();
+      await expect(sheet).toHaveCount(0);
+      await prep
+        .getByLabel("Trạng thái Kiểm tra ghế em bé", { exact: true })
+        .selectOption("done");
+      await expect(prep.locator(".prep-progress")).toContainText("2/12");
+      await prep
+        .getByRole("button", { name: "Thêm liên hệ", exact: true })
+        .click();
+      sheet = page.getByRole("dialog");
+      await sheet.getByLabel("Tên liên hệ *").fill("Tài xế xe gia đình");
+      await sheet.getByLabel("Loại liên hệ").selectOption("driver");
+      await sheet.getByLabel("Số điện thoại").fill("+84 912 345 678");
+      await sheet.getByLabel("Địa chỉ", { exact: true }).fill("Hồ Tràm");
+      await sheet
+        .getByLabel("Liên kết bản đồ HTTPS")
+        .fill("https://maps.google.com/");
+      await sheet.getByRole("button", { name: "Lưu thay đổi" }).click();
+      await expect(sheet).toHaveCount(0);
+      await expect(prep.locator('a[href="tel:+84912345678"]')).toBeVisible();
+      await expect(prep.getByRole("link", { name: "Bản đồ" })).toHaveAttribute(
+        "href",
+        "https://maps.google.com/",
+      );
+      await prep.getByText("Gia đình & nhu cầu").click();
+      await expect(prep.locator(".prep-family")).toContainText("Mang bình sữa");
+      await expect(prep.locator(".prep-family")).toContainText("Em bé");
+      await context.setOffline(true);
+      await prep
+        .getByLabel("Trạng thái Giấy tờ tùy thân", { exact: true })
+        .selectOption("needed");
+      await expect(prep.locator(".prep-progress")).toContainText("1/12");
+      await context.setOffline(false);
+      await expect
+        .poll(
+          async () =>
+            (
+              await db.query<any>(
+                "select status from trip_checklist_items where trip_id=$1 and title='Giấy tờ tùy thân'",
+                [tid],
+              )
+            ).rows[0]?.status,
+          { timeout: 15000 },
+        )
+        .toBe("needed");
+      for (const [width, theme] of [
+        [320, "light"],
+        [390, "dark"],
+        [768, "light"],
+        [1280, "dark"],
+      ] as const) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.evaluate((t) => {
+          document.documentElement.dataset.theme = t;
+          localStorage.setItem("tripflow:theme", t);
+        }, theme);
+        // Open the module from desktop More as well; on mobile it remains selected.
+        if (width === 768) {
+          await nav("Thêm");
+        }
+        await expect(prep).toBeVisible();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth + 1,
+          ),
+        ).toBe(true);
+        await prep
+          .getByRole("button", { name: "Thêm mục", exact: true })
+          .click();
+        sheet = page.getByRole("dialog");
+        expect(
+          await sheet.evaluate((el) =>
+            Array.from(el.querySelectorAll("input,select,textarea")).every(
+              (i) => {
+                const r = i.getBoundingClientRect(),
+                  p = el.getBoundingClientRect();
+                return r.left >= p.left - 1 && r.right <= p.right + 1;
+              },
+            ),
+          ),
+        ).toBe(true);
+        await page.screenshot({
+          path: `test-results/preparation-form-${width}-${theme}.png`,
+        });
+        await sheet.getByRole("button", { name: "Hủy", exact: true }).click();
+        await expect(sheet).toHaveCount(0);
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      const current = (
+        await db.query<any>("select * from trips where id=$1", [tid])
+      ).rows[0];
+      await mutate(
+        "trip",
+        {
+          ...current,
+          start_date: "2026-09-25",
+          end_date: "2026-09-27",
+          status: "planning",
+        },
+        "update",
+        { version: current.version },
+      );
+      await nav("Tổng quan");
+      await page.reload();
+      await expect(
+        page.getByRole("button", { name: "Mở chuẩn bị chuyến đi" }),
+      ).toContainText("1/12");
+      await page.getByRole("button", { name: "Mở chuẩn bị chuyến đi" }).click();
+      await expect(prep).toBeVisible();
+      await page.reload();
+      await expect(prep).toBeVisible();
+      viewRole = "viewer";
+      await page.reload();
+      await expect(prep).toBeVisible();
+      await expect(
+        prep.getByRole("button", { name: "Thêm mục", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        prep.getByLabel("Trạng thái Giấy tờ tùy thân", { exact: true }),
+      ).toBeDisabled();
+      if (errors.length) throw new Error(errors.join("\n"));
+      console.log(
+        "PASS V2.11 preparation UI: module, template copy, personal filter, inline statuses/exclusion, family metadata, contacts, offline sync, before-trip summary, Viewer, 320/390/768/1280 containment and themes.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_COST_TEST) {
       await nav("Chi phí");
       await page
@@ -1078,7 +1284,7 @@ async function main() {
         name: "Thêm chức năng",
         exact: true,
       });
-      await expect(picker.locator(".module-tile")).toHaveCount(14);
+      await expect(picker.locator(".module-tile")).toHaveCount(15);
       await expect(page.locator(".module-grid")).toHaveCount(1);
       await expect(page.locator(".module-hub .module-grid")).toHaveCount(0);
       await picker.getByRole("button", { name: "Đóng", exact: true }).click();

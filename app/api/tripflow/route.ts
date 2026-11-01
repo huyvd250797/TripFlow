@@ -9,6 +9,10 @@ import {
 } from "@/lib/api-hardening";
 export const dynamic = "force-dynamic";
 const messages: Record<string, string> = {
+  PARTICIPANT_HAS_CHECKLIST:
+    "Người này đang được phân công chuẩn bị. Hãy đổi người phụ trách hoặc xóa mục liên quan trước khi xóa người.",
+  INVALID_PREPARATION:
+    "Mục chuẩn bị hoặc liên hệ không hợp lệ. Kiểm tra lại dữ liệu.",
   INVALID_COST_SHARING:
     "Cách chia không hợp lệ. Kiểm tra phần cố định và danh sách người chia.",
   COST_SHARING_EXCEEDS_TOTAL: "Phần cố định vượt tổng tiền khoản dự toán.",
@@ -133,7 +137,19 @@ export async function GET(req: NextRequest) {
       }
       throw Error("LIMIT_REACHED");
     }
+    const preparationReady = await s.rpc("tf_preparation_ready");
+    if (preparationReady.error || !preparationReady.data)
+      return reply(
+        {
+          error:
+            "Cần chạy migration 202611010005_v2110_packing_checklist_family.sql trước khi dùng V2.11.0.",
+          code: "V2110_MIGRATION_REQUIRED",
+        },
+        503,
+      );
     const [
+      checklist,
+      contacts,
       items,
       budgets,
       expenses,
@@ -148,6 +164,8 @@ export async function GET(req: NextRequest) {
       collaborationResult,
       permissionResult,
     ] = await Promise.all([
+      all("trip_checklist_items"),
+      all("trip_contacts"),
       all("itinerary_items"),
       all("budget_items"),
       all("expenses"),
@@ -218,6 +236,8 @@ export async function GET(req: NextRequest) {
       trip,
       role,
       permissions: permissionResult.data,
+      checklist,
+      contacts,
       items,
       budgets,
       expenses,
@@ -327,6 +347,22 @@ export async function POST(req: NextRequest) {
     const parsed = mutationSchema.safeParse(json);
     if (!parsed.success)
       return reply({ error: parsed.error.issues[0]?.message }, 400);
+    if (
+      ["checklist", "checklist_batch", "contact", "participant"].includes(
+        parsed.data.entity,
+      )
+    ) {
+      const ready = await a.s.rpc("tf_preparation_ready");
+      if (ready.error || !ready.data)
+        return reply(
+          {
+            error:
+              "Cần chạy migration 202611010005_v2110_packing_checklist_family.sql trước khi dùng V2.11.0.",
+            code: "V2110_MIGRATION_REQUIRED",
+          },
+          503,
+        );
+    }
     if (parsed.data.entity === "budget" || parsed.data.entity === "expense") {
       const ready = await a.s.rpc("tf_selected_cost_sharing_ready");
       if (ready.error || !ready.data)

@@ -11,6 +11,9 @@ import type {
 } from "./types";
 
 const CORE_OFFLINE_ACTIONS: Record<string, Set<string>> = {
+  checklist: new Set(["create", "update", "delete"]),
+  checklist_batch: new Set(["create"]),
+  contact: new Set(["create", "update", "delete"]),
   trip: new Set(["update"]),
   item: new Set(["create", "update", "delete", "status"]),
   budget: new Set(["create", "update", "delete"]),
@@ -290,6 +293,9 @@ function optimisticParticipant(
   const data = mutation.data || {};
   return {
     ...baseRow(mutation.id, nowIso),
+    age_group: (data.age_group || "adult") as Participant["age_group"],
+    family_group: String(data.family_group || ""),
+    needs_note: String(data.needs_note || ""),
     name: String(data.name || ""),
     note: String(data.note || ""),
   };
@@ -311,6 +317,42 @@ export function applyOptimisticMutation(
     participants: [...bundle.participants],
   };
   const data = mutation.data || {};
+  if (mutation.entity === "checklist_batch" && mutation.action === "create") {
+    for (const entry of (data.entries || []) as Record<string, unknown>[]) {
+      next = applyOptimisticMutation(
+        next,
+        { ...mutation, entity: "checklist", id: String(entry.id), data: entry },
+        nowIso,
+      );
+    }
+    return next;
+  }
+  if (mutation.entity === "checklist" || mutation.entity === "contact") {
+    const field = mutation.entity === "checklist" ? "checklist" : "contacts";
+    const rows = [...(next[field] || [])];
+    if (
+      mutation.action === "create" &&
+      mutation.id &&
+      !rows.some((r) => r.id === mutation.id)
+    )
+      rows.push({
+        ...baseRow(mutation.id, nowIso),
+        trip_id: mutation.tripId,
+        ...data,
+      } as (typeof rows)[number]);
+    next = {
+      ...next,
+      [field]:
+        mutation.action === "delete"
+          ? rows.filter((r) => r.id !== mutation.id)
+          : rows.map((r) =>
+              r.id === mutation.id && mutation.action === "update"
+                ? bumped(r, data, nowIso)
+                : r,
+            ),
+    };
+    return next;
+  }
   // Never combine a cloud aggregate with locally modified rows. Rebuild reports from
   // the visible arrays until a fresh server bundle replaces the optimistic cache.
   if (["expense", "budget", "item", "trip"].includes(mutation.entity))
@@ -564,6 +606,10 @@ export function overlayQueuedTripList(
 }
 
 export function currentVersionForMutation(bundle: Bundle, mutation: Mutation) {
+  if (mutation.entity === "checklist")
+    return bundle.checklist?.find((x) => x.id === mutation.id)?.version;
+  if (mutation.entity === "contact")
+    return bundle.contacts?.find((x) => x.id === mutation.id)?.version;
   if (mutation.entity === "trip") return bundle.trip.version;
   const id = mutation.id;
   if (!id) return undefined;

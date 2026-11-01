@@ -381,11 +381,17 @@ test("V2.10 SQL shares, deposit, identity, replay, permission and backup preserv
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        "supabase/migrations/202611010005_v2110_packing_checklist_family.sql",
+        "utf8",
+      ),
+    );
     await as(owner);
     assert.equal(
       (await db.query<any>("select tf_release_readiness() r")).rows[0].r
         .database_version,
-      "2.10.1",
+      "2.11.0",
     );
     assert.equal(
       (

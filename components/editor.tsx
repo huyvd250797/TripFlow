@@ -86,6 +86,9 @@ export function Editor({
     amount: "",
     payment_source: "personal",
     payer: "",
+    age_group: "adult",
+    family_group: "",
+    needs_note: "",
     settlement_type: row ? String(row.settlement_type || "advance") : "direct",
     cost_sharing: { mode: "equal" },
     location: "",
@@ -286,8 +289,16 @@ export function Editor({
     f("is_cover", "Dùng làm ảnh bìa chuyến đi", "checkbox");
     f("note", "Caption / câu chuyện", "textarea");
   }
-  if (spec.entity === "participant")
+  if (spec.entity === "participant") {
     f("name", "Tên người tham gia *", "text", true);
+    sel("age_group", "Nhóm tuổi", [
+      ["adult", "Người lớn"],
+      ["child", "Trẻ em"],
+      ["infant", "Em bé"],
+    ]);
+    f("family_group", "Nhóm gia đình");
+    f("needs_note", "Nhu cầu cần lưu ý", "textarea");
+  }
   if (spec.entity === "invitation") {
     f("email", "Email người được mời *", "email", true);
     sel("role", "Vai trò", [
@@ -343,6 +354,9 @@ export function Editor({
     invitation: "lời mời",
     member: "quyền thành viên",
     snapshot: "lần chốt dự toán",
+    checklist: "mục chuẩn bị",
+    checklist_batch: "mẫu chuẩn bị",
+    contact: "liên hệ",
   };
   const close = () => {
     if (

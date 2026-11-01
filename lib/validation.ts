@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { costSharingSchema } from "./cost-sharing";
+import {
+  checklistSchema,
+  contactSchema,
+  checklistBatchSchema,
+} from "./preparation";
 import { CATEGORIES } from "./types";
 const text = z.string().trim().min(1, "Vui lòng nhập nội dung.").max(200);
 const note = z.string().max(5000).default("");
@@ -116,7 +121,16 @@ export const schemas = {
     story_order: z.coerce.number().int().min(0).max(9999).default(0),
     note,
   }),
-  participant: z.object({ name: text.max(160), note }),
+  checklist: checklistSchema,
+  checklist_batch: checklistBatchSchema,
+  contact: contactSchema,
+  participant: z.object({
+    name: text.max(160),
+    note,
+    age_group: z.enum(["adult", "child", "infant"]).optional(),
+    family_group: z.string().trim().max(160).optional(),
+    needs_note: z.string().max(5000).optional(),
+  }),
   invitation: z.object({
     ...permissionFields,
     email: z.email().max(254),
@@ -139,6 +153,9 @@ export const mutationSchema = z
       "invitation",
       "member",
       "snapshot",
+      "checklist",
+      "checklist_batch",
+      "contact",
     ]),
     action: z.enum(["create", "update", "delete", "status", "accept"]),
     id: z.uuid().optional(),

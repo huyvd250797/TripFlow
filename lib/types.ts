@@ -1,6 +1,6 @@
 import type { CostSharing } from "./cost-sharing";
-export const VERSION = "2.10.1";
-export const DATABASE_VERSION = "2.10.1";
+export const VERSION = "2.11.0";
+export const DATABASE_VERSION = "2.11.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -45,7 +45,10 @@ export type Entity =
   | "participant"
   | "invitation"
   | "member"
-  | "snapshot";
+  | "snapshot"
+  | "checklist"
+  | "checklist_batch"
+  | "contact";
 export type Row = {
   id: string;
   version: number;
@@ -111,7 +114,35 @@ export type Media = Row & {
   is_cover?: boolean;
   story_order?: number;
 };
-export type Participant = Row & { name: string; note: string };
+export type Participant = Row & {
+  name: string;
+  note: string;
+  age_group?: "adult" | "child" | "infant";
+  family_group?: string;
+  needs_note?: string;
+};
+export type ChecklistItem = Row & {
+  trip_id: string;
+  title: string;
+  category: string;
+  kind: "packing" | "task";
+  scope: "shared" | "personal";
+  assignee_id: string | null;
+  quantity: number;
+  due_on: string | null;
+  note: string;
+  status: "needed" | "ready" | "packed" | "done";
+  excluded: boolean;
+};
+export type TravelContact = Row & {
+  trip_id: string;
+  name: string;
+  kind: "hotel" | "driver" | "family" | "other";
+  phone: string;
+  address: string;
+  map_url: string;
+  note: string;
+};
 export type TripPermissions = {
   can_invite: boolean;
   can_change_roles: boolean;
@@ -301,6 +332,8 @@ export type Bundle = {
   expenses: Expense[];
   media: Media[];
   participants: Participant[];
+  checklist?: ChecklistItem[];
+  contacts?: TravelContact[];
   members: Member[];
   invitations: Invitation[];
   snapshots: Snapshot[];

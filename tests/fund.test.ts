@@ -393,6 +393,12 @@ test("V2.9 fund transactions preserve cash, permissions, expense accounting and 
           "utf8",
         ),
       );
+      await db.exec(
+        await readFile(
+          "supabase/migrations/202611010005_v2110_packing_checklist_family.sql",
+          "utf8",
+        ),
+      );
       await as();
       const r = (await db.query<any>("select tf_release_readiness() r")).rows[0]
         .r;
