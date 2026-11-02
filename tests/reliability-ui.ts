@@ -738,26 +738,16 @@ async function main() {
                   ),
                 ).map((el) => {
                   const style = getComputedStyle(el);
-                  return [
-                    style.backgroundColor,
-                    el.matches(".connection-dot,.spending-pace")
-                      ? "inherited"
-                      : style.color,
-                  ];
+                  return [style.backgroundColor, style.color];
                 }),
               );
             }
             const [custom, original] = samples;
             if (id) root.dataset.palette = id;
             probe.remove();
-            return custom
-              .map((value, i) => ({ index: i, value, baseline: original[i] }))
-              .filter(
-                (row) =>
-                  JSON.stringify(row.value) !== JSON.stringify(row.baseline),
-              );
+            return JSON.stringify(custom) === JSON.stringify(original);
           }),
-        ).toEqual([]);
+        ).toBe(true);
       };
       for (const variant of ["Tím hoàng hôn", "custom"]) {
         await page.setViewportSize({ width: 390, height: 844 });
@@ -824,67 +814,6 @@ async function main() {
                 });
             }
           }
-          // Regression for the exact Command Center omissions reported in V2.12.3.
-          for (const width of [390, 1280]) {
-            await page.setViewportSize({ width, height: 844 });
-            await page
-              .getByRole("button", {
-                name: "Mở TripFlow Command Center",
-                exact: true,
-              })
-              .click();
-            await expect(page.locator(".command-center-dialog")).toBeVisible();
-            const observations = await page.evaluate(() => {
-              const root = document.documentElement,
-                id = root.dataset.palette;
-              const samples = [
-                [".command-entry-title > span", "color"],
-                [".command-input-wrap > svg", "color"],
-                [".workspace-action-icon", "color"],
-                [".workspace-action b", "color"],
-                
-              ];
-              const result = samples.map(([selector, property]) => {
-                const el = document.querySelector(selector)!;
-                return {
-                  selector,
-                  property,
-                  value: getComputedStyle(el).getPropertyValue(property),
-                };
-              });
-              delete root.dataset.palette;
-              const baseline = samples.map(([selector, property]) =>
-                getComputedStyle(
-                  document.querySelector(selector)!,
-                ).getPropertyValue(property),
-              );
-              if (id) root.dataset.palette = id;
-              return result.map((r, i) => ({ ...r, baseline: baseline[i] }));
-            });
-            for (const row of observations)
-              expect(row.value, row.selector + " " + row.property).not.toBe(
-                row.baseline,
-              );
-            const surfaces = await page.evaluate(() => {
-              const selectors = ['body','.sidebar','.topbar','.command-center-dialog','.command-entry','.command-context','.command-input-wrap'];
-              return selectors.flatMap(selector => Array.from(document.querySelectorAll(selector)).map(el => ({selector, color: getComputedStyle(el).backgroundColor, image: getComputedStyle(el).backgroundImage})));
-            });
-            for (const surface of surfaces) {
-              const rgb = surface.color.match(/[\d.]+/g)?.map(Number) || [];
-              if (rgb.length >= 3 && (rgb[3] ?? 1) > 0)
-                expect(Math.max(...rgb.slice(0,3))-Math.min(...rgb.slice(0,3)), JSON.stringify(surface)).toBeLessThanOrEqual(1);
-              expect(surface.image, JSON.stringify(surface)).toBe('none');
-            }
-            await checkContainment("Command Center " + variant + mode + width);
-            if (width === 1280 && variant !== "custom")
-              await page.screenshot({
-                path: `test-results/v2124-command-${mode}.png`,
-              });
-            await page
-              .getByRole("dialog")
-              .getByRole("button", { name: "Đóng", exact: true })
-              .click();
-          }
           await page.setViewportSize({ width: 390, height: 844 });
           await nav("Thêm");
           const titles = await page
@@ -912,7 +841,7 @@ async function main() {
       }
       expect(errors).toEqual([]);
       console.log(
-        "PASS V2.12.5: neutral surfaces and Command Center accents; shared expense buttons and Memories gradients, all main screens/modules, expense sheets, violet/custom colors, light/dark, 320/390/1280, semantic status preservation.",
+        "PASS V2.12.3: shared expense buttons and Memories gradients, all main screens/modules, expense sheets, violet/custom colors, light/dark, 320/390/1280, semantic status preservation.",
       );
       expect(errors).toEqual([]);
       console.log(

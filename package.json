@@ -1,18 +1,17 @@
 {
   "name": "tripflow-cloud",
-  "version": "2.12.5",
+  "version": "2.12.3",
   "private": true,
   "scripts": {
-    "dev": "node scripts/generate-palette-coverage.cjs && next dev",
-    "build": "node scripts/generate-palette-coverage.cjs && next build --webpack && node scripts/generate-sw-manifest.cjs",
+    "dev": "next dev",
+    "build": "next build --webpack && node scripts/generate-sw-manifest.cjs",
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:ui": "node --import tsx tests/reliability-ui.ts",
     "test:update:ui": "node --import tsx tests/app-update-ui.ts",
     "measure:bundle": "node scripts/measure-client-bundle.cjs",
-    "format": "prettier --write app components lib tests docs README.md next.config.ts tsconfig.json package.json vercel.json .github",
-    "test:theme-audit": "node scripts/generate-palette-coverage.cjs --check"
+    "format": "prettier --write app components lib tests docs README.md next.config.ts tsconfig.json package.json vercel.json .github"
   },
   "engines": {
     "node": "24.x"

@@ -1,5 +1,5 @@
 import type { CostSharing } from "./cost-sharing";
-export const VERSION = "2.12.5";
+export const VERSION = "2.12.3";
 export const DATABASE_VERSION = "2.12.0";
 export const CATEGORIES = [
   "Di chuyển",

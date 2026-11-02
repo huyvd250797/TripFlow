@@ -1,8 +1,3 @@
-import {
-  TONE_COLORS,
-  TONE_ENGINE_SOURCE,
-  toneValues,
-} from "./palette-tones.js";
 export type AppPalette = {
   id: string;
   name: string;
@@ -86,25 +81,16 @@ export function paletteValues(palette: AppPalette): Record<string, string> {
     "--palette-dark": dark,
   };
 }
-export function appliedPaletteValues(
-  palette: AppPalette,
-): Record<string, string> {
-  const core = paletteValues(palette);
-  return { ...core, ...toneValues(TONE_COLORS, core["--palette-end"]) };
-}
 export function applyPalette(value: unknown) {
   const palette = resolvePalette(value),
     root = document.documentElement;
   if (palette.id === "default") {
     delete root.dataset.palette;
-    for (const key of [
-      ...Object.keys(paletteValues(palette)),
-      ...TONE_COLORS.map((hex) => "--brand-tone-" + hex.slice(1).toLowerCase()),
-    ])
+    for (const key of Object.keys(paletteValues(palette)))
       root.style.removeProperty(key);
   } else {
     root.dataset.palette = palette.id;
-    for (const [key, color] of Object.entries(appliedPaletteValues(palette)))
+    for (const [key, color] of Object.entries(paletteValues(palette)))
       root.style.setProperty(key, color);
   }
   syncThemeColor();
@@ -112,8 +98,12 @@ export function applyPalette(value: unknown) {
 }
 export function syncThemeColor() {
   const root = document.documentElement;
-  const color = getComputedStyle(root).getPropertyValue("--canvas").trim() ||
-    (root.dataset.theme === "dark" ? "#111111" : "#f7f7f7");
+  const color =
+    root.dataset.theme === "dark"
+      ? "#0d1722"
+      : root.dataset.palette
+        ? root.style.getPropertyValue("--palette-end").trim()
+        : "#0B6873";
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute("content", color);
@@ -134,6 +124,5 @@ for(let i=0;i<100&&lum(light)>.11;i++)light=mix(light,0,.035);
 for(let i=0;i<100&&lum(dark)<.58;i++)dark=mix(dark,255,.05);
 const root=document.documentElement;root.dataset.palette=selected.id;
 for(const [name,color] of Object.entries({'--palette-start':start,'--palette-end':end,'--palette-light':light,'--palette-dark':dark}))root.style.setProperty(name,color);
-for(const [name,color] of Object.entries((${TONE_ENGINE_SOURCE})(${JSON.stringify(TONE_COLORS)},end)))root.style.setProperty(name,color);
-document.querySelector?.('meta[name="theme-color"]')?.setAttribute('content',getComputedStyle(root).getPropertyValue('--canvas').trim()||(root.dataset.theme==='dark'?'#111111':'#f7f7f7'));
+document.querySelector?.('meta[name="theme-color"]')?.setAttribute('content',root.dataset.theme==='dark'?'#0d1722':end);
 }catch{}})();`;

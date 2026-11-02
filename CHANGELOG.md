@@ -1,22 +1,4 @@
-## V2.12.5 — Neutral Surfaces & Accent Colors
-
-- Khôi phục nền trang, thanh điều hướng, form, sheet và thẻ thông tin về trắng/xám ở chế độ sáng và đen/xám ở chế độ tối. Bỏ lớp phủ màu lan toàn giao diện.
-- Màu cấu hình dành cho nút chính, icon/chữ nhấn, viền chọn/focus, tiến độ và vùng nhận diện đậm vốn có (Memories, banner). Không đổi ảnh và logo.
-- Generator phân biệt màu trung tính, nền nhạt và màu nhấn; bóng đổ giữ trung tính. Thanh màu trình duyệt theo nền sáng/tối.
-- Giữ bảng màu đã lưu và nút Mặc định; không thay dữ liệu chuyến đi.
-- **Không cần chạy migration mới. App 2.12.5; database giữ 2.12.0.**
-
 # Changelog
-
-## V2.12.4 — Full Palette Coverage
-
-- Sửa toàn bộ lớp màu còn sót trong Command Center: tiêu đề Quick Entry, icon, input/focus, viền, label, khối thao tác, tìm kiếm và ngữ cảnh.
-- Thay cách sửa danh sách selector bằng generator quét mọi stylesheet được import theo thứ tự cascade. Màu sắc mặc định ở chữ/icon/nền/viền/bóng được ánh xạ theo màu chọn; cả các biến màu cũ như `--green` được phủ.
-- Mỗi sắc độ giữ độ sáng tương đối và alpha để duy trì tương phản. Dùng cùng engine lúc khởi động và khi đổi màu, không lọc màu lên ảnh/video/logo.
-- Giữ màu ngữ nghĩa cho lỗi/cảnh báo/thành công/kết nối, trạng thái nghiệp vụ. Bấm Mặc định bỏ toàn bộ lớp màu cấu hình, không sửa dữ liệu chuyến đi.
-- Build tự chạy `scripts/generate-palette-coverage.cjs`. Dùng `npm run test:theme-audit` để phát hiện file màu sinh ra chưa đồng bộ với source CSS.
-- **Không cần chạy migration mới. App 2.12.4; database giữ 2.12.0.** Xem `docs/UPGRADE-V2.12.4.md` và `docs/VALIDATION-V2.12.4.md`.
-
 
 ## V2.12.3 — Complete Theme Consistency
 
