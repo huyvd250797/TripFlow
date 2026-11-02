@@ -1,10 +1,19 @@
-# TripFlow V2.12.2 — Gradient Themes & App Icon Branding
+# TripFlow V2.12.3 — Complete Theme Consistency
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.12.3 — Complete Theme Consistency
+
+- Nút **Ghi chi tiêu** trong Ví chuyến đi dùng cùng kiểu `btn primary` và icon Plus với nút phía trên, không còn nền xanh và icon nền riêng.
+- Nền **TripFlow Memories** cùng bảng màu đang chọn. Giữ ảnh bìa và ảnh/video gốc; không áp filter đổi màu lên nội dung người dùng.
+- Rà soát và gom màu nhận diện còn cố định ở loading, bản đồ/chặng, quick action, menu module, quỹ/ví, analytics, mẫu kế hoạch, header sheet và màn đăng nhập vào các vai trò màu dùng chung.
+- Giữ màu đỏ của xác nhận xóa; cảnh báo, offline/kết nối, số liệu phân loại và trạng thái nghiệp vụ giữ ý nghĩa riêng. Mặc định vẫn khôi phục giao diện gốc (nút Ví đồng bộ theo yêu cầu).
+- **Không cần chạy migration mới. App 2.12.3, database giữ 2.12.0.** Không reset DB, không chạy lại SQL đã áp dụng.
+- Xem `docs/UPGRADE-V2.12.3.md`, `docs/VALIDATION-V2.12.3.md` và `docs/THEME-AUDIT-V2.12.3.md`.
 
 ## V2.12.2 — Gradient Themes & App Icon Branding
 

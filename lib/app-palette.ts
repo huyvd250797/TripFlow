@@ -93,7 +93,20 @@ export function applyPalette(value: unknown) {
     for (const [key, color] of Object.entries(paletteValues(palette)))
       root.style.setProperty(key, color);
   }
+  syncThemeColor();
   return palette;
+}
+export function syncThemeColor() {
+  const root = document.documentElement;
+  const color =
+    root.dataset.theme === "dark"
+      ? "#0d1722"
+      : root.dataset.palette
+        ? root.style.getPropertyValue("--palette-end").trim()
+        : "#0B6873";
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", color);
 }
 // Plain JavaScript prevents bundlers/transpilers from adding closure-bound helper references.
 export const PALETTE_BOOTSTRAP = `(()=>{try{
@@ -111,4 +124,5 @@ for(let i=0;i<100&&lum(light)>.11;i++)light=mix(light,0,.035);
 for(let i=0;i<100&&lum(dark)<.58;i++)dark=mix(dark,255,.05);
 const root=document.documentElement;root.dataset.palette=selected.id;
 for(const [name,color] of Object.entries({'--palette-start':start,'--palette-end':end,'--palette-light':light,'--palette-dark':dark}))root.style.setProperty(name,color);
+document.querySelector?.('meta[name="theme-color"]')?.setAttribute('content',root.dataset.theme==='dark'?'#0d1722':end);
 }catch{}})();`;

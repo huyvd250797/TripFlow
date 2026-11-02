@@ -678,6 +678,171 @@ async function main() {
       await page.screenshot({
         path: "test-results/v2122-ocean-finance-dark.png",
       });
+      const checkBrandFill = async (selector: string) => {
+        const el = page.locator(selector).first();
+        await expect(el).toBeVisible();
+        expect(
+          await el.evaluate((el) => {
+            const root = document.documentElement;
+            const hex = root.style.getPropertyValue("--palette-start").trim();
+            const rgb = [1, 3, 5]
+              .map((i) => parseInt(hex.slice(i, i + 2), 16))
+              .join(", ");
+            return getComputedStyle(el).backgroundImage.includes(`rgb(${rgb})`);
+          }),
+          selector,
+        ).toBe(true);
+      };
+      const checkContainment = async (label: string) => {
+        expect(
+          await page.evaluate(() => {
+            const leaks: string[] = [];
+            for (const el of Array.from(
+              document.querySelectorAll<HTMLElement>(
+                "main .btn,.dialog-content .btn,.module-tile",
+              ),
+            )) {
+              if (
+                !el.getClientRects().length ||
+                el.closest('.table-scroll,.planning-board,[aria-hidden="true"]')
+              )
+                continue;
+              const r = el.getBoundingClientRect();
+              if (r.left < -1 || r.right > innerWidth + 1)
+                leaks.push(el.textContent?.trim() || el.className);
+            }
+            return {
+              fits: document.documentElement.scrollWidth <= innerWidth + 1,
+              leaks,
+            };
+          }),
+          label,
+        ).toEqual({ fits: true, leaks: [] });
+      };
+      const checkSemanticColors = async () => {
+        expect(
+          await page.evaluate(() => {
+            const root = document.documentElement,
+              id = root.dataset.palette;
+            const probe = document.createElement("div");
+            probe.innerHTML =
+              '<div class="dialog-danger"><footer class="dialog-footer"><button class="btn primary">Xóa</button></footer></div><div class="notice warning">Warning</div><span class="connection-dot ready"></span><span class="connection-dot offline"></span><div class="spending-pace over"><div class="spending-pace-copy">Over</div></div><div class="command-preview invalid"><span class="command-preview-icon">Invalid</span></div>';
+            document.body.append(probe);
+            const samples: string[][][] = [];
+            for (let i = 0; i < 2; i++) {
+              if (i === 1) delete root.dataset.palette;
+              samples.push(
+                Array.from(
+                  probe.querySelectorAll(
+                    "button,.notice,.connection-dot,.spending-pace,.spending-pace-copy,.command-preview-icon",
+                  ),
+                ).map((el) => {
+                  const style = getComputedStyle(el);
+                  return [style.backgroundColor, style.color];
+                }),
+              );
+            }
+            const [custom, original] = samples;
+            if (id) root.dataset.palette = id;
+            probe.remove();
+            return JSON.stringify(custom) === JSON.stringify(original);
+          }),
+        ).toBe(true);
+      };
+      for (const variant of ["Tím hoàng hôn", "custom"]) {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await nav("Thêm");
+        await page
+          .getByRole("dialog")
+          .getByRole("button", { name: /Giao diện/ })
+          .click();
+        if (variant === "custom") {
+          const details = palette.locator("details");
+          if ((await details.getAttribute("open")) === null)
+            await details.locator("summary").click();
+          await palette
+            .getByLabel("Màu bắt đầu · mã HEX", { exact: true })
+            .fill("#643489");
+          await palette
+            .getByLabel("Màu kết thúc · mã HEX", { exact: true })
+            .fill("#DDAADD");
+          await palette
+            .getByRole("button", { name: "Lưu màu", exact: true })
+            .click();
+        } else
+          await palette
+            .getByRole("button", { name: variant, exact: true })
+            .click();
+        await checkSemanticColors();
+        for (const mode of ["Sáng", "Tối"]) {
+          await page.getByRole("button", { name: mode, exact: true }).click();
+          for (const width of [320, 390, 1280]) {
+            await page.setViewportSize({ width, height: 844 });
+            for (const screen of [
+              "Tổng quan",
+              "Lịch trình",
+              "Chi phí",
+              "Media",
+            ]) {
+              await nav(screen);
+              await checkContainment(`${variant} ${mode} ${width} ${screen}`);
+              if (screen === "Chi phí") {
+                await checkBrandFill(".expense-add-action");
+                expect(
+                  await page
+                    .locator(".expense-add-action")
+                    .evaluate((el) => getComputedStyle(el).backgroundImage),
+                ).toBe(
+                  await page
+                    .locator(".page-heading .btn.primary")
+                    .evaluate((el) => getComputedStyle(el).backgroundImage),
+                );
+                await checkBrandFill(".finance-quick-summary");
+                await page.locator(".expense-add-action").click();
+                await expect(page.getByRole("dialog")).toBeVisible();
+                await checkContainment("expense sheet " + mode + width);
+                await page
+                  .getByRole("dialog")
+                  .getByRole("button", { name: "Hủy", exact: true })
+                  .click();
+              }
+              if (screen === "Media")
+                await checkBrandFill(".story-hero-visual");
+              if (width === 390 && variant !== "custom")
+                await page.screenshot({
+                  path: `test-results/v2123-${screen}-${mode}.png`,
+                });
+            }
+          }
+          await page.setViewportSize({ width: 390, height: 844 });
+          await nav("Thêm");
+          const titles = await page
+            .locator(".module-picker .module-tile strong")
+            .allTextContents();
+          for (const title of titles) {
+            const picker = page.locator(".module-picker");
+            if (!(await picker.isVisible()))
+              await page
+                .getByRole("button", { name: "Tất cả module", exact: true })
+                .click();
+            await picker
+              .locator(".module-tile")
+              .filter({ has: page.getByText(title, { exact: true }) })
+              .click();
+            await expect(page.locator(".module-management")).toBeVisible();
+            await checkContainment("module " + title + " " + mode);
+          }
+          await nav("Thêm");
+          await page
+            .getByRole("dialog")
+            .getByRole("button", { name: /Giao diện/ })
+            .click();
+        }
+      }
+      expect(errors).toEqual([]);
+      console.log(
+        "PASS V2.12.3: shared expense buttons and Memories gradients, all main screens/modules, expense sheets, violet/custom colors, light/dark, 320/390/1280, semantic status preservation.",
+      );
       expect(errors).toEqual([]);
       console.log(
         "PASS V2.12.2: presets, custom HEX validation, cancel/save/reset, exact original restoration, persistence, light/dark and containment 320–1280, icon branding, no JS errors.",

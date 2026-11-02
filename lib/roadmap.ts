@@ -336,6 +336,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Logo có nền bo góc đúng icon app; sáu bảng màu gradient, khôi phục mặc định và tùy chỉnh hai màu, lưu theo thiết bị, tương thích sáng/tối. DB giữ 2.12.0.",
   },
   {
+    version: "V2.12.3",
+    title: "Complete Theme Consistency",
+    done: true,
+    description:
+      "Đồng bộ nút Ghi chi tiêu với nút chung; phủ màu nhận diện cho Memories, bản đồ, loading, shortcut, module và các khối phụ. Giữ trạng thái cảnh báo và ảnh gốc; DB giữ 2.12.0.",
+  },
+  {
     version: "V2.13.0",
     title: "Group Expenses & Settlement",
     done: false,

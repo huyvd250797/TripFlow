@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { syncThemeColor } from "../lib/app-palette";
 import { Sun, Moon, Monitor } from "lucide-react";
 
 type Theme = "system" | "light" | "dark";
@@ -18,9 +19,7 @@ function applyTheme(preference: Theme) {
   document.documentElement.dataset.theme = dark ? "dark" : "light";
   document.documentElement.dataset.themePreference = preference;
   document.documentElement.style.colorScheme = dark ? "dark" : "light";
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", dark ? "#0d1722" : "#0B6873");
+  syncThemeColor();
 }
 
 export function ThemeControl({ compact = false }: { compact?: boolean }) {

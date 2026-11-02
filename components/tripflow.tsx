@@ -4654,15 +4654,10 @@ function App() {
                             </div>
                             {writable && (
                               <button
-                                className="wallet-add-expense"
+                                className="btn primary expense-add-action"
                                 onClick={() => edit("expense")}
                               >
-                                <span className="wallet-add-expense-icon">
-                                  <Plus size={18} />
-                                </span>
-                                <span>
-                                  <b>Ghi chi tiêu</b>
-                                </span>
+                                <Plus size={18} /> Ghi chi tiêu
                               </button>
                             )}
                           </div>

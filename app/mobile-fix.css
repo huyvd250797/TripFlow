@@ -195,29 +195,6 @@ button svg,
   font-size: 21px;
   margin: 0;
 }
-.wallet-heading .wallet-add-expense {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 40px;
-  width: auto;
-  padding: 9px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.wallet-heading .wallet-add-expense-icon {
-  width: auto;
-  height: auto;
-  padding: 0;
-  background: none;
-}
-.wallet-heading .wallet-add-expense span,
-.wallet-heading .wallet-add-expense b {
-  font-size: 13px;
-  white-space: nowrap;
-}
 .travel-wallet-panel .wallet-kpis {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
