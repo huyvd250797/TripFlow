@@ -1,10 +1,18 @@
-# TripFlow V2.12.4 — Full Palette Coverage
+# TripFlow V2.12.5 — Neutral Surfaces & Accent Colors
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.12.5 — Neutral Surfaces & Accent Colors
+
+- Khôi phục nền trang, thanh điều hướng, form, sheet và thẻ thông tin về trắng/xám ở chế độ sáng và đen/xám ở chế độ tối. Bỏ lớp phủ màu lan toàn giao diện.
+- Màu cấu hình dành cho nút chính, icon/chữ nhấn, viền chọn/focus, tiến độ và vùng nhận diện đậm vốn có (Memories, banner). Không đổi ảnh và logo.
+- Generator phân biệt màu trung tính, nền nhạt và màu nhấn; bóng đổ giữ trung tính. Thanh màu trình duyệt theo nền sáng/tối.
+- Giữ bảng màu đã lưu và nút Mặc định; không thay dữ liệu chuyến đi.
+- **Không cần chạy migration mới. App 2.12.5; database giữ 2.12.0.**
 
 ## V2.12.4 — Full Palette Coverage
 

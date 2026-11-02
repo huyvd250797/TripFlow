@@ -254,7 +254,7 @@ html[data-palette][data-theme] body .daily-command-panel,
 html[data-palette][data-theme] body .context-hero {
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--primary) 10%, var(--panel)),
+    var(--panel),
     var(--panel)
   );
   border-color: color-mix(in srgb, var(--primary) 24%, var(--line));
@@ -266,7 +266,7 @@ html[data-palette][data-theme] body .daily-actions .link {
 }
 html[data-palette][data-theme] body .segments,
 html[data-palette][data-theme] body .planning-view-switch {
-  background: color-mix(in srgb, var(--primary) 10%, var(--panel));
+  background: var(--surface-soft);
   border-color: color-mix(in srgb, var(--primary) 22%, var(--line));
 }
 html[data-palette][data-theme] body .segments button.active,

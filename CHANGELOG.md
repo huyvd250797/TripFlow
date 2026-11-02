@@ -1,3 +1,11 @@
+## V2.12.5 — Neutral Surfaces & Accent Colors
+
+- Khôi phục nền trang, thanh điều hướng, form, sheet và thẻ thông tin về trắng/xám ở chế độ sáng và đen/xám ở chế độ tối. Bỏ lớp phủ màu lan toàn giao diện.
+- Màu cấu hình dành cho nút chính, icon/chữ nhấn, viền chọn/focus, tiến độ và vùng nhận diện đậm vốn có (Memories, banner). Không đổi ảnh và logo.
+- Generator phân biệt màu trung tính, nền nhạt và màu nhấn; bóng đổ giữ trung tính. Thanh màu trình duyệt theo nền sáng/tối.
+- Giữ bảng màu đã lưu và nút Mặc định; không thay dữ liệu chuyến đi.
+- **Không cần chạy migration mới. App 2.12.5; database giữ 2.12.0.**
+
 # Changelog
 
 ## V2.12.4 — Full Palette Coverage

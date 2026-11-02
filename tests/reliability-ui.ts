@@ -840,11 +840,9 @@ async function main() {
               const samples = [
                 [".command-entry-title > span", "color"],
                 [".command-input-wrap > svg", "color"],
-                [".command-input-wrap", "border-top-color"],
-                [".workspace-action-icon", "background-color"],
                 [".workspace-action-icon", "color"],
                 [".workspace-action b", "color"],
-                [".command-context", "background-color"],
+                
               ];
               const result = samples.map(([selector, property]) => {
                 const el = document.querySelector(selector)!;
@@ -867,6 +865,16 @@ async function main() {
               expect(row.value, row.selector + " " + row.property).not.toBe(
                 row.baseline,
               );
+            const surfaces = await page.evaluate(() => {
+              const selectors = ['body','.sidebar','.topbar','.command-center-dialog','.command-entry','.command-context','.command-input-wrap'];
+              return selectors.flatMap(selector => Array.from(document.querySelectorAll(selector)).map(el => ({selector, color: getComputedStyle(el).backgroundColor, image: getComputedStyle(el).backgroundImage})));
+            });
+            for (const surface of surfaces) {
+              const rgb = surface.color.match(/[\d.]+/g)?.map(Number) || [];
+              if (rgb.length >= 3 && (rgb[3] ?? 1) > 0)
+                expect(Math.max(...rgb.slice(0,3))-Math.min(...rgb.slice(0,3)), JSON.stringify(surface)).toBeLessThanOrEqual(1);
+              expect(surface.image, JSON.stringify(surface)).toBe('none');
+            }
             await checkContainment("Command Center " + variant + mode + width);
             if (width === 1280 && variant !== "custom")
               await page.screenshot({
@@ -904,7 +912,7 @@ async function main() {
       }
       expect(errors).toEqual([]);
       console.log(
-        "PASS V2.12.4: full generated theme coverage and Command Center colors; shared expense buttons and Memories gradients, all main screens/modules, expense sheets, violet/custom colors, light/dark, 320/390/1280, semantic status preservation.",
+        "PASS V2.12.5: neutral surfaces and Command Center accents; shared expense buttons and Memories gradients, all main screens/modules, expense sheets, violet/custom colors, light/dark, 320/390/1280, semantic status preservation.",
       );
       expect(errors).toEqual([]);
       console.log(
