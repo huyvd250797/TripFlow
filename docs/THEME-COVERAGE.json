@@ -1,0 +1,16 @@
+{
+  "files": [
+    "globals.css",
+    "dark-palette.css",
+    "theme.css",
+    "polish.css",
+    "mobile-fix.css",
+    "cost-sharing.css",
+    "preparation.css",
+    "flexible-planning.css",
+    "layout-polish.css"
+  ],
+  "colors": 716,
+  "declarations": 1608,
+  "selectors": 977
+}

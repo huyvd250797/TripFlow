@@ -7,6 +7,7 @@ import {
   luminance,
   mixHex,
   paletteValues,
+  appliedPaletteValues,
   resolvePalette,
 } from "../lib/app-palette";
 
@@ -74,7 +75,7 @@ test("before-paint bootstrap equals runtime colors, tolerates corrupt or blocked
       },
     });
     const p = resolvePalette(value);
-    assert.deepEqual(values, p.id === "default" ? {} : paletteValues(p));
+    assert.deepEqual(values, p.id === "default" ? {} : appliedPaletteValues(p));
     assert.equal(dataset.palette, p.id === "default" ? undefined : p.id);
   }
   for (const getItem of [
@@ -86,4 +87,19 @@ test("before-paint bootstrap equals runtime colors, tolerates corrupt or blocked
     assert.doesNotThrow(() =>
       runInNewContext(PALETTE_BOOTSTRAP, { localStorage: { getItem } }),
     );
+});
+
+test("all discovered brand tones preserve luminance for preset, bright and monochrome custom palettes", async () => {
+  const { TONE_COLORS, toneValues } = await import("../lib/palette-tones.js");
+  assert.ok(TONE_COLORS.length > 500);
+  for (const end of ["#8B55B8", "#FFFFFF", "#000000", "#FF4400"]) {
+    const values = toneValues(TONE_COLORS, end) as Record<string, string>;
+    for (const color of TONE_COLORS) {
+      const mapped = values["--brand-tone-" + color.slice(1).toLowerCase()];
+      assert.ok(
+        Math.abs(luminance(mapped) - luminance(color)) < 0.006,
+        `${color} -> ${mapped}`,
+      );
+    }
+  }
 });

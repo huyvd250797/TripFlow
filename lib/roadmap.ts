@@ -343,6 +343,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Đồng bộ nút Ghi chi tiêu với nút chung; phủ màu nhận diện cho Memories, bản đồ, loading, shortcut, module và các khối phụ. Giữ trạng thái cảnh báo và ảnh gốc; DB giữ 2.12.0.",
   },
   {
+    version: "V2.12.4",
+    title: "Full Palette Coverage",
+    done: true,
+    description:
+      "Quét màu từ toàn bộ stylesheet theo cascade; chữ/icon/viền/nền/bóng nhận palette, bao gồm Command Center. Giữ tương phản và màu trạng thái; DB 2.12.0.",
+  },
+  {
     version: "V2.13.0",
     title: "Group Expenses & Settlement",
     done: false,

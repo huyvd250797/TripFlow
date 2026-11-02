@@ -7,6 +7,7 @@ import "./cost-sharing.css";
 import "./preparation.css";
 import "./flexible-planning.css";
 import "./layout-polish.css";
+import "./palette-generated.css";
 import "./app-palette.css";
 import "./palette-surfaces.css";
 import { PALETTE_BOOTSTRAP } from "../lib/app-palette";
