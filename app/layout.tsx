@@ -7,6 +7,8 @@ import "./cost-sharing.css";
 import "./preparation.css";
 import "./flexible-planning.css";
 import "./layout-polish.css";
+import "./app-palette.css";
+import { PALETTE_BOOTSTRAP } from "../lib/app-palette";
 export const metadata: Metadata = {
   title: "TripFlow · Plan. Go. Remember.",
   description:
@@ -32,6 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             __html: `(function(){try{var p=localStorage.getItem('tripflow:theme')||'system';if(p!=='light'&&p!=='dark')p='system';var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.dataset.themePreference=p;document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}})();`,
           }}
         />
+        <script dangerouslySetInnerHTML={{ __html: PALETTE_BOOTSTRAP }} />
       </head>
       <body>{children}</body>
     </html>

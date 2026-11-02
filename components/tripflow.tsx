@@ -106,6 +106,7 @@ import {
   Star,
 } from "lucide-react";
 import { browserClient, configured } from "@/lib/supabase/client";
+import { PaletteControl } from "./palette-control";
 import { ThemeControl } from "./theme-control";
 import { PERMISSION_FIELDS, tripPermissions } from "@/lib/permissions";
 import { Auth } from "./auth";
@@ -5594,6 +5595,7 @@ function App() {
                         </p>
                       </div>
                       <ThemeControl />
+                      <PaletteControl />
                     </section>
                     <div data-module-title="Chuẩn bị chuyến đi">
                       <PreparationModule

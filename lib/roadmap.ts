@@ -329,6 +329,13 @@ export const ROADMAP: RoadmapItem[] = [
       "Logo không khung, thanh chế độ lịch vừa khung, điều phối bằng icon; phân chia trong sheet của Báo cáo; chuẩn bị gọn, cuộn sẵn và thông báo tải lại đổi sang thành công. DB giữ 2.12.0.",
   },
   {
+    version: "V2.12.2",
+    title: "Gradient Themes & App Icon Branding",
+    done: true,
+    description:
+      "Logo có nền bo góc đúng icon app; sáu bảng màu gradient, khôi phục mặc định và tùy chỉnh hai màu, lưu theo thiết bị, tương thích sáng/tối. DB giữ 2.12.0.",
+  },
+  {
     version: "V2.13.0",
     title: "Group Expenses & Settlement",
     done: false,

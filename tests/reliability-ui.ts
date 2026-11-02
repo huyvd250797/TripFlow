@@ -187,6 +187,7 @@ async function main() {
   const context = await browser.newContext({
     viewport: {
       width:
+        process.env.TRIPFLOW_PALETTE_TEST ||
         process.env.TRIPFLOW_LAYOUT_TEST ||
         process.env.TRIPFLOW_ROUTE_TEST ||
         process.env.TRIPFLOW_PREPARATION_TEST ||
@@ -531,6 +532,158 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_PALETTE_TEST) {
+      await nav("Thêm");
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: /Giao diện/ })
+        .click();
+      const palette = page.locator(".palette-control");
+      await expect(palette).toBeVisible();
+      const original = await page
+        .locator(".btn.primary")
+        .first()
+        .evaluate((el) => getComputedStyle(el).backgroundImage);
+      for (const name of [
+        "Đại dương",
+        "Tím hoàng hôn",
+        "Hồng san hô",
+        "Rừng xanh",
+        "Nắng ấm",
+      ]) {
+        await palette.getByRole("button", { name, exact: true }).click();
+        await expect(
+          palette.getByRole("button", { name, exact: true }),
+        ).toHaveAttribute("aria-pressed", "true");
+        for (const mode of ["Sáng", "Tối"]) {
+          await page.getByRole("button", { name: mode, exact: true }).click();
+          for (const width of [320, 390, 768, 1280]) {
+            await page.setViewportSize({ width, height: 844 });
+            expect(
+              await palette.evaluate((el) => {
+                const box = el.getBoundingClientRect();
+                return {
+                  fits: box.left >= 0 && box.right <= innerWidth + 1,
+                  box: { left: box.left, right: box.right, width: innerWidth },
+                  leaks: Array.from(el.querySelectorAll("button,input"))
+                    .filter((x) => x.getClientRects().length)
+                    .map((x) => {
+                      const r = x.getBoundingClientRect();
+                      return {
+                        text: x.textContent || x.getAttribute("aria-label"),
+                        left: r.left,
+                        right: r.right,
+                      };
+                    })
+                    .filter(
+                      (r) => r.left < box.left - 1 || r.right > box.right + 1,
+                    ),
+                };
+              }),
+              `palette ${name} ${mode} ${width}`,
+            ).toMatchObject({ fits: true, leaks: [] });
+          }
+        }
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await palette.locator("summary").click();
+      await palette
+        .getByLabel("Màu bắt đầu · mã HEX", { exact: true })
+        .fill("#FFFFFF");
+      await palette
+        .getByLabel("Màu kết thúc · mã HEX", { exact: true })
+        .fill("bad");
+      await expect(
+        palette.getByRole("button", { name: "Lưu màu", exact: true }),
+      ).toBeDisabled();
+      await palette
+        .getByLabel("Màu kết thúc · mã HEX", { exact: true })
+        .fill("#CC55EE");
+      await palette
+        .getByRole("button", { name: "Lưu màu", exact: true })
+        .click();
+      await expect(page.locator("html")).toHaveAttribute(
+        "data-palette",
+        "custom",
+      );
+      const saved = await page.evaluate(() =>
+        document.documentElement.style.getPropertyValue("--palette-end"),
+      );
+      await palette
+        .getByLabel("Màu bắt đầu · mã HEX", { exact: true })
+        .fill("#112233");
+      await palette.getByRole("button", { name: "Hủy", exact: true }).click();
+      await expect(
+        palette.getByLabel("Màu bắt đầu · mã HEX", { exact: true }),
+      ).toHaveValue("#FFFFFF");
+      await page.screenshot({
+        path: "test-results/v2122-palette-dark-mobile.png",
+      });
+      await page.reload();
+      await expect(page.locator(".topbar")).toBeVisible();
+      await expect(page.locator("html")).toHaveAttribute(
+        "data-palette",
+        "custom",
+      );
+      expect(
+        await page.evaluate(() =>
+          document.documentElement.style.getPropertyValue("--palette-end"),
+        ),
+      ).toBe(saved);
+      await nav("Thêm");
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: /Giao diện/ })
+        .click();
+      await palette
+        .getByRole("button", { name: "Mặc định", exact: true })
+        .click();
+      await expect(page.locator("html")).not.toHaveAttribute("data-palette");
+      expect(
+        await page.evaluate(() => localStorage.getItem("tripflow:palette")),
+      ).toBe(null);
+      expect(
+        await page
+          .locator(".btn.primary")
+          .first()
+          .evaluate((el) => getComputedStyle(el).backgroundImage),
+      ).toBe(original);
+      await expect(
+        page.locator('svg.brand-mark:visible image[href="/icon.svg"]').first(),
+      ).toBeVisible();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({
+        path: "test-results/v2122-default-logo-mobile.png",
+      });
+      await palette
+        .getByRole("button", { name: "Đại dương", exact: true })
+        .click();
+      await nav("Tổng quan");
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({ path: "test-results/v2122-ocean-home-dark.png" });
+      await nav("Chi phí");
+      const banner = page.locator(".finance-quick-summary");
+      await expect(banner).toBeVisible();
+      expect(
+        await banner.evaluate((el) => {
+          const hex = document.documentElement.style
+            .getPropertyValue("--palette-start")
+            .trim();
+          const rgb = [1, 3, 5]
+            .map((i) => parseInt(hex.slice(i, i + 2), 16))
+            .join(", ");
+          return getComputedStyle(el).backgroundImage.includes(`rgb(${rgb})`);
+        }),
+      ).toBe(true);
+      await page.screenshot({
+        path: "test-results/v2122-ocean-finance-dark.png",
+      });
+      expect(errors).toEqual([]);
+      console.log(
+        "PASS V2.12.2: presets, custom HEX validation, cancel/save/reset, exact original restoration, persistence, light/dark and containment 320–1280, icon branding, no JS errors.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_LAYOUT_TEST) {
       const checkLayout = async (label: string) => {
         const leaks = await page.evaluate(() => {
@@ -740,7 +893,9 @@ async function main() {
         ),
       ).toBe(true);
       await sheet.getByRole("button", { name: "Hủy", exact: true }).click();
-      expect(await page.locator("svg.brand-mark rect").count()).toBe(0);
+      await expect(
+        page.locator('svg.brand-mark:visible image[href="/icon.svg"]').first(),
+      ).toBeVisible();
       expect(
         await page
           .locator("svg.brand-mark")

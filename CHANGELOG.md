@@ -1,5 +1,15 @@
 # Changelog
 
+## V2.12.2 — Gradient Themes & App Icon Branding
+
+- Logo trong app dùng đúng icon nền gradient bo góc hiện có, pin trắng và đường cam; không thêm khung vuông bên ngoài. Logo nhận diện giữ màu gốc khi đổi bảng màu.
+- Thêm → Giao diện → **Màu ứng dụng**: 6 bảng màu gradient, gồm TripFlow mặc định, Đại dương, Tím hoàng hôn, Hồng san hô, Rừng xanh và Nắng ấm. Chạm bảng màu để áp dụng/lưu ngay.
+- **Tùy chỉnh gradient**: chọn hai màu bằng color picker hoặc mã HEX, xem trước, Hủy bên trái/Lưu màu bên phải. Màu quá sáng được cân chỉnh để chữ dễ đọc; cảnh báo mã không hợp lệ.
+- **Mặc định** khôi phục chính xác bảng màu gốc. Màu lưu trên thiết bị/trình duyệt, không đồng bộ tài khoản; khôi phục trước khi render và khi đổi sáng/tối. Nếu trình duyệt chặn lưu, thông báo rõ.
+- **Không cần chạy migration mới. App 2.12.2, database giữ 2.12.0.** Không reset DB/chạy lại migration đã áp dụng.
+- Xem `docs/UPGRADE-V2.12.2.md` và `docs/VALIDATION-V2.12.2.md`.
+
+
 ## V2.12.1 — Mobile Layout & Interaction Polish
 
 - Bỏ nền khung/viền/shadow của logo hiển thị trong app; pin đứng độc lập, màu phù hợp sáng/tối. Không thay icon nút điều hướng hoặc dữ liệu người dùng.
