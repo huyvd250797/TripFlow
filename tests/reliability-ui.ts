@@ -175,6 +175,25 @@ async function main() {
     await db.exec(
       `set role postgres;update budget_items set cost_sharing='{"mode":"equal"}'::jsonb;set role authenticated;`,
     );
+  if (process.env.TRIPFLOW_SETTLEMENT_TEST) {
+    const huy = await mutate("participant", { name: "Huy", note: "" });
+    for (const name of ["Mai Phụng", "Anh Hai"])
+      await mutate("participant", { name, note: "" });
+    await db.exec("set role postgres");
+    await db.query(
+      'update budget_items set cost_sharing=\'{"mode":"equal"}\'::jsonb,quantity=1,unit_price=900000 where id=$1',
+      [food.id],
+    );
+    await db.query(
+      "update budget_items set deleted_at=now() where trip_id=$1 and id<>$2",
+      [tid, food.id],
+    );
+    await db.query(
+      "update expenses set amount=900000,payer_participant_id=$1,settlement_type='direct' where trip_id=$2",
+      [huy.id, tid],
+    );
+    await db.exec("set role authenticated");
+  }
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
     args: [
@@ -350,6 +369,7 @@ async function main() {
             can_revoke_access: viewRole === "owner",
             can_delete_trip: viewRole === "owner" || viewerCanDelete,
             can_close_budget: viewRole === "owner",
+            can_close_settlement: viewRole === "owner",
           },
         };
         for (const [key, table] of Object.entries(tables)) {
@@ -386,6 +406,34 @@ async function main() {
           ? 409
           : 400,
         json: { error: (e as Error).message },
+      });
+    }
+  });
+  await page.route("**/api/settlement*", async (route) => {
+    try {
+      if (route.request().method() === "POST" && viewRole === "viewer") {
+        await route.fulfill({
+          status: 403,
+          json: { error: "Bạn chỉ có quyền xem quyết toán." },
+        });
+        return;
+      }
+      const post = route.request().method() === "POST";
+      const result = (
+        await db.query<any>(
+          post
+            ? "select tf_settlement_mutate($1::jsonb) r"
+            : "select tf_settlement_snapshot($1) r",
+          [post ? JSON.stringify(route.request().postDataJSON()) : tid],
+        )
+      ).rows[0].r;
+      if (viewRole === "viewer") result.can_close = false;
+      await route.fulfill({ json: result });
+    } catch (e) {
+      const error = (e as Error).message;
+      await route.fulfill({
+        status: error.includes("STALE_VERSION") ? 409 : 400,
+        json: { error },
       });
     }
   });
@@ -532,6 +580,185 @@ async function main() {
     await expect(page.locator(".daily-focus-card.current")).toContainText(
       "Dạo quanh hồ Xuân Hương",
     );
+    if (process.env.TRIPFLOW_SETTLEMENT_TEST) {
+      await nav("Chi phí");
+      await page
+        .locator(".finance-toolbar")
+        .getByRole("button", { name: "Báo cáo", exact: true })
+        .click();
+      const panel = page.locator(".settlement-panel");
+      await expect(panel).toContainText("600.000");
+      await panel
+        .getByRole("button", { name: "Quyết toán", exact: true })
+        .click();
+      const dialog = page.locator(".settlement-dialog");
+      await expect(dialog).toBeVisible();
+      for (const mode of ["light", "dark"]) {
+        await page.evaluate((mode) => {
+          document.documentElement.dataset.theme = mode;
+        }, mode);
+        for (const width of [320, 390, 768, 1280]) {
+          await page.setViewportSize({ width, height: 844 });
+          for (const label of ["Theo người", "Chuyển tiền", "Lịch sử"]) {
+            await dialog
+              .getByRole("button", { name: label, exact: true })
+              .click();
+            const leak = await dialog.evaluate((el) =>
+              Array.from(el.querySelectorAll("button,input,select,article"))
+                .filter((x) => x.getClientRects().length)
+                .some((x) => {
+                  const r = x.getBoundingClientRect();
+                  return r.left < 0 || r.right > innerWidth + 1;
+                }),
+            );
+            expect(leak, mode + width + label).toBe(false);
+          }
+          if (width === 390) {
+            await dialog
+              .getByRole("button", { name: "Theo người", exact: true })
+              .click();
+            await page.screenshot({
+              path: `test-results/v2130-people-${mode}.png`,
+            });
+          }
+        }
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await dialog
+        .getByRole("button", { name: "Chuyển tiền", exact: true })
+        .click();
+      await dialog
+        .getByRole("button", { name: "Ghi nhận", exact: true })
+        .first()
+        .click();
+      await dialog.getByLabel("Số tiền đã chuyển (VNĐ)").fill("100000");
+      await dialog.getByLabel("Ghi chú quyết toán").fill("Thanh toán một phần");
+      await dialog
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(dialog).toContainText("Đã ghi nhận.");
+      await expect(dialog.locator(".settlement-body")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      );
+      await dialog
+        .getByRole("button", { name: "Lịch sử", exact: true })
+        .click();
+      await expect(dialog).toContainText("Thanh toán một phần");
+      await dialog
+        .getByRole("button", { name: "Hủy giao dịch", exact: true })
+        .click();
+      await dialog.getByLabel("Ghi chú quyết toán").fill("Sửa thông tin");
+      await dialog
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(dialog).toContainText("Đã hủy");
+      await expect(dialog.locator(".settlement-body")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      );
+      // An intervening write invalidates the captured form revision.
+      await dialog
+        .getByRole("button", { name: "Chuyển tiền", exact: true })
+        .click();
+      await dialog
+        .getByRole("button", { name: "Ghi nhận", exact: true })
+        .first()
+        .click();
+      await db.exec("set role postgres");
+      await db.query(
+        "update budget_items set note='Đã thay đổi trên thiết bị khác' where id=$1",
+        [food.id],
+      );
+      await db.exec("set role authenticated");
+      await dialog
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(dialog).toContainText("STALE_VERSION");
+      await expect(dialog.locator(".settlement-body")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      );
+      // Complete all currently suggested transfers, then close/reopen.
+      for (let i = 0; i < 3; i++) {
+        const record = dialog.getByRole("button", {
+          name: "Ghi nhận",
+          exact: true,
+        });
+        if (!(await record.count())) break;
+        await record.first().click();
+        await dialog
+          .getByRole("button", { name: "Xác nhận", exact: true })
+          .click();
+        await expect(dialog).toContainText("Đã ghi nhận.");
+        await expect(dialog.locator(".settlement-body")).toHaveAttribute(
+          "aria-busy",
+          "false",
+        );
+      }
+      await expect(
+        dialog.getByRole("button", { name: "Chốt quyết toán", exact: true }),
+      ).toBeEnabled();
+      await dialog
+        .getByRole("button", { name: "Chốt quyết toán", exact: true })
+        .click();
+      await dialog
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(
+        dialog.getByRole("button", { name: "Mở lại quyết toán", exact: true }),
+      ).toBeVisible();
+      await dialog
+        .getByRole("button", { name: "Mở lại quyết toán", exact: true })
+        .click();
+      await dialog.getByLabel("Ghi chú quyết toán").fill("Bổ sung");
+      await dialog
+        .getByRole("button", { name: "Xác nhận", exact: true })
+        .click();
+      await expect(
+        dialog.getByRole("button", { name: "Chốt quyết toán", exact: true }),
+      ).toBeVisible();
+      await context.setOffline(true);
+      await dialog
+        .getByRole("button", { name: "Đóng", exact: true })
+        .last()
+        .click();
+      await panel
+        .getByRole("button", { name: "Quyết toán", exact: true })
+        .click();
+      await expect(dialog).toContainText("Đang xem bản đã tải");
+      await expect(
+        dialog.getByRole("button", { name: "Chốt quyết toán", exact: true }),
+      ).toBeDisabled();
+      await context.setOffline(false);
+      await dialog
+        .getByRole("button", { name: "Đóng", exact: true })
+        .last()
+        .click();
+      viewRole = "viewer";
+      await page.reload();
+      await expect(page.locator(".topbar")).toBeVisible();
+      await nav("Chi phí");
+      await page
+        .locator(".finance-toolbar")
+        .getByRole("button", { name: "Báo cáo", exact: true })
+        .click();
+      await page
+        .locator(".settlement-panel")
+        .getByRole("button", { name: "Quyết toán", exact: true })
+        .click();
+      await dialog
+        .getByRole("button", { name: "Chuyển tiền", exact: true })
+        .click();
+      await expect(
+        dialog.getByRole("button", { name: "Chốt quyết toán", exact: true }),
+      ).toHaveCount(0);
+      expect(errors).toEqual([]);
+      console.log(
+        "PASS V2.13: responsive light/dark settlement, partial transfer, reversal, stale revision, close/reopen, offline cached read and Viewer.",
+      );
+      return;
+    }
     if (process.env.TRIPFLOW_PALETTE_TEST) {
       await nav("Thêm");
       await page
@@ -2414,7 +2641,7 @@ async function main() {
       await sheet
         .getByRole("button", { name: "Chia sẻ & phân quyền", exact: true })
         .click();
-      await expect(sheet.locator(".permission-grants .pill")).toHaveCount(5);
+      await expect(sheet.locator(".permission-grants .pill")).toHaveCount(6);
       await sheet
         .getByRole("button", { name: "Các mục quản lý", exact: true })
         .click();
@@ -2687,7 +2914,7 @@ async function main() {
         .locator("#module-trip")
         .getByRole("button", { name: "Xóa chuyến đi", exact: true }),
     ).toBeVisible();
-    await expect(page.locator(".permission-grants .pill")).toHaveCount(5);
+    await expect(page.locator(".permission-grants .pill")).toHaveCount(6);
     await page.getByRole("button", { name: "Sửa quyền", exact: true }).click();
     for (const label of [
       "Mời thành viên",
@@ -2695,6 +2922,7 @@ async function main() {
       "Thu hồi quyền truy cập",
       "Xóa chuyến đi",
       "Chốt dự toán",
+      "Chốt/mở lại quyết toán",
     ])
       await expect(
         page.getByRole("dialog").getByLabel(label, { exact: true }),
@@ -2851,7 +3079,7 @@ async function main() {
     await expect(page.locator(".error")).toHaveCount(0);
     expect(errors).toEqual([]);
     console.log(
-      "PASS V2.7.0 regression: five permission fields, owner grant persisted, viewer action visibility, offline Wallet+sync, theme persistence/system switching, 40 responsive views, delete-trip navigation/cache cleanup, no JS errors.",
+      "PASS V2.7.0 regression: six permission fields, owner grant persisted, viewer action visibility, offline Wallet+sync, theme persistence/system switching, 40 responsive views, delete-trip navigation/cache cleanup, no JS errors.",
     );
   } finally {
     await context.close();

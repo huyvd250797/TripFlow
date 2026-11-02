@@ -26,6 +26,7 @@ import { TripFund, FinanceBanner } from "./trip-fund";
 import { CommandDock } from "./ui/command-dock";
 import { observeDialogViewport } from "@/lib/ui-viewport";
 import { CostSharingButton } from "./cost-sharing";
+import { Settlement } from "./settlement";
 import { RoutePlanning, RouteLeg } from "./route-planning";
 import { PreparationSummary } from "./preparation-summary";
 const PreparationModule = dynamic(
@@ -5479,6 +5480,12 @@ function App() {
                           )}
                         </section>
 
+                        <Settlement
+                          key={data.trip.id}
+                          bundle={data}
+                          userId={user.id}
+                          online={online}
+                        />
                         <section className="panel">
                           <div className="section-heading report-activity-heading">
                             <h2>Báo cáo theo hoạt động</h2>

@@ -9,6 +9,7 @@ import "./flexible-planning.css";
 import "./layout-polish.css";
 import "./app-palette.css";
 import "./palette-surfaces.css";
+import "./settlement.css";
 import { PALETTE_BOOTSTRAP } from "../lib/app-palette";
 export const metadata: Metadata = {
   title: "TripFlow · Plan. Go. Remember.",

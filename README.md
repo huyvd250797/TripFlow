@@ -1,10 +1,21 @@
-# TripFlow V2.12.3 — Complete Theme Consistency
+# TripFlow V2.13.0 — Group Expenses & Settlement
 
 Web app quản lý chuyến đi, viết mới từ kế hoạch TripFlow, ưu tiên điện thoại. Giao diện tiếng Việt, tiền VNĐ, ngày DD/MM/YYYY. Frontend và backend triển khai chung trên Vercel; dữ liệu và tài khoản dùng Supabase.
 
 **Bắt đầu:** giải nén → chạy migration theo thứ tự → cấu hình Supabase/Vercel → tạo tài khoản → nếu cần thì nâng một tài khoản thành Master bằng SQL tin cậy → kiểm thử tài chính, online/offline và phân quyền.
 
 ZIP chứa mã nguồn. Vercel không tự tạo database từ ZIP; cần hoàn thành cấu hình dưới đây. Không cần máy chủ backend riêng. Không có dữ liệu mẫu hoặc tài khoản mặc định trong bản chạy thật.
+
+## V2.13.0 — Group Expenses & Settlement
+
+- Báo cáo có block **Công nợ & quyết toán**, nút cùng tiêu đề mở bottom sheet Theo người / Chuyển tiền / Lịch sử. Không thêm tab chính, giữ giao diện và bảng màu V2.12.3.
+- Công nợ lấy từ thực chi đã phân bổ, người thanh toán, đóng/trả quỹ, hoàn ứng và chuyển tiền đã xác nhận. Xem nguồn từng số dư; hỗ trợ thanh toán một phần, chứng từ HTTPS và hủy giao dịch có lý do, giữ lịch sử.
+- Trả quỹ/hoàn ứng dùng đúng sổ quỹ hiện có, không cộng lại vào chi phí. Đề xuất chưa làm giảm công nợ và không tự chuyển tiền ngân hàng.
+- Chốt/mở lại bằng quyền riêng **Chốt/mở lại quyết toán**. Editor không tự cấp quyền; Viewer chỉ xem. Server khóa tài chính đã chốt, kể cả thao tác từ app cũ/khôi phục dữ liệu đã xóa; mở lại cần lý do.
+- Revision chung cho dữ liệu tài chính; xác nhận trên snapshot cũ bị từ chối. Chống ghi trùng và retry an toàn. Backup/restore bao gồm toàn bộ giao dịch, remap người tham gia và giữ trạng thái đã chốt.
+- Offline: xem bản quyết toán đã tải, có thời điểm tải; chỉ xác nhận/chốt khi online và không còn hàng đợi trên thiết bị. Không xếp giao dịch quyết toán vào hàng đợi offline.
+- **Nâng từ V2.12.3: chỉ chạy migration `202611020001_v2130_group_settlement.sql` trước khi deploy.** Bản TXT riêng chứa nguyên SQL. App/database 2.13.0; không chạy lại SQL cũ, không reset dữ liệu.
+- Xem `docs/UPGRADE-V2.13.0.md`, `docs/SETTLEMENT-RULES.md` và `docs/VALIDATION-V2.13.0.md`.
 
 ## V2.12.3 — Complete Theme Consistency
 

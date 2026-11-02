@@ -1,3 +1,14 @@
+## V2.13.0 — Group Expenses & Settlement
+
+- Báo cáo có block **Công nợ & quyết toán**, nút cùng tiêu đề mở bottom sheet Theo người / Chuyển tiền / Lịch sử. Không thêm tab chính, giữ giao diện và bảng màu V2.12.3.
+- Công nợ lấy từ thực chi đã phân bổ, người thanh toán, đóng/trả quỹ, hoàn ứng và chuyển tiền đã xác nhận. Xem nguồn từng số dư; hỗ trợ thanh toán một phần, chứng từ HTTPS và hủy giao dịch có lý do, giữ lịch sử.
+- Trả quỹ/hoàn ứng dùng đúng sổ quỹ hiện có, không cộng lại vào chi phí. Đề xuất chưa làm giảm công nợ và không tự chuyển tiền ngân hàng.
+- Chốt/mở lại bằng quyền riêng **Chốt/mở lại quyết toán**. Editor không tự cấp quyền; Viewer chỉ xem. Server khóa tài chính đã chốt, kể cả thao tác từ app cũ/khôi phục dữ liệu đã xóa; mở lại cần lý do.
+- Revision chung cho dữ liệu tài chính; xác nhận trên snapshot cũ bị từ chối. Chống ghi trùng và retry an toàn. Backup/restore bao gồm toàn bộ giao dịch, remap người tham gia và giữ trạng thái đã chốt.
+- Offline: xem bản quyết toán đã tải, có thời điểm tải; chỉ xác nhận/chốt khi online và không còn hàng đợi trên thiết bị. Không xếp giao dịch quyết toán vào hàng đợi offline.
+- **Nâng từ V2.12.3: chỉ chạy migration `202611020001_v2130_group_settlement.sql` trước khi deploy.** Bản TXT riêng chứa nguyên SQL. App/database 2.13.0; không chạy lại SQL cũ, không reset dữ liệu.
+- Xem `docs/UPGRADE-V2.13.0.md`, `docs/SETTLEMENT-RULES.md` và `docs/VALIDATION-V2.13.0.md`.
+
 # Changelog
 
 ## V2.12.3 — Complete Theme Consistency
@@ -9,7 +20,6 @@
 - **Không cần chạy migration mới. App 2.12.3, database giữ 2.12.0.** Không reset DB, không chạy lại SQL đã áp dụng.
 - Xem `docs/UPGRADE-V2.12.3.md`, `docs/VALIDATION-V2.12.3.md` và `docs/THEME-AUDIT-V2.12.3.md`.
 
-
 ## V2.12.2 — Gradient Themes & App Icon Branding
 
 - Logo trong app dùng đúng icon nền gradient bo góc hiện có, pin trắng và đường cam; không thêm khung vuông bên ngoài. Logo nhận diện giữ màu gốc khi đổi bảng màu.
@@ -18,7 +28,6 @@
 - **Mặc định** khôi phục chính xác bảng màu gốc. Màu lưu trên thiết bị/trình duyệt, không đồng bộ tài khoản; khôi phục trước khi render và khi đổi sáng/tối. Nếu trình duyệt chặn lưu, thông báo rõ.
 - **Không cần chạy migration mới. App 2.12.2, database giữ 2.12.0.** Không reset DB/chạy lại migration đã áp dụng.
 - Xem `docs/UPGRADE-V2.12.2.md` và `docs/VALIDATION-V2.12.2.md`.
-
 
 ## V2.12.1 — Mobile Layout & Interaction Polish
 
@@ -32,7 +41,6 @@
 
 Hướng dẫn: `docs/UPGRADE-V2.12.1.md`; xác minh: `docs/VALIDATION-V2.12.1.md`.
 
-
 ## V2.12.0 — Flexible Itinerary & Route Planning
 
 - Lịch trình có giờ cố định/linh hoạt, giới hạn không bắt đầu trước và phải hoàn tất trước. Các trường mới nằm trong form hoạt động; giới hạn giờ nằm trong Thêm chi tiết khi tạo mới.
@@ -45,7 +53,6 @@ Hướng dẫn: `docs/UPGRADE-V2.12.1.md`; xác minh: `docs/VALIDATION-V2.12.1.m
 
 Xem `docs/UPGRADE-V2.12.0.md` và `docs/VALIDATION-V2.12.0.md`.
 
-
 ## V2.11.0 — Packing, Checklist & Family Travel
 
 - Thêm → **Chuẩn bị chuyến đi**, không thêm tab điều hướng chính. Checklist chung/cá nhân, sáu nhóm gấp/mở, bộ lọc Tất cả / Của tôi / Chưa xong / Chưa phân công.
@@ -56,7 +63,6 @@ Xem `docs/UPGRADE-V2.12.0.md` và `docs/VALIDATION-V2.12.0.md`.
 - App/DB **2.11.0**. Từ V2.10.1 chỉ chạy `202611010005_v2110_packing_checklist_family.sql` trong TXT riêng trước deploy. Không reset DB, không chạy lại migration cũ.
 
 Xem `docs/UPGRADE-V2.11.0.md` và `docs/VALIDATION-V2.11.0.md`.
-
 
 ## V2.10.1 — Sheet & Cost Sharing UX Fix
 

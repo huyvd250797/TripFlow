@@ -1,0 +1,202 @@
+/* V2.13 uses the V2.12.3 palette roles; no global theme overrides. */
+.settlement-panel .section-heading {
+  gap: 12px;
+  align-items: center;
+}
+.settlement-panel .section-heading > .btn {
+  flex-shrink: 0;
+}
+.settlement-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.settlement-kpis > div {
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+  min-width: 0;
+}
+.settlement-kpis span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.settlement-kpis strong {
+  display: block;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.settlement-body {
+  min-width: 0;
+}
+.settlement-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+.settlement-tabs button {
+  min-width: 0;
+  padding: 9px 4px;
+  font-size: 13px;
+}
+.settlement-list {
+  display: grid;
+  gap: 12px;
+}
+.settlement-list article {
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 14px;
+  min-width: 0;
+  background: var(--panel);
+}
+.settlement-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.settlement-row > div {
+  min-width: 0;
+}
+.settlement-row b,
+.settlement-row strong {
+  overflow-wrap: anywhere;
+}
+.settlement-row .btn {
+  flex-shrink: 0;
+}
+.settlement-metrics {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.settlement-metrics > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.settlement-metrics dd {
+  margin: 0;
+  text-align: right;
+}
+.settlement-metrics dt {
+  color: var(--muted);
+}
+.settlement-list details {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.settlement-list summary,
+.settlement-issues summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--primary);
+}
+.settlement-list details p {
+  margin: 8px 0;
+}
+.settlement-list small {
+  overflow-wrap: anywhere;
+  display: block;
+}
+.settlement-list h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.settlement-search,
+.settlement-form input,
+.settlement-form textarea,
+.settlement-form select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 11px;
+  padding: 11px;
+  margin: 5px 0 12px;
+}
+.settlement-form {
+  display: grid;
+  gap: 8px;
+}
+.settlement-form label {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 0;
+}
+.settlement-form textarea {
+  min-height: 88px;
+}
+.settlement-issues {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.settlement-close {
+  padding: 14px;
+  background: var(--surface-soft);
+  border-radius: 14px;
+}
+.settlement-close .btn {
+  margin-left: auto;
+  display: flex;
+}
+@media (max-width: 480px) {
+  .settlement-kpis {
+    gap: 6px;
+  }
+  .settlement-kpis > div {
+    padding: 9px;
+  }
+  .settlement-kpis strong {
+    font-size: 14px;
+  }
+  .settlement-panel .section-heading h2 {
+    font-size: 18px;
+  }
+  .settlement-panel .section-heading > .btn {
+    padding: 9px;
+    font-size: 12px;
+  }
+  .settlement-person > .settlement-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .settlement-row .btn {
+    padding: 8px;
+    font-size: 12px;
+  }
+  .settlement-list article {
+    padding: 11px;
+  }
+}
+/* Override the legacy global two-column dl layout: one complete metric per row. */
+.settlement-dialog .settlement-metrics {
+  grid-template-columns: minmax(0, 1fr);
+  margin: 12px 0;
+  width: 100%;
+}
+.settlement-dialog .settlement-metrics > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+.settlement-dialog .settlement-metrics dt {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.settlement-dialog .settlement-metrics dd {
+  white-space: nowrap;
+  min-width: 0;
+}

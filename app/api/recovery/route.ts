@@ -36,6 +36,11 @@ function migrationError(
 }
 
 function mapped(message = "") {
+  if (message.includes("SETTLEMENT_CLOSED"))
+    return [
+      "Quyết toán đã chốt. Mở lại trước khi khôi phục dữ liệu tài chính.",
+      409,
+    ] as const;
   if (message.includes("FUND_INSUFFICIENT"))
     return [
       "Không thể khôi phục khoản chi vì quỹ hiện không đủ tiền.",

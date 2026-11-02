@@ -104,6 +104,7 @@ export function Editor({
     can_revoke_access: false,
     can_delete_trip: false,
     can_close_budget: false,
+    can_close_settlement: false,
 
     email: "",
     budget_id: "",

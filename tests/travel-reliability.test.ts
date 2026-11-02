@@ -253,6 +253,7 @@ test("V2.4.1 five special permissions fail closed for legacy members, independen
       can_revoke_access: false,
       can_delete_trip: true,
       can_close_budget: false,
+      can_close_settlement: false,
     },
   });
   assert.equal(p.can_delete_trip, true);

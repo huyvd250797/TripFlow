@@ -43,6 +43,7 @@ const permissionFields = {
   can_revoke_access: z.boolean().optional(),
   can_delete_trip: z.boolean().optional(),
   can_close_budget: z.boolean().optional(),
+  can_close_settlement: z.boolean().optional(),
 };
 export const schemas = {
   trip: z

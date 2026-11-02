@@ -55,7 +55,7 @@ test("V2.4.1 migration, independent permissions and server enforcement", async (
       `create schema auth;create role anon;create role authenticated;create table auth.users(id uuid primary key,email text,created_at timestamptz default now(),last_sign_in_at timestamptz);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;grant usage on schema auth to authenticated;insert into auth.users(id,email) values('${owner}','${owner}@test.local'),('${other}','${other}@test.local');`,
     );
     for (const name of allMigrations.filter(
-      (n) => !n.includes("v241") && !n.includes("v280") && !n.includes("v290"),
+      (n) => n < "202610310001_v241_travel_reliability_permissions.sql",
     ))
       await db.exec(await readFile("supabase/migrations/" + name, "utf8"));
     await as();

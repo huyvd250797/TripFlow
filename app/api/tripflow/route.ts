@@ -9,6 +9,10 @@ import {
 } from "@/lib/api-hardening";
 export const dynamic = "force-dynamic";
 const messages: Record<string, string> = {
+  SETTLEMENT_CLOSED:
+    "Quyết toán đã chốt. Mở lại trong Báo cáo → Quyết toán trước khi thay đổi tài chính.",
+  PARTICIPANT_HAS_SETTLEMENT:
+    "Người này có giao dịch tài chính; hãy giữ lại để bảo toàn công nợ.",
   ROUTE_CONTEXT_CHANGED:
     "Lịch trình đã thay đổi sau khi xem trước. Hãy tải lại và tạo bản xem trước mới.",
   INVALID_ROUTE:
@@ -34,7 +38,7 @@ const messages: Record<string, string> = {
     "Khoản này đã được hoàn ứng. Hãy hủy giao dịch hoàn ứng liên quan trước khi thay đổi.",
   RETURN_EXCEEDS_CONTRIBUTION: "Số tiền trả quỹ vượt số đã đóng.",
   PERMISSION_DENIED: "Bạn chưa được cấp quyền thực hiện thao tác này.",
-  PERMISSION_GRANT_OWNER_ONLY: "Chỉ chủ chuyến đi được cấp năm quyền đặc biệt.",
+  PERMISSION_GRANT_OWNER_ONLY: "Chỉ chủ chuyến đi được cấp các quyền đặc biệt.",
   SELF_PERMISSION_CHANGE: "Bạn không thể tự đổi quyền của chính mình.",
   FORBIDDEN: "Bạn không có quyền truy cập chuyến đi này.",
   READ_ONLY: "Bạn chỉ có quyền xem.",

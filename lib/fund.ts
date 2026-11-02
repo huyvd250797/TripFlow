@@ -94,7 +94,12 @@ export function fundTotals(data: FundData, expenses: Expense[]) {
     .filter((e) => e.payment_source === "fund")
     .reduce((s, e) => s + (e.kind === "refund" ? -1 : 1) * Number(e.amount), 0);
   const advances = expenses
-    .filter((e) => e.kind === "payment" && e.payment_source !== "fund" && e.settlement_type !== "direct")
+    .filter(
+      (e) =>
+        e.kind === "payment" &&
+        e.payment_source !== "fund" &&
+        e.settlement_type !== "direct",
+    )
     .map((e) => ({
       expense: e,
       remaining:
@@ -122,6 +127,8 @@ export function fundTotals(data: FundData, expenses: Expense[]) {
   };
 }
 export const fundErrors: Record<string, string> = {
+  SETTLEMENT_CLOSED:
+    "Quyết toán đã chốt. Mở lại trong Báo cáo → Quyết toán trước khi thay đổi sổ quỹ.",
   FUND_INSUFFICIENT:
     "Quỹ không đủ tiền. Hãy kiểm tra số đã thu và khoản chi từ quỹ.",
   REIMBURSEMENT_EXCEEDS_ADVANCE:

@@ -5,6 +5,7 @@ export const PERMISSION_FIELDS = [
   ["can_revoke_access", "Thu hồi quyền truy cập"],
   ["can_delete_trip", "Xóa chuyến đi"],
   ["can_close_budget", "Chốt dự toán"],
+  ["can_close_settlement", "Chốt/mở lại quyết toán"],
 ] as const;
 export function tripPermissions(
   bundle?: Pick<Bundle, "role" | "permissions"> | null,

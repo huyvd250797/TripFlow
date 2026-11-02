@@ -1,6 +1,6 @@
 import type { CostSharing } from "./cost-sharing";
-export const VERSION = "2.12.3";
-export const DATABASE_VERSION = "2.12.0";
+export const VERSION = "2.13.0";
+export const DATABASE_VERSION = "2.13.0";
 export const CATEGORIES = [
   "Di chuyển",
   "Lưu trú",
@@ -167,6 +167,7 @@ export type TripPermissions = {
   can_revoke_access: boolean;
   can_delete_trip: boolean;
   can_close_budget: boolean;
+  can_close_settlement: boolean;
 };
 export type Member = Row &
   Partial<TripPermissions> & {

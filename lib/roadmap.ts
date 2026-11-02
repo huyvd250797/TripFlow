@@ -345,7 +345,7 @@ export const ROADMAP: RoadmapItem[] = [
   {
     version: "V2.13.0",
     title: "Group Expenses & Settlement",
-    done: false,
+    done: true,
     description:
       "Hoàn thiện công nợ cá nhân và chuyển tiền quyết toán, kế thừa quỹ chuyến đi và ba cách chia chi phí hiện có.",
   },
@@ -362,6 +362,34 @@ export const ROADMAP: RoadmapItem[] = [
     done: false,
     description:
       "Đa tiền tệ và tỷ giá theo giao dịch, múi giờ theo chặng, hộ chiếu/visa.",
+  },
+  {
+    version: "V2.16.0",
+    title: "Travel Utility Hub",
+    done: false,
+    description:
+      "Gom các công cụ nhỏ thường dùng; Tính chi phí xăng, cầu đường, gửi xe; đổi đơn vị; ghi vị trí đỗ xe; danh sách mua đồ; ghi chú nhanh",
+  },
+  {
+    version: "V2.17.0",
+    title: "Family Travel Companion",
+    done: false,
+    description:
+      "Hỗ trợ gia đình đi cùng trẻ nhỏ; Theo dõi đồ cần bổ sung; nhật ký ăn/ngủ/thay tã tùy chọn; chèn khoảng nghỉ vào lịch; bàn giao việc giữa người chăm sóc",
+  },
+  {
+    version: "V2.18.0",
+    title: "Group Decisions & Collaboration",
+    done: false,
+    description:
+      "Giảm trao đổi rời rạc khi đi nhóm; Bình chọn địa điểm/nhà hàng; bình luận tại hoạt động; phân công; ghim quyết định cuối cùng",
+  },
+  {
+    version: "V2.19.0",
+    title: "Trip Review & Reuse",
+    done: false,
+    description:
+      "Rút kinh nghiệm cho chuyến sau; Tổng kết dự kiến/thực tế; đánh giá địa điểm; ghi chú lần sau; tạo mẫu từ chuyến đã đi và chọn nội dung muốn giữ",
   },
 ];
 
